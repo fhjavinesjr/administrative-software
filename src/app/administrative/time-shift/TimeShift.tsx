@@ -7,14 +7,13 @@ import { authToken } from "@/pages/api/authToken";
 import { fetchWithAuth } from "@/pages/api/fetchWithAuth";
 
 export default function TimeShift() {
-
-type TimeShift = {
-  timeShiftId: number;
-  timeIn: string;
-  breakOut: string;
-  breakIn: string;
-  timeOut: string;
-}
+  type TimeShift = {
+    timeShiftId: number;
+    timeIn: string;
+    breakOut: string;
+    breakIn: string;
+    timeOut: string;
+  };
 
   const [form, setForm] = useState({
     code: "",
@@ -61,18 +60,21 @@ type TimeShift = {
         return;
       }
 
-     const method = "POST";
-     const res = await fetchWithAuth('http://localhost:8083/api/time-shift/create', {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tsCode: payload.tsCode,
-          timeIn: payload.timeIn,
-          breakOut: payload.breakOut,
-          breakIn: payload.breakIn,
-          timeOut: payload.timeOut,
-        }),
-      });
+      const method = "POST";
+      const res = await fetchWithAuth(
+        "http://localhost:8083/api/time-shift/create",
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tsCode: payload.tsCode,
+            timeIn: payload.timeIn,
+            breakOut: payload.breakOut,
+            breakIn: payload.breakIn,
+            timeOut: payload.timeOut,
+          }),
+        }
+      );
 
       if (!res.ok) {
         throw new Error(`Failed to save timeshift: ${res.status}`);
@@ -217,24 +219,25 @@ type TimeShift = {
             </div>
 
             <div className={styles.dtrTableContainer}>
+         
               <table className={styles.dtrTable}>
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Time In</th>
                     <th>Break Out</th>
                     <th>Break In</th>
                     <th>Time Out</th>
+                    <th>Saved Data</th> {/* <-- Blank column header */}
                   </tr>
                 </thead>
                 <tbody>
-                  {shifts.map((s) => (
-                    <tr key={s.timeShiftId}>
-                      <td>{s.timeShiftId}</td>
-                      <td>{s.timeIn}</td>
-                      <td>{s.breakOut}</td>
-                      <td>{s.breakIn}</td>
-                      <td>{s.timeOut}</td>
+                  {shifts.map((shift, idx) => (
+                    <tr key={idx}>
+                      <td>{shift.timeIn}</td>
+                      <td>{shift.breakOut}</td>
+                      <td>{shift.breakIn}</td>
+                      <td>{shift.timeOut}</td>
+                      <td>{/* Data will appear here when saving */}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -54,29 +54,64 @@
 .clearButton:hover { background: #565e64; }
 
 
+
+
 .dtrTableContainer {
+  padding: 8px;
   flex: 1;
   min-width: 300px;
-  background-color: #343c42;
-  border-radius: 10px;
+  background-color: #f3f4f6; // light grey
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(60, 60, 60, 0.08);
 }
-
 .dtrTable {
   width: 100%;
-  border-collapse: collapse;
-
-  th,
-  td {
-    border: 1px solid rgb(0, 0, 0);
-    padding: 8px;
-    text-align: center;
-    background-color: white;
-  }
-
-  th {
-    background-color: #6ad0ff;
-  }
+  border-collapse: separate;
+  border-spacing: 0;
+  box-shadow: 0 4px 24px rgba(60, 60, 60, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #f3f4f6; // light grey
 }
+
+.dtrTable th,
+.dtrTable td {
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 15px;
+  border-bottom: 1px solid #d1d5db; // medium grey
+  background-color: #f9fafb; // very light grey
+  transition: background 0.2s;
+}
+
+.dtrTable th {
+  background-color: #6b7280; // dark grey
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #4b5563; // darker grey
+}
+
+.dtrTable tr:last-child td {
+  border-bottom: none;
+}
+
+.dtrTable tr:hover td {
+  background-color: #e5e7eb; // hover light grey
+}
+
+.dtrTable td {
+  color: #7097d4; // dark text
+}
+
+.dtrTable thead {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);
+}
+
+.dtrTable tbody tr {
+  transition: background 0.2s;
+}
+
 
 /* ✅ Modern dropdown style */
 .timeSelect {
@@ -160,3 +195,5 @@
   font-weight: bold;
   color: #666;
 }
+
+
