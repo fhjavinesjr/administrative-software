@@ -8,7 +8,8 @@ import Image from "next/image";
 import Link from "next/link";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation"; //use next/navigation if the page is dynamic (server-rendered or client-rendered)
-import { authToken } from "@/pages/api/authToken";
+import { authToken } from "@/lib/utils/localStorageUtil";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_TIMEKEEPING;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function LoginPage() {
       const employeePassword = formData.get("employeePassword") as string;
 
       //Invoke Login API endpoint for Login
-      const response = await fetch('http://localhost:8084/api/employee/login', {
+      const response = await fetch(`${API_BASE_URL}/api/employee/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

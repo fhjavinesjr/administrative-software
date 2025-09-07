@@ -5,14 +5,15 @@
   label {
     font-weight: bold;
     display: block;
-    margin-top: 10px;
+    margin-bottom: .3rem;
   }
 
   input {
-    padding: 5px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    width: 30%;
+    margin-bottom: 10px;
+    min-width: 300px;
+    padding: .5rem;
   }
 
   p {
@@ -57,12 +58,10 @@
 
 
 .dtrTableContainer {
-  padding: 8px;
   flex: 1;
   min-width: 300px;
-  background-color: #f3f4f6; // light grey
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(60, 60, 60, 0.08);
+  margin-bottom: 10px;
 }
 .dtrTable {
   width: 100%;
@@ -70,8 +69,6 @@
   border-spacing: 0;
   box-shadow: 0 4px 24px rgba(60, 60, 60, 0.08);
   border-radius: 12px;
-  overflow: hidden;
-  background-color: #f3f4f6; // light grey
 }
 
 .dtrTable th,
@@ -82,14 +79,14 @@
   border-bottom: 1px solid #d1d5db; // medium grey
   background-color: #f9fafb; // very light grey
   transition: background 0.2s;
+  border: 1px solid #ccc;
 }
 
 .dtrTable th {
-  background-color: #6b7280; // dark grey
-  color: #fff;
+  background-color: #f1f1f1;
   font-weight: 600;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #4b5563; // darker grey
+  border: 1px solid #ccc;
 }
 
 .dtrTable tr:last-child td {
@@ -98,10 +95,6 @@
 
 .dtrTable tr:hover td {
   background-color: #e5e7eb; // hover light grey
-}
-
-.dtrTable td {
-  color: #7097d4; // dark text
 }
 
 .dtrTable thead {
@@ -156,6 +149,8 @@
   padding: 4px 8px;
   width: fit-content;
   transition: all 0.2s ease;
+  margin-bottom: 10px;
+  width: 300px;
 }
 
 .timeGroup:focus-within {
