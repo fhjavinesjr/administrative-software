@@ -1,4 +1,4 @@
-import { authToken } from './authToken';
+import { authToken } from '../../lib/utils/localStorageUtil';
 
 export const logout = () => {
   authToken.clear(); // Clear localStorage token
