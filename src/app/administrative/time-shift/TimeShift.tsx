@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "@/styles/TimeShift.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
+import { authToken } from "@/pages/api/authToken";
+import { fetchWithAuth } from "@/pages/api/fetchWithAuth";
 import { authToken } from "@/pages/api/authToken";
 import { fetchWithAuth } from "@/pages/api/fetchWithAuth";
 
