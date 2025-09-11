@@ -5,8 +5,9 @@ import styles from "@/styles/TimeShift.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import { authToken } from "@/lib/utils/localStorageUtil";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
-const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
-import to12HourFormat from '@/lib/utils/convert24To12HrFormat';
+const API_BASE_URL_ADMINISTRATIVE =
+  process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+import to12HourFormat from "@/lib/utils/convert24To12HrFormat";
 
 export default function TimeShift() {
   type TimeShift = {
@@ -49,8 +50,8 @@ export default function TimeShift() {
     const payload = {
       tsCode: form.code,
       timeIn: `${form.timeIn.hour}:${form.timeIn.minute}:${form.timeIn.second}`,
-      breakOut: `${form.breakOut.hour}:${form.breakOut.minute}:${form.breakOut.second}`,
-      breakIn: `${form.breakIn.hour}:${form.breakIn.minute}:${form.breakIn.second}`,
+      breakOut: `${form.breakOut.hour != '' ? form.breakOut.hour+":"+form.breakOut.minute+":"+form.breakOut.second : ''}`,
+      breakIn: `${form.breakIn.hour != '' ? form.breakIn.hour+":"+form.breakIn.minute+":"+form.breakIn.second : ''}`,
       timeOut: `${form.timeOut.hour}:${form.timeOut.minute}:${form.timeOut.second}`,
     };
 
@@ -96,7 +97,9 @@ export default function TimeShift() {
 
   const fetchShifts = async () => {
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/getAll/time-shift`);
+      const res = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/getAll/time-shift`
+      );
 
       if (!res.ok) {
         throw new Error(`Failed to fetch timeshifts: ${res.status}`);
@@ -128,6 +131,7 @@ export default function TimeShift() {
         value={form[field].hour}
         onChange={(e) => handleChange(field, "hour", e.target.value)}
       >
+        <option value="">--</option> {/* ✅ empty option */}
         {hours.map((h) => (
           <option key={h} value={h}>
             {h}
@@ -140,6 +144,7 @@ export default function TimeShift() {
         value={form[field].minute}
         onChange={(e) => handleChange(field, "minute", e.target.value)}
       >
+        <option value="">--</option> {/* ✅ empty option */}
         {minutesSeconds.map((m) => (
           <option key={m} value={m}>
             {m}
@@ -212,8 +217,8 @@ export default function TimeShift() {
                     {shifts.map((shift, idx) => (
                       <tr key={idx}>
                         <td>{to12HourFormat(shift.timeIn)}</td>
-                        <td>{to12HourFormat(shift.breakOut)}</td>
-                        <td>{to12HourFormat(shift.breakIn)}</td>
+                        <td>{shift.breakOut != null?to12HourFormat(shift.breakOut):'-'}</td>
+                        <td>{shift.breakIn != null?to12HourFormat(shift.breakIn):'-'}</td>
                         <td>{to12HourFormat(shift.timeOut)}</td>
                       </tr>
                     ))}
