@@ -8,10 +8,12 @@ import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 const API_BASE_URL_ADMINISTRATIVE =
   process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 import to12HourFormat from "@/lib/utils/convert24To12HrFormat";
+import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
 export default function TimeShift() {
   type TimeShift = {
     timeShiftId: number;
+    tsCode: string;
     timeIn: string;
     breakOut: string;
     breakIn: string;
@@ -50,8 +52,24 @@ export default function TimeShift() {
     const payload = {
       tsCode: form.code,
       timeIn: `${form.timeIn.hour}:${form.timeIn.minute}:${form.timeIn.second}`,
-      breakOut: `${form.breakOut.hour != '' ? form.breakOut.hour+":"+form.breakOut.minute+":"+form.breakOut.second : ''}`,
-      breakIn: `${form.breakIn.hour != '' ? form.breakIn.hour+":"+form.breakIn.minute+":"+form.breakIn.second : ''}`,
+      breakOut: `${
+        form.breakOut.hour != ""
+          ? form.breakOut.hour +
+            ":" +
+            form.breakOut.minute +
+            ":" +
+            form.breakOut.second
+          : ""
+      }`,
+      breakIn: `${
+        form.breakIn.hour != ""
+          ? form.breakIn.hour +
+            ":" +
+            form.breakIn.minute +
+            ":" +
+            form.breakIn.second
+          : ""
+      }`,
       timeOut: `${form.timeOut.hour}:${form.timeOut.minute}:${form.timeOut.second}`,
     };
 
@@ -131,9 +149,9 @@ export default function TimeShift() {
         value={form[field].hour}
         onChange={(e) => handleChange(field, "hour", e.target.value)}
       >
-        <option value="">--</option> {/* ✅ empty option */}
-        {hours.map((h) => (
-          <option key={h} value={h}>
+        <option value="">--</option>
+        {hours.map((h, idx) => (
+          <option key={`${field}-hour-${idx}`} value={h}>
             {h}
           </option>
         ))}
@@ -144,15 +162,50 @@ export default function TimeShift() {
         value={form[field].minute}
         onChange={(e) => handleChange(field, "minute", e.target.value)}
       >
-        <option value="">--</option> {/* ✅ empty option */}
-        {minutesSeconds.map((m) => (
-          <option key={m} value={m}>
+        <option value="">--</option>
+        {minutesSeconds.map((m, idx) => (
+          <option key={`${field}-minute-${idx}`} value={m}>
             {m}
           </option>
         ))}
       </select>
     </div>
   );
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/time-shift/delete/${id}`,
+        { method: "DELETE" }
+      );
+
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+      setShifts((prev) => prev.filter((s) => s.timeShiftId !== id));
+    } catch (err) {
+      console.error("Failed to delete shift:", err);
+    }
+  };
+
+  const handleEdit = (shift: TimeShift) => {
+    // ✅ pre-fill form for editing
+    setForm({
+      code: shift.tsCode,
+      timeIn: splitTime(shift.timeIn),
+      breakOut: shift.breakOut
+        ? splitTime(shift.breakOut)
+        : { hour: "", minute: "", second: "" },
+      breakIn: shift.breakIn
+        ? splitTime(shift.breakIn)
+        : { hour: "", minute: "", second: "" },
+      timeOut: splitTime(shift.timeOut),
+    });
+  };
+
+  // helper: split "HH:mm:ss" to {hour, minute, second}
+  const splitTime = (timeStr: string) => {
+    const [hour, minute, second] = timeStr.split(":");
+    return { hour, minute, second };
+  };
 
   return (
     <div id="timeShiftModal" className={modalStyles.Modal}>
@@ -203,23 +256,48 @@ export default function TimeShift() {
             </div>
 
             {shifts.length > 0 && (
-              <div className={styles.dtrTableContainer}>
-                <table className={styles.dtrTable}>
+              <div className={styles.DTRTable}>
+                <table className={styles.table}>
                   <thead>
                     <tr>
+                      <th>Code</th>
                       <th>Time In</th>
                       <th>Break Out</th>
                       <th>Break In</th>
                       <th>Time Out</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {shifts.map((shift, idx) => (
-                      <tr key={idx}>
+                      <tr key={shift.timeShiftId ?? `row-${idx}`}>
+                        <td>{shift.tsCode}</td>
                         <td>{to12HourFormat(shift.timeIn)}</td>
-                        <td>{shift.breakOut != null?to12HourFormat(shift.breakOut):'-'}</td>
-                        <td>{shift.breakIn != null?to12HourFormat(shift.breakIn):'-'}</td>
+                        <td>
+                          {shift.breakOut
+                            ? to12HourFormat(shift.breakOut)
+                            : "-"}
+                        </td>
+                        <td>
+                          {shift.breakIn ? to12HourFormat(shift.breakIn) : "-"}
+                        </td>
                         <td>{to12HourFormat(shift.timeOut)}</td>
+                        <td className={styles.actionsCell}>
+                          <button
+                            className={`${styles.iconButton} ${styles.editIcon}`}
+                            onClick={() => handleEdit(shift)}
+                            title="Edit"
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className={`${styles.iconButton} ${styles.deleteIcon}`}
+                            onClick={() => handleDelete(shift.timeShiftId)}
+                            title="Delete"
+                          >
+                            <FaTrashAlt />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
