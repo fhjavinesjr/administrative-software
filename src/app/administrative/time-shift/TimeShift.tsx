@@ -1,60 +1,37 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "@/styles/TimeShift.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
-import { authToken } from "@/lib/utils/localStorageUtil";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+const API_BASE_URL_ADMINISTRATIVE =
+  process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 import to12HourFormat from "@/lib/utils/convert24To12HrFormat";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
-const API_BASE_URL_ADMINISTRATIVE =
-  process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
-
-type TimeShift = {
-  timeShiftId: number;
-  tsCode: string;
-  timeIn: string;
-  breakOut: string;
-  breakIn: string;
-  timeOut: string;
-};
-
-type FormValues = {
-  code: string;
-  timeInHour: string;
-  timeInMinute: string;
-  breakOutHour: string;
-  breakOutMinute: string;
-  breakInHour: string;
-  breakInMinute: string;
-  timeOutHour: string;
-  timeOutMinute: string;
-};
-
 export default function TimeShift() {
-  const [shifts, setShifts] = useState<TimeShift[]>([]);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // react-hook-form
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({
-    defaultValues: {
-      code: "",
-      timeInHour: "08",
-      timeInMinute: "00",
-      breakOutHour: "12",
-      breakOutMinute: "00",
-      breakInHour: "13",
-      breakInMinute: "00",
-      timeOutHour: "17",
-      timeOutMinute: "00",
-    },
+  type TimeShift = {
+    timeShiftId: number;
+    tsCode: string;
+    timeIn: string;
+    breakOut: string;
+    breakIn: string;
+    timeOut: string;
+  };
+
+  const [form, setForm] = useState({
+    timeShiftId: 0,
+    code: "",
+    timeIn: { hour: "08", minute: "00", second: "00" },
+    breakOut: { hour: "12", minute: "00", second: "00" },
+    breakIn: { hour: "13", minute: "00", second: "00" },
+    timeOut: { hour: "17", minute: "00", second: "00" },
   });
+
+  const [shifts, setShifts] = useState<TimeShift[]>([]); // store backend data
 
   const hours = Array.from({ length: 24 }, (_, i) =>
     String(i).padStart(2, "0")
@@ -63,44 +40,20 @@ export default function TimeShift() {
     String(i).padStart(2, "0")
   );
 
-  const onSubmit = async (data: FormValues) => {
-    const payload = {
-      tsCode: data.code,
-      timeIn: `${data.timeInHour}:${data.timeInMinute}:00`,
-      breakOut: data.breakOutHour
-        ? `${data.breakOutHour}:${data.breakOutMinute}:00`
-        : "",
-      breakIn: data.breakInHour
-        ? `${data.breakInHour}:${data.breakInMinute}:00`
-        : "",
-      timeOut: `${data.timeOutHour}:${data.timeOutMinute}:00`,
-    };
-
-    try {
-      const token = authToken.get();
-      if (!token) {
-        console.error("No token found, please login first");
-        return;
-      }
-
-      const res = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/time-shift/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) throw new Error(`Failed to save timeshift: ${res.status}`);
-
-      const saved = await res.json();
-      setShifts((prev) => [...prev, saved]);
-      reset(); // clear form
-    } catch (err) {
-      console.error("Save failed:", err);
-    }
+  const handleChange = (
+    field: "timeIn" | "breakOut" | "breakIn" | "timeOut",
+    part: "hour" | "minute" | "second",
+    value: string
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: { ...prev[field], [part]: value },
+    }));
   };
+
+  useEffect(() => {
+    fetchShifts();
+  }, []);
 
   const fetchShifts = async () => {
     try {
@@ -108,7 +61,9 @@ export default function TimeShift() {
         `${API_BASE_URL_ADMINISTRATIVE}/api/getAll/time-shift`
       );
 
-      if (!res.ok) throw new Error(`Failed to fetch timeshifts: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch timeshifts: ${res.status}`);
+      }
 
       const data = await res.json();
       setShifts(data);
@@ -117,9 +72,50 @@ export default function TimeShift() {
     }
   };
 
-  useEffect(() => {
-    fetchShifts();
-  }, []);
+  const handleClear = () => {
+    setForm({
+      timeShiftId: 0,
+      code: "",
+      timeIn: { hour: "08", minute: "00", second: "00" },
+      breakOut: { hour: "12", minute: "00", second: "00" },
+      breakIn: { hour: "13", minute: "00", second: "00" },
+      timeOut: { hour: "17", minute: "00", second: "00" },
+    });
+
+    setIsEditing(false);
+  };
+
+  const renderTimeSelect = (
+    field: "timeIn" | "breakOut" | "breakIn" | "timeOut"
+  ) => (
+    <div className={styles.timeGroup}>
+      <select
+        className={styles.timeSelect}
+        value={form[field].hour}
+        onChange={(e) => handleChange(field, "hour", e.target.value)}
+      >
+        <option value="">--</option>
+        {hours.map((h, idx) => (
+          <option key={`${field}-hour-${idx}`} value={h}>
+            {h}
+          </option>
+        ))}
+      </select>
+      <span className={styles.timeColon}>:</span>
+      <select
+        className={styles.timeSelect}
+        value={form[field].minute}
+        onChange={(e) => handleChange(field, "minute", e.target.value)}
+      >
+        <option value="">--</option>
+        {minutesSeconds.map((m, idx) => (
+          <option key={`${field}-minute-${idx}`} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 
   const handleDelete = async (id: number) => {
     try {
@@ -128,8 +124,12 @@ export default function TimeShift() {
         { method: "DELETE" }
       );
 
-      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Delete failed: ${res.status}`);
+      }
+        
       setShifts((prev) => prev.filter((s) => s.timeShiftId !== id));
+      handleClear();
     } catch (err) {
       console.error("Failed to delete shift:", err);
     }
@@ -137,21 +137,93 @@ export default function TimeShift() {
 
   const handleEdit = (shift: TimeShift) => {
     const splitTime = (timeStr: string) => {
+      if (!timeStr) return { hour: "", minute: "" };
       const [hour, minute] = timeStr.split(":");
       return { hour, minute };
     };
 
-    reset({
+    setForm({
+      timeShiftId: shift.timeShiftId,
       code: shift.tsCode,
-      timeInHour: splitTime(shift.timeIn).hour,
-      timeInMinute: splitTime(shift.timeIn).minute,
-      breakOutHour: shift.breakOut ? splitTime(shift.breakOut).hour : "",
-      breakOutMinute: shift.breakOut ? splitTime(shift.breakOut).minute : "",
-      breakInHour: shift.breakIn ? splitTime(shift.breakIn).hour : "",
-      breakInMinute: shift.breakIn ? splitTime(shift.breakIn).minute : "",
-      timeOutHour: splitTime(shift.timeOut).hour,
-      timeOutMinute: splitTime(shift.timeOut).minute,
+      timeIn: { ...splitTime(shift.timeIn), second: "00" },
+      breakOut: shift.breakOut
+        ? { ...splitTime(shift.breakOut), second: "00" }
+        : { hour: "", minute: "", second: "00" },
+      breakIn: shift.breakIn
+        ? { ...splitTime(shift.breakIn), second: "00" }
+        : { hour: "", minute: "", second: "00" },
+      timeOut: { ...splitTime(shift.timeOut), second: "00" },
     });
+
+    // scroll into view like you already do
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (formRef.current) {
+          formRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+          const firstFocusable = formRef.current.querySelector(
+            "input, select, textarea, button"
+          ) as HTMLElement | null;
+          if (firstFocusable) firstFocusable.focus();
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+    });
+
+    setIsEditing(true);
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // ✅ Build the TimeShift model
+    const payload: TimeShift = {
+      timeShiftId: form.timeShiftId, // comes from your form state
+      tsCode: form.code,
+      timeIn: `${form.timeIn.hour}:${form.timeIn.minute}:${form.timeIn.second}`,
+      breakOut: form.breakOut.hour
+        ? `${form.breakOut.hour}:${form.breakOut.minute}:${form.breakOut.second}`
+        : "",
+      breakIn: form.breakIn.hour
+        ? `${form.breakIn.hour}:${form.breakIn.minute}:${form.breakIn.second}`
+        : "",
+      timeOut: `${form.timeOut.hour}:${form.timeOut.minute}:${form.timeOut.second}`,
+    };
+
+    try {
+      const url = isEditing
+        ? `${API_BASE_URL_ADMINISTRATIVE}/api/time-shift/update/${payload.timeShiftId}`
+        : `${API_BASE_URL_ADMINISTRATIVE}/api/time-shift/create`;
+
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await fetchWithAuth(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to save timeshift: ${res.status}`);
+      }
+    
+      const saved: TimeShift = await res.json();
+
+      if (isEditing) {
+        setShifts((prev) =>
+          prev.map((s) => (s.timeShiftId === saved.timeShiftId ? saved : s))
+        );
+      } else {
+        setShifts((prev) => [...prev, saved]);
+      }
+
+      handleClear();
+    } catch (err) {
+      console.error("Save failed:", err);
+    }
   };
 
   return (
@@ -162,128 +234,47 @@ export default function TimeShift() {
         </div>
         <div className={modalStyles.modalBody}>
           <div className={styles.TimeShiftWrapper}>
-            {/* Form enhanced with react-hook-form */}
             <form
+              ref={formRef}
               className={styles.TimeShiftForm}
-              onSubmit={handleSubmit(onSubmit)}
+              onSubmit={onSubmit}
             >
               <label>Code</label>
               <input
                 type="text"
-                {...register("code", { required: "Code is required" })}
+                value={form.code}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, code: e.target.value }))
+                }
                 required={true}
               />
-              {errors.code && (
-                <span className={styles.error}>{errors.code.message}</span>
-              )}
 
               <label>Time In</label>
-              <div className={styles.timeGroup}>
-                <select {...register("timeInHour")} className={styles.timeSelect}>
-                  {hours.map((h) => (
-                    <option key={`timeInHour-${h}`} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-                <span className={styles.timeColon}>:</span>
-                <select
-                  {...register("timeInMinute")}
-                  className={styles.timeSelect}
-                >
-                  {minutesSeconds.map((m) => (
-                    <option key={`timeInMinute-${m}`} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {renderTimeSelect("timeIn")}
 
               <label>Break Out</label>
-              <div className={styles.timeGroup}>
-                <select {...register("breakOutHour")} className={styles.timeSelect}>
-                  <option value="">--</option>
-                  {hours.map((h) => (
-                    <option key={`breakOutHour-${h}`} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-                <span className={styles.timeColon}>:</span>
-                <select
-                  {...register("breakOutMinute")}
-                  className={styles.timeSelect}
-                >
-                  <option value="">--</option>
-                  {minutesSeconds.map((m) => (
-                    <option key={`breakOutMinute-${m}`} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {renderTimeSelect("breakOut")}
 
               <label>Break In</label>
-              <div className={styles.timeGroup}>
-                <select {...register("breakInHour")} className={styles.timeSelect}>
-                  <option value="">--</option>
-                  {hours.map((h) => (
-                    <option key={`breakInHour-${h}`} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-                <span className={styles.timeColon}>:</span>
-                <select
-                  {...register("breakInMinute")}
-                  className={styles.timeSelect}
-                >
-                  <option value="">--</option>
-                  {minutesSeconds.map((m) => (
-                    <option key={`breakInMinute-${m}`} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {renderTimeSelect("breakIn")}
 
               <label>Time Out</label>
-              <div className={styles.timeGroup}>
-                <select {...register("timeOutHour")} className={styles.timeSelect}>
-                  {hours.map((h) => (
-                    <option key={`timeOutHour-${h}`} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-                <span className={styles.timeColon}>:</span>
-                <select
-                  {...register("timeOutMinute")}
-                  className={styles.timeSelect}
-                >
-                  {minutesSeconds.map((m) => (
-                    <option key={`timeOutMinute-${m}`} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {renderTimeSelect("timeOut")}
 
               <div className={styles.buttonGroup}>
                 <button type="submit" className={styles.saveButton}>
-                  Save
+                  {isEditing ? "Update" : "Save"}
                 </button>
                 <button
                   type="button"
                   className={styles.clearButton}
-                  onClick={() => reset()}
+                  onClick={handleClear}
                 >
                   Clear
                 </button>
               </div>
             </form>
 
-            {/* Table remains unchanged */}
             {shifts.length > 0 && (
               <div className={styles.DTRTable}>
                 <table className={styles.table}>
@@ -298,8 +289,8 @@ export default function TimeShift() {
                     </tr>
                   </thead>
                   <tbody>
-                    {shifts.map((shift) => (
-                      <tr key={shift.timeShiftId}>
+                    {shifts.map((shift, idx) => (
+                      <tr key={shift.timeShiftId ?? `row-${idx}`}>
                         <td>{shift.tsCode}</td>
                         <td>{to12HourFormat(shift.timeIn)}</td>
                         <td>
