@@ -1,0 +1,90 @@
+
+.PremiumPayMultiplier {
+
+  .title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    }
+
+    /* DOLE Notes */
+    .doleNotes {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: #fef9c3;
+    font-size: 0.875rem;
+
+    h3 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    ul {
+        list-style: disc;
+        padding-left: 1.5rem;
+
+        li {
+        margin-bottom: 0.25rem;
+        }
+    }
+    }
+
+    /* Sector Selection */
+    .sectorSelection {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 1rem;
+
+    label {
+        cursor: pointer;
+    }
+    }
+
+    /* Input fields */
+    .formGrid {
+    margin-bottom: 1.5rem;
+
+    .inputDiv {
+        margin-bottom: 10px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    input {
+        border: 1px solid #d1d5db;
+        padding: 0.5rem;
+        width: 100vh;
+    }
+    }
+
+    /* Multipliers Table */
+    .table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 0.875rem;
+
+    th,
+    td {
+        border: 1px solid #9ca3af;
+        padding: 0.5rem;
+        text-align: left;
+    }
+
+    thead {
+        background-color: #f3f4f6;
+    }
+
+    input {
+        border: 1px solid #d1d5db;
+        padding: 0.25rem;
+        width: 5rem;
+    }
+    }
+
+}
