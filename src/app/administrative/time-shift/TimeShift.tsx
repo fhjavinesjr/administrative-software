@@ -234,11 +234,7 @@ export default function TimeShift() {
         </div>
         <div className={modalStyles.modalBody}>
           <div className={styles.TimeShiftWrapper}>
-            <form
-              ref={formRef}
-              className={styles.TimeShiftForm}
-              onSubmit={onSubmit}
-            >
+            <form ref={formRef} className={styles.TimeShiftForm} onSubmit={onSubmit}>
               <label>Code</label>
               <input
                 type="text"
@@ -276,7 +272,7 @@ export default function TimeShift() {
             </form>
 
             {shifts.length > 0 && (
-              <div className={styles.DTRTable}>
+              <div className={styles.TimeShiftTable}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
