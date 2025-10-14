@@ -21,7 +21,38 @@ const hrItems = [
     label: "Plantilla",
     goto: "/administrative/plantilla",
   },
+  {
+    id: 2,
+    icon: "/jobposition.png",
+    label: "Job Position",
+    goto: "/administrative/job-position",
+  },
+  {
+    id: 3,
+    icon: "/appointment.png",
+    label: "Nature Of Appointment",
+    goto: "/administrative/appointment",
+  },
+  {
+    id: 4,
+    icon: "/separation.png",
+    label: "Nature Of Separation",
+    goto: "/administrative/natureofseparation",
+  },
+  {
+    id: 5,
+    icon: "/engagement.png",
+    label: "Official Engagement",
+    goto: "/administrative/officialengagement",
+  },
+  {
+    id: 6,
+    icon: "/leave.png",
+    label: "Leave",
+    goto: "/administrative/leave",
+  },
 ];
+
 
 const tkItems = [
   {
