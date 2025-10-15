@@ -9,7 +9,7 @@ import Link from "next/link";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation"; //use next/navigation if the page is dynamic (server-rendered or client-rendered)
 import { authToken } from "@/lib/utils/localStorageUtil";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_TIMEKEEPING;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_HRM;
 
 export default function LoginPage() {
   const router = useRouter();
