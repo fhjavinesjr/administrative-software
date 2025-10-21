@@ -6,9 +6,13 @@ import styles from "@/styles/JobPosition.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
 export default function JobPosition() {
+    type jobPositionItem = {
+        title: string;
+        grade: string;
+    }
   
     const [isEditing, setIsEditing] = useState(false);
-    const [position, setposition] = useState<any[]>([]);
+    const [position, setposition] = useState<jobPositionItem[]>([]);
     const [editIndex, setEditIndex] = useState<number | null>(null);
 
     const [title, setTitle] = useState("");

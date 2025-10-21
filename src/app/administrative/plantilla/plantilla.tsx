@@ -6,7 +6,14 @@ import styles from "@/styles/Plantilla.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
 export default function Plantilla() {
-    const [plantilla, setPlantilla] = useState<any[]>([]);
+    type PlantillaItem = {
+        plantillID: string;
+        itemNo: string;
+        position: string;
+        grade: string;
+    }
+
+    const [plantilla, setPlantilla] = useState<PlantillaItem[]>([]);
 
     const [plantillID, setPlantillID] = useState("");
     const [itemNo, setItemNo] = useState("");
@@ -16,13 +23,13 @@ export default function Plantilla() {
     const [isEditing, setIsEditing] = useState(false);
     const [editIndex, setEditIndex] = useState<number | null>(null)
 
-    const [positions, setpositions] = useState([
+    const positions = [
         {id: 1, position: 'Software Engineer', grade: 3},
         {id: 2, position: 'Frontend Developer', grade: 4},
         {id: 3, position: 'Backend Developer', grade: 5},
         {id: 4, position: 'Full Stack Developer', grade: 6},
         {id: 5, position: 'DevOps Engineer', grade: 7}
-    ]);
+    ];
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selected = e.target.value;
@@ -39,7 +46,8 @@ export default function Plantilla() {
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry = { plantillID, itemNo, position, grade };
+        // const newEntry = { plantillID, itemNo, position, grade };
+        const newEntry: PlantillaItem = { plantillID, itemNo, position, grade };
 
         if(!isEditing) {
             setPlantilla([...plantilla, newEntry]);
@@ -57,15 +65,12 @@ export default function Plantilla() {
         setGrade("");
     };
 
-    const handleEdit = (obj: { itemNo: string, position: string; grade: string,  plantillID: string}, index: number) => {
-        const {itemNo, position, grade, plantillID} = obj;
-
+    const handleEdit = (obj: PlantillaItem, index: number) => {
         setEditIndex(index);
-        setPlantillID(plantillID);
-        setItemNo(itemNo);
-        setPosition(position);
-        setGrade(grade);
-
+        setPlantillID(obj.plantillID);
+        setItemNo(obj.itemNo);
+        setPosition(obj.position);
+        setGrade(obj.grade);
         setIsEditing(true);
     };
 
@@ -77,7 +82,7 @@ export default function Plantilla() {
             setIsEditing(false);
         }
         
-        const arr = plantilla.filter(plntll => plntll.plantillID != id);
+        const arr = plantilla.filter(plntll => plntll.plantillID != id.toString());
         setPlantilla(arr);
     };
 
@@ -170,7 +175,7 @@ export default function Plantilla() {
                                             </button>
                                             <button
                                                 className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                onClick={() => handleDelete(plntll.plantillID)}
+                                                onClick={() => handleDelete(Number(plntll.plantillID))}
                                                 title="Delete"
                                             >
                                                 <FaTrashAlt />

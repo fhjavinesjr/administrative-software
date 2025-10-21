@@ -9,7 +9,6 @@ import { FaPenSquare } from "react-icons/fa";
 import Form from "@/styles/AddressForm.module.scss";
 
 export default function Accounts() {
-  const x = 0;
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // Controls modal visibility
   const [formData, setFormData] = useState({
     employeeNo: "",
