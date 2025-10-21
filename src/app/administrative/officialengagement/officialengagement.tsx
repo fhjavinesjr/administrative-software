@@ -6,20 +6,26 @@ import styles from "@/styles/Officialengagement.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
 export default function Officialengagement() {
-    const [official, setOfficial] = useState("");
+    type OfficialItem = {
+        code: string;
+        engagement: string;
+    }
+    
+    const [code, setCode] = useState("");
+    const [engagement, setEngagement] = useState("");
     const [isEditing, setIsEditing] = useState(false);
     const [editIndex, setEditIndex] = useState<number | null>(null);
-    const [arr, setArr] = useState<any[]>([]);
+    const [arr, setArr] = useState<OfficialItem[]>([]);
 
-    const [officials, setOfficials] = useState([
-        {id: 1, type: 'Official Business'},
-        {id: 1, type: 'Official Time'},
-    ]);
+    // const officials = [
+    //     { id: 1, type: 'Official Business' },
+    //     { id: 2, type: 'Official Time' },
+    // ];
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry = { official };
+        const newEntry: OfficialItem = { code, engagement };
 
         if(!isEditing) {
             setArr([...arr, newEntry]);
@@ -33,33 +39,36 @@ export default function Officialengagement() {
             }
         }
 
-        setOfficial("");
+        setCode("");
+        setEngagement("");
     };
 
     const handleClear = () => {
-        setOfficial("");
+        setCode("");
+        setEngagement("");
         setIsEditing(false);
     }
 
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selected = e.target.value;
-        setOfficial(selected);
-    };
+    // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    //     const selected = e.target.value;
+    //     setOfficial(selected);
+    // };
 
     const handleDelete = (type: string) => {
-        if(official) {
-            setOfficial("");
+        if(code) {
+            setCode("");
+            setEngagement("");
             setIsEditing(false);
         }
 
-       const res = arr.filter(s => s.official != type);
+       const res = arr.filter(s => s.engagement != type);
         setArr(res);
     };
 
-    const handleEdit = (official: string, index: number) => {
-
-        setOfficial(official);
+    const handleEdit = (obj: OfficialItem, index: number) => {
         setEditIndex(index);
+        setCode(obj.code);
+        setEngagement(obj.engagement);
         setIsEditing(true);
     };
 
@@ -71,8 +80,21 @@ export default function Officialengagement() {
                 </div>
                 <div className={modalStyles.modalBody}>
                      <form className={styles.OfficialForm} onSubmit={onSubmit}>
-                        <label>Engagement Type</label>
-                        <select
+                        <label>Code</label>
+                        <input
+                            type="text"
+                            value={code}
+                            onChange={e => setCode(e.target.value)}
+                            required={true}
+                        />
+                        <label>Nature</label>
+                        <input
+                            type="text"
+                            value={engagement}
+                            onChange={e => setEngagement(e.target.value)}
+                            required={true}
+                        />
+                        {/* <select
                             onChange={handleChange}
                             value={official}
                             required
@@ -83,7 +105,7 @@ export default function Officialengagement() {
                                         {off.type}
                                         </option>
                                     ))}
-                        </select>
+                        </select> */}
                         <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
                                 {isEditing ? "Update" : "Save"}
@@ -103,24 +125,26 @@ export default function Officialengagement() {
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
-                                        <th>Engagement Type</th>
+                                        <th>Code</th>
+                                        <th>Engagement</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {arr.map((a, indx) => (
-                                        <tr key={a.official ?? `row-${indx}`}>
-                                             <td>{a.official}</td>
+                                        <tr key={a.code ?? `row-${indx}`}>
+                                            <td>{a.code}</td>
+                                             <td>{a.engagement}</td>
                                              <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(a.official, indx)}
+                                                    onClick={() => handleEdit(a, indx)}
                                                     title="Edit">
                                                     <FaRegEdit />
                                                 </button>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(a.official)}
+                                                    onClick={() => handleDelete(a.engagement)}
                                                     title="Delete">
                                                     <FaTrashAlt />
                                                 </button>

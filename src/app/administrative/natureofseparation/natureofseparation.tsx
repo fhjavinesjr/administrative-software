@@ -6,32 +6,38 @@ import styles from "@/styles/Natureofseparation.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
 export default function Natureofseparation() {
-    const [slct_app, setApp] = useState<any[]>([]);
+    type SeparationEntry = {
+        code: string;
+        nature: string;
+    };
+
+    const [code, setCode] = useState("");
+    const [nature, setNature] = useState("");
+    const [slct_app, setApp] = useState<SeparationEntry[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const [editIndex, setEditIndex] = useState<number | null>(null)
         
-    const [appointment, setAppointment] = useState("");
 
-    const [appointments, setAppointments] = useState([
-        {id: 1, type: 'Resignation'},
-        {id: 2, type: 'Retirement (Compulsory)'},
-        {id: 3, type: 'Retirement (Optional)'},
-        {id: 4, type: 'Death'},
-        {id: 6, type: 'Dropped from Rolls'},
-        {id: 7, type: 'Dismissal/Removal'},
-        {id: 8, type: 'Separation Due to Reorganization'},
-        {id: 9, type: 'Others'}
-    ]);
+    // const appointments = [
+    //     {id: 1, type: 'Resignation'},
+    //     {id: 2, type: 'Retirement (Compulsory)'},
+    //     {id: 3, type: 'Retirement (Optional)'},
+    //     {id: 4, type: 'Death'},
+    //     {id: 6, type: 'Dropped from Rolls'},
+    //     {id: 7, type: 'Dismissal/Removal'},
+    //     {id: 8, type: 'Separation Due to Reorganization'},
+    //     {id: 9, type: 'Others'}
+    // ];
 
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selected = e.target.value;
-        setAppointment(selected);
-    };
+    // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    //     const selected = e.target.value;
+    //     setAppointment(selected);
+    // };
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry = { appointment };
+        const newEntry: SeparationEntry = {code, nature};
 
         if(!isEditing) {
             setApp([...slct_app, newEntry]);
@@ -44,29 +50,32 @@ export default function Natureofseparation() {
                 setEditIndex(null);
             }
         }
-        setAppointment("");
+
+        setCode("");
+        setNature("");
     };
 
     const handleDelete = (type: string) => {
-        if(appointment) {
-            setAppointment("");
+        if(code) {
+            setCode("");
+            setNature("");
             setIsEditing(false);
         }
 
-        const arr = slct_app.filter(s => s.appointment != type);
+        const arr = slct_app.filter(s => s.nature != type);
         setApp(arr);
     };
 
-    const handleEdit = (appointment: string, index: number) => {
-
-        setAppointment(appointment);
+    const handleEdit = (obj: SeparationEntry, index: number) => {
         setEditIndex(index);
+        setCode(obj.code);
+        setNature(obj.nature);
         setIsEditing(true);
     };
 
     const handleClear = () => {
-        setAppointment("");
-
+        setCode("");
+        setNature("");
         setIsEditing(false);
     };
 
@@ -78,9 +87,21 @@ export default function Natureofseparation() {
                 </div>
                 <div className={modalStyles.modalBody}>
                     <form className={styles.NatureofseparationForm} onSubmit={onSubmit}>
-                        <label>Nature of Separation</label>
-
-                        <select
+                        <label>Code</label>
+                        <input
+                            type="text"
+                            value={code}
+                            onChange={e => setCode(e.target.value)}
+                            required={true}
+                        />
+                        <label>Nature</label>
+                        <input
+                            type="text"
+                            value={nature}
+                            onChange={e => setNature(e.target.value)}
+                            required={true}
+                        />
+                        {/* <select
                             onChange={handleChange}
                             value={appointment}
                             required
@@ -91,7 +112,7 @@ export default function Natureofseparation() {
                                         {app.type}
                                         </option>
                                     ))}
-                        </select>
+                        </select> */}
 
                         <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
@@ -112,24 +133,26 @@ export default function Natureofseparation() {
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
-                                        <th>Appointment</th>
+                                        <th>Code</th>
+                                        <th>Nature</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {slct_app.map((m, indx) => (
-                                        <tr key={m.appointment ?? `row-${indx}`}>
-                                             <td>{m.appointment}</td>
+                                        <tr key={m.code ?? `row-${indx}`}>
+                                            <td>{m.code}</td>
+                                             <td>{m.nature}</td>
                                              <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(m.appointment, indx)}
+                                                    onClick={() => handleEdit(m, indx)}
                                                     title="Edit">
                                                     <FaRegEdit />
                                                 </button>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(m.appointment)}
+                                                    onClick={() => handleDelete(m.nature)}
                                                     title="Delete">
                                                     <FaTrashAlt />
                                                 </button>
