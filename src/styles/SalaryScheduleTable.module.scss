@@ -1,0 +1,69 @@
+
+.SalaryScheduleTable {
+  padding: 1rem;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 0.9rem;
+
+  .versionInfo {
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+  }
+
+  .salaryTable {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+  }
+
+  .salaryTable th,
+  .salaryTable td {
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+  }
+
+  .salaryTable thead {
+    background-color: #f5f5f5;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .gradeCell {
+    font-weight: 600;
+    background: #f8f8f8;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+  }
+
+  .salaryCell {
+    vertical-align: top;
+  }
+
+  .salaryContent {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .label {
+    font-weight: 500;
+    color: #555;
+  }
+
+  .monthly {
+    color: #333;
+  }
+
+  .annual {
+    color: #888;
+    font-size: 0.85rem;
+  }
+}
