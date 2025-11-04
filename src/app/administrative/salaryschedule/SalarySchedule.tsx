@@ -9,7 +9,13 @@ import modalStyles from "@/styles/Modal.module.scss";
 
 export default function SalarySchedulePage() {
   const [activeTab, setActiveTab] = useState<"salary" | "audit">("salary");
-  const [isEditing, setIsEditing] = useState(false);
+
+  // LIFTED form state so Table can include them in payload
+  const [effectivityDate, setEffectivityDate] = useState<string>("");
+  const [nbcNo, setNbcNo] = useState<string>("");
+  const [nbcDate, setNbcDate] = useState<string>("");
+  const [eoNo, setEoNo] = useState<string>("");
+  const [eoDate, setEoDate] = useState<string>("");
 
   return (
     <div className={modalStyles.Modal}>
@@ -40,8 +46,25 @@ export default function SalarySchedulePage() {
             {/* --- Salary Schedule Tab --- */}
             {activeTab === "salary" && (
               <div className={salaryScheduleStyle.tabContent}>
-                <SalaryScheduleForm />
-                <SalaryScheduleTable />
+                <SalaryScheduleForm
+                  effectivityDate={effectivityDate}
+                  setEffectivityDate={setEffectivityDate}
+                  nbcNo={nbcNo}
+                  setNbcNo={setNbcNo}
+                  nbcDate={nbcDate}
+                  setNbcDate={setNbcDate}
+                  eoNo={eoNo}
+                  setEoNo={setEoNo}
+                  eoDate={eoDate}
+                  setEoDate={setEoDate}
+                />
+                <SalaryScheduleTable
+                  effectivityDate={effectivityDate}
+                  nbcNo={nbcNo}
+                  nbcDate={nbcDate}
+                  eoNo={eoNo}
+                  eoDate={eoDate}
+                />
               </div>
             )}
 

@@ -2,13 +2,33 @@
 
 import React from "react";
 import styles from "@/styles/SalaryScheduleForm.module.scss";
+import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 
-export default function SalaryScheduleForm() {
-  const [effectivityDate, setEffectivityDate] = React.useState("");
-  const [nbcNo, setNbcNo] = React.useState("");
-  const [nbcDate, setNbcDate] = React.useState("");
-  const [eoNo, setEoNo] = React.useState("");
-  const [eoDate, setEoDate] = React.useState("");
+type Props = {
+  effectivityDate: string;
+  setEffectivityDate: (v: string) => void;
+  nbcNo: string;
+  setNbcNo: (v: string) => void;
+  nbcDate: string;
+  setNbcDate: (v: string) => void;
+  eoNo: string;
+  setEoNo: (v: string) => void;
+  eoDate: string;
+  setEoDate: (v: string) => void;
+};
+
+export default function SalaryScheduleForm({
+  effectivityDate,
+  setEffectivityDate,
+  nbcNo,
+  setNbcNo,
+  nbcDate,
+  setNbcDate,
+  eoNo,
+  setEoNo,
+  eoDate,
+  setEoDate,
+}: Props) {
 
   return (
     <div className={styles.SalaryScheduleForm}>
@@ -17,8 +37,8 @@ export default function SalaryScheduleForm() {
         <label className={styles.label}>Select Effectivity Date</label>
         <input
           type="date"
-          value={effectivityDate}
-          onChange={(e) => setEffectivityDate(e.target.value)}
+          value={effectivityDate ? toDateInputValue(effectivityDate) : ""}
+          onChange={(e) => setEffectivityDate(toCustomFormat(e.target.value, false))}
           className={styles.dateInput}
         />
       </div>
@@ -37,8 +57,8 @@ export default function SalaryScheduleForm() {
           <span className={styles.dated}>Dated</span>
           <input
             type="date"
-            value={nbcDate}
-            onChange={(e) => setNbcDate(e.target.value)}
+            value={nbcDate ? toDateInputValue(nbcDate) : ""}
+            onChange={(e) => setNbcDate(toCustomFormat(e.target.value, false))}
             className={styles.dateInput}
           />
         </div>
@@ -58,8 +78,8 @@ export default function SalaryScheduleForm() {
           <span className={styles.dated}>Dated</span>
           <input
             type="date"
-            value={eoDate}
-            onChange={(e) => setEoDate(e.target.value)}
+            value={eoDate ? toDateInputValue(eoDate) : ""}
+            onChange={(e) => setEoDate(toCustomFormat(e.target.value, false))}
             className={styles.dateInput}
           />
         </div>
