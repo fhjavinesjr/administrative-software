@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import styles from "@/styles/SalaryScheduleForm.module.scss";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 
