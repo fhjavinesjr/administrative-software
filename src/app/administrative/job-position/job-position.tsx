@@ -6,29 +6,55 @@ import styles from "@/styles/JobPosition.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import type { SalaryScheduleItem } from "@/lib/types/SalaryScheduleItem";
+import Swal from "sweetalert2";
 
 const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 
 export default function JobPosition() {
   type JobPositionItem = {
-    title: string;
-    grade: string;
-    step: string;
+    jobPositionId: number;
+    jobPositionName: string;
+    salaryGrade: string;
+    salaryStep: string;
   };
 
   const [isEditing, setIsEditing] = useState(false);
   const [position, setPosition] = useState<JobPositionItem[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  const [title, setTitle] = useState("");
-  const [grade, setGrade] = useState("");
-  const [step, setStep] = useState("1");
+  const [jobPositionId, setJobPositionId] = useState(0);
+  const [jobPositionName, setJobPositionName] = useState("");
+  const [salaryGrade, setSalaryGrade] = useState("");
+  const [salaryStep, setSalaryStep] = useState("1");
 
   // salary grades fetched from latest salary schedule
   const [grades, setGrades] = useState<number[]>([]);
   const [gradeSteps, setGradeSteps] = useState<Record<string, number[]>>({});
   const [loadingGrades, setLoadingGrades] = useState(false);
 
+  // 🟢 FETCH EXISTING JOB POSITIONS FROM BACKEND
+  const fetchJobPositions = async () => {
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`);
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+      const data = (await res.json()) as JobPositionItem[];
+
+      // Sort alphabetically
+      const sortedData = data.sort((a, b) =>
+        a.jobPositionName.localeCompare(b.jobPositionName)
+      );
+      setPosition(sortedData);
+    } catch (err) {
+      console.error("Failed to load job positions:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobPositions();
+  }, []);
+  
   // fetch latest salary schedule and populate distinct grades
   useEffect(() => {
     const fetchGrades = async () => {
@@ -80,11 +106,11 @@ export default function JobPosition() {
         setGrades(gradeArr);
 
         // default grade/step
-        if (gradeArr.length > 0 && !grade) {
+        if (gradeArr.length > 0 && !salaryGrade) {
           const firstGrade = String(gradeArr[0]);
-          setGrade(firstGrade);
+          setSalaryGrade(firstGrade);
           const firstStep = String(stepsMap[firstGrade]?.[0] ?? "1");
-          setStep(firstStep);
+          setSalaryStep(firstStep);
         }
       } catch (err) {
         console.error("Failed to load salary grades", err);
@@ -97,55 +123,189 @@ export default function JobPosition() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // when grade changes, update step list and select first available
-  useEffect(() => {
-    if (grade && gradeSteps[grade]) {
-      const steps = gradeSteps[grade];
-      setStep(String(steps[0] ?? "1"));
-    }
-  }, [grade, gradeSteps]);
-
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const newJob: JobPositionItem = { title, grade, step };
 
-    if (!isEditing) {
-      setPosition((prev) => [...prev, newJob]);
-    } else if (editIndex !== null) {
-      const updatePositions = [...position];
-      updatePositions[editIndex] = newJob;
-      setPosition(updatePositions);
+    if (!jobPositionName.trim()) {
+      await Swal.fire("Missing Title", "Please enter a job position title.", "warning");
+      return;
+    }
+    if (!salaryGrade) {
+      await Swal.fire("Missing Grade", "Please select a salary grade.", "warning");
+      return;
+    }
+    if (!salaryStep) {
+      await Swal.fire("Missing Step", "Please select a salary step.", "warning");
+      return;
+    }
+
+    const newJob: JobPositionItem = { jobPositionId, jobPositionName, salaryGrade, salaryStep };
+
+    try {
+      // Swal.fire({
+      //   title: isEditing ? "Updating..." : "Saving...",
+      //   text: "Please wait while we process your request.",
+      //   allowOutsideClick: false,
+      //   didOpen: () => {
+      //     Swal.showLoading();
+      //   },
+      // });
+
+      let url = `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/create`;
+      let submitMethod = "POST";
+      if(isEditing) {
+        url = `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/update/${jobPositionId}`;
+        submitMethod = "PUT";
+      }
+
+      const res = await fetchWithAuth(url, {
+          method: submitMethod,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newJob),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to save job position.");
+      }
+
+      type ApiResponse = {
+        metadataId?: string | number;
+        message: string;
+      };
+
+      const result: ApiResponse = await res.json();
+      console.log("Saved successfully:", result);
+
+      setPosition((prev) => {
+        const updated = [...prev];
+        if (isEditing && editIndex !== null) {
+          updated[editIndex] = newJob;
+        } else {
+          updated.push(newJob);
+        }
+        return updated;
+      });
+
+      // Reset states
       setIsEditing(false);
       setEditIndex(null);
-    }
+      setJobPositionName("");
+      setSalaryGrade("");
+      setSalaryStep("1");
 
-    setTitle("");
-    setGrade("");
-    setStep("1");
+      await Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: isEditing
+          ? "Job position has been updated successfully."
+          : "Job position has been saved successfully.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      // 🔁 Reload table with real IDs from backend
+      await fetchJobPositions();
+      handleClear();
+
+    } catch (error) {
+      console.error("Error saving job position:", error);
+
+      // Type-safe error message extraction
+      const message =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred.";
+
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          message.includes("Failed to fetch") || message.includes("NetworkError")
+            ? "Unable to reach the server. Please check your network or backend status."
+            : message,
+      });
+    }
   };
 
   const handleClear = () => {
-    setTitle("");
-    setGrade("");
-    setStep("1");
+    setJobPositionId(0);
+    setJobPositionName("");
+    setSalaryGrade("");
+    setSalaryStep("1");
     setIsEditing(false);
   };
 
-  const handleDelete = (titleToDelete: string) => {
-    const arr = position.filter((pos) => pos.title !== titleToDelete);
-    setPosition(arr);
-    setTitle("");
-    setGrade("");
-    setStep("1");
-    setIsEditing(false);
+  const handleDelete = async (obj: JobPositionItem) => {
+    const { jobPositionId, jobPositionName } = obj;
+
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: `Do you really want to delete "${jobPositionName}"? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
+
+    if (!confirm.isConfirmed) {
+      return;
+    }
+
+    try {
+      Swal.fire({
+        title: "Deleting...",
+        text: "Please wait while we remove the record.",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const url = `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/delete/${jobPositionId}`;
+      const res = await fetchWithAuth(url, { method: "DELETE" });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to delete job position.");
+      }
+
+      Swal.close();
+
+      await Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: `Job position "${jobPositionName}" has been deleted successfully.`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      // 🔁 Refresh from backend
+      await fetchJobPositions();
+
+      if (isEditing) handleClear();
+    } catch (error) {
+      Swal.close();
+      console.error("Error deleting job position:", error);
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred.";
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          message.includes("Failed to fetch") || message.includes("NetworkError")
+            ? "Unable to reach the server. Please check your network or backend status."
+            : message,
+      });
+    }
   };
 
   const handleEdit = (obj: JobPositionItem, index: number) => {
-    const { title: t, grade: g, step: s } = obj;
+    const { jobPositionId: jobPositionId, jobPositionName: t, salaryGrade: g, salaryStep: s } = obj;
     setEditIndex(index);
-    setTitle(t);
-    setGrade(g);
-    setStep(s);
+    setJobPositionId(jobPositionId);
+    setJobPositionName(t);
+    setSalaryGrade(g);
+    setSalaryStep(s);
     setIsEditing(true);
   };
 
@@ -162,15 +322,15 @@ export default function JobPosition() {
               <label>Position</label>
               <input
                 type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                value={jobPositionName}
+                onChange={(e) => setJobPositionName(e.target.value)}
                 required
               />
 
               <label>Salary Grade</label>
               <select
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
+                value={salaryGrade}
+                onChange={(e) => setSalaryGrade(e.target.value)}
                 required
               >
                 {loadingGrades ? (
@@ -192,14 +352,14 @@ export default function JobPosition() {
 
               <label>Salary Step</label>
               <select
-                value={step}
-                onChange={(e) => setStep(e.target.value)}
+                value={salaryStep}
+                onChange={(e) => setSalaryStep(e.target.value)}
                 required
-                disabled={!grade}
+                disabled={!salaryGrade}
               >
                 <option value="0">0</option>
-                {grade && gradeSteps[grade] ? (
-                  gradeSteps[grade].map((s) => (
+                {salaryGrade && gradeSteps[salaryGrade] ? (
+                  gradeSteps[salaryGrade].map((s) => (
                     <option key={s} value={String(s)}>
                       Step {s}
                     </option>
@@ -239,10 +399,10 @@ export default function JobPosition() {
                   </thead>
                   <tbody>
                     {position.map((pos, indx) => (
-                      <tr key={pos.title ?? `row-${indx}`}>
-                        <td>{pos.title}</td>
-                        <td>{pos.grade}</td>
-                        <td>{pos.step}</td>
+                      <tr key={pos.jobPositionName ?? `row-${indx}`}>
+                        <td>{pos.jobPositionName}</td>
+                        <td>{pos.salaryGrade}</td>
+                        <td>{pos.salaryStep}</td>
                         <td>
                           <button
                             className={`${styles.iconButton} ${styles.editIcon}`}
@@ -253,7 +413,7 @@ export default function JobPosition() {
                           </button>
                           <button
                             className={`${styles.iconButton} ${styles.deleteIcon}`}
-                            onClick={() => handleDelete(pos.title)}
+                            onClick={() => handleDelete(pos)}
                             title="Delete"
                           >
                             <FaTrashAlt />
