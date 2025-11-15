@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/Officialengagement.module.scss";
+import styles from "@/styles/OfficialEngagement.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
-export default function Officialengagement() {
+export default function OfficialEngagement() {
     type OfficialItem = {
         code: string;
         engagement: string;
@@ -79,7 +79,7 @@ export default function Officialengagement() {
                     <h2 className={modalStyles.mainTitle}>Official Engagement</h2>
                 </div>
                 <div className={modalStyles.modalBody}>
-                     <form className={styles.OfficialForm} onSubmit={onSubmit}>
+                     <form className={styles.OfficialEngagement} onSubmit={onSubmit}>
                         <label>Code</label>
                         <input
                             type="text"

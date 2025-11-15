@@ -130,7 +130,7 @@ export default function UserSetting() {
                     <h2 className={modalStyles.mainTitle}>User Setting</h2>
                 </div>
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.UserForm} onSubmit={onSubmit}>
+                    <form className={styles.UserSetting} onSubmit={onSubmit}>
                         <div className={styles.formGroup}>
                             <label htmlFor="employee">Employee Name</label>
                             <input

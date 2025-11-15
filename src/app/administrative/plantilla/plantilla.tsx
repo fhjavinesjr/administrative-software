@@ -102,7 +102,7 @@ export default function Plantilla() {
                 </div>
 
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.PlantillaForm} onSubmit={onSubmit}>
+                    <form className={styles.Plantilla} onSubmit={onSubmit}>
                         <label>Plantilla/Item No</label>
                         <input
                             type="text"

@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/Natureofseparation.module.scss";
+import styles from "@/styles/NatureOfSeparation.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
-export default function Natureofseparation() {
+export default function NatureOfSeparation() {
     type SeparationEntry = {
         code: string;
         nature: string;
@@ -86,7 +86,7 @@ export default function Natureofseparation() {
                     <h2 className={modalStyles.mainTitle}>Nature Of Separation</h2>
                 </div>
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.NatureofseparationForm} onSubmit={onSubmit}>
+                    <form className={styles.NatureOfSeparation} onSubmit={onSubmit}>
                         <label>Code</label>
                         <input
                             type="text"

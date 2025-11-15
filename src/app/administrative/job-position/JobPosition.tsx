@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/JobPosition.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
@@ -33,27 +33,32 @@ export default function JobPosition() {
   const [loadingGrades, setLoadingGrades] = useState(false);
 
   // 🟢 FETCH EXISTING JOB POSITIONS FROM BACKEND
-  const fetchJobPositions = async () => {
+  const fetchJobPositions = useCallback(async () => {
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`);
+      const res = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`
+      );
+
       if (!res.ok) {
         throw new Error(await res.text());
       }
+
       const data = (await res.json()) as JobPositionItem[];
 
       // Sort alphabetically
       const sortedData = data.sort((a, b) =>
         a.jobPositionName.localeCompare(b.jobPositionName)
       );
+
       setPosition(sortedData);
     } catch (err) {
       console.error("Failed to load job positions:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchJobPositions();
-  }, []);
+  }, [fetchJobPositions]);
   
   // fetch latest salary schedule and populate distinct grades
   useEffect(() => {

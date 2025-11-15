@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/Appointment.module.scss";
+import styles from "@/styles/NatureOfAppointment.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
-export default function Appointment() {
+export default function NatureOfAppointment() {
     type AppointmentItem = {
         code: string;
         nature: string;
@@ -80,7 +80,7 @@ export default function Appointment() {
                 </div>
 
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.AppointmentForm} onSubmit={onSubmit}>
+                    <form className={styles.NatureOfAppointment} onSubmit={onSubmit}>
                         <label>Code</label>
                         <input
                             type="text"
