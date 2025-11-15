@@ -31,7 +31,7 @@ const hrItems = [
     id: 3,
     icon: "/appointment.png",
     label: "Nature Of Appointment",
-    goto: "/administrative/appointment",
+    goto: "/administrative/natureofappointment",
   },
   {
     id: 4,
