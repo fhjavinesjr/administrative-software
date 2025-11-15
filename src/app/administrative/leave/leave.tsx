@@ -5,7 +5,7 @@ import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Leave.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 
-export default function Natureofseparation() {
+export default function Leave() {
     type LeaveEntry = {
         code: string;
         leave: string;
@@ -16,24 +16,6 @@ export default function Natureofseparation() {
     const [isEditing, setIsEditing] = useState(false);
     const [editIndex, setEditIndex] = useState<number | null>(null)
     const [arr, setArr] = useState<LeaveEntry[]>([]);
-
-    // const leaves = [
-    //     { id: 1, type: "Vacation Leave" },
-    //     { id: 2, type: "Sick Leave" },
-    //     { id: 3, type: "Paternity Leave" },
-    //     { id: 4, type: "Maternity Leave" },
-    //     { id: 6, type: "Forced Leave" },
-    //     { id: 7, type: "Special Privilege Leave" },
-    //     { id: 8, type: "Solo Parent Leave" },
-    //     { id: 9, type: "Rehabilitation Leave" },
-    //     { id: 10, type: "Gynecological Leave" },
-    //     { id: 11, type: "Study Leave" },
-    //     { id: 12, type: "Terminal Leave" },
-    //     { id: 13, type: "COVID 19 TREATMENT LEAVE" },
-    //     { id: 14, type: "10-Day VAWC Leave" },
-    //     { id: 15, type: "Special Emergency Leave" },
-    //     { id: 16, type: "Adoption Leave" },
-    // ];
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,11 +36,6 @@ export default function Natureofseparation() {
         setCode("");
         setLeave("");
     };
-
-    // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    //     const selected = e.target.value;
-    //     setLeave(selected);
-    // };
 
     const handleClear = () => {
         setCode("");
@@ -106,18 +83,6 @@ export default function Natureofseparation() {
                             onChange={e => setLeave(e.target.value)}
                             required={true}
                         />
-                        {/* <select
-                            onChange={handleChange}
-                            value={leave}
-                            required
-                            className={styles.selectField}>
-                            <option value="">-- Select --</option>
-                                {leaves.map((vl, index) => (
-                                    <option key={index} value={vl.type}>
-                                        {vl.type}
-                                        </option>
-                                    ))}
-                        </select> */}
                          <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
                                 {isEditing ? "Update" : "Save"}
