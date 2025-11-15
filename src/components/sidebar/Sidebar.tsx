@@ -53,6 +53,14 @@ const hrItems = [
   },
 ];
 
+const userManagementItem = [
+  {
+    id: 1,
+    icon: "/usersetting.png",
+    label: "User Setting",
+    goto: "/administrative/usersetting",
+  },
+];
 
 const tkItems = [
   {
@@ -98,6 +106,7 @@ export default function Sidebar() {
   const [hrOpen, setHrOpen] = useState(false);
   const [tkOpen, setTkOpen] = useState(false);
   const [payrollOpen, setPayrollOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
 
   // 👇 Auto-open HR section if current route matches
   useEffect(() => {
@@ -109,6 +118,9 @@ export default function Sidebar() {
     }
     if (payrollItems.some((item) => pathname.startsWith(item.goto))) {
       setPayrollOpen(true);
+    }
+    if (userManagementItem.some((item) => pathname.startsWith(item.goto))) {
+      setUserOpen(true);
     }
   }, [pathname]);
 
@@ -198,6 +210,31 @@ export default function Sidebar() {
         {payrollOpen && (
           <div role="menu">
             {payrollItems.map((item) => (
+              <MenuItem
+                key={item.id}
+                icon={item.icon}
+                label={item.label}
+                goto={item.goto}
+                isActive={pathname === item.goto}
+                onClick={() => {}}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* USER MANAGEMENT */}
+      <div className={styles.menuSection}>
+        <h2
+          className={styles.menuHeader}
+          onClick={() => setUserOpen(!userOpen)}
+          style={{ cursor: "pointer" }}
+        >
+          USER MANAGEMENT {userOpen ? "▲" : "▼"}
+        </h2>
+        {userOpen && (
+          <div role="menu">
+            {userManagementItem.map((item) => (
               <MenuItem
                 key={item.id}
                 icon={item.icon}

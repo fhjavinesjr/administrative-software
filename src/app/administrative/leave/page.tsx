@@ -1,5 +1,5 @@
 import React from 'react'
-import Leave from "./leave"
+import Leave from "./Leave"
 import Main from "../main/Main"
 
 export default function LeavePage() {
