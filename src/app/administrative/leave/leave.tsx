@@ -76,7 +76,7 @@ export default function Leave() {
                             onChange={e => setCode(e.target.value)}
                             required={true}
                         />
-                        <label>Nature</label>
+                        <label>Name</label>
                         <input
                             type="text"
                             value={leave}
