@@ -31,7 +31,7 @@ const hrItems = [
     id: 3,
     icon: "/appointment.png",
     label: "Nature Of Appointment",
-    goto: "/administrative/natureofappointment",
+    goto: "/administrative/appointment",
   },
   {
     id: 4,
@@ -50,6 +50,18 @@ const hrItems = [
     icon: "/leave.png",
     label: "Leave",
     goto: "/administrative/leave",
+  },
+  {
+    id: 7,
+    icon: "/genders.png",
+    label: "Gender",
+    goto: "/administrative/gender",
+  },
+  {
+    id: 8,
+    icon: "/status.png",
+    label: "Civil Status",
+    goto: "/administrative/civilstatus",
   },
 ];
 

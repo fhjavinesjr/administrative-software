@@ -2,29 +2,40 @@
 
 import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/Leave.module.scss";
+import styles from "@/styles/Appointment.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 
-export default function Leave() {
-    type LeaveEntry = {
+export default function Appointment() {
+    type AppointmentItem = {
         code: string;
-        leave: string;
-    };
+        nature: string;
+    }
 
     const [code, setCode] = useState("");
-    const [leave, setLeave] = useState("");
-    const [isEditing, setIsEditing] = useState(false);
+    const [nature, setNature] = useState("");
+    const [slct_app, setApp] = useState<AppointmentItem[]>([]);
     const [editIndex, setEditIndex] = useState<number | null>(null)
-    const [arr, setArr] = useState<LeaveEntry[]>([]);
+    const [isEditing, setIsEditing] = useState(false);
+
+    // const appointments = [
+    //     { id: 1, type: 'Permanent' },
+    //     { id: 2, type: 'Temporary' },
+    //     { id: 3, type: 'Provisional' },
+    //     { id: 4, type: 'Casual' },
+    //     { id: 6, type: 'Contractual' },
+    //     { id: 7, type: 'Co-terminous' },
+    //     { id: 8, type: 'Job Order' },
+    //     { id: 9, type: 'Contract of Service' },
+    // ];
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry: LeaveEntry = { code, leave };
-        
+        const newEntry: AppointmentItem = {code, nature};
+
         if(!isEditing) {
-            setArr([...arr, newEntry]);
+            setApp([...slct_app, newEntry]);
 
             const Toast = Swal.mixin({
                 toast: true,
@@ -40,11 +51,11 @@ export default function Leave() {
 
             Toast.fire({
                 icon: "success",
-                title: "Successfully Added!"
+                title: "Successfully Created!"
             });
 
             setCode("");
-            setLeave("");
+            setNature("");
         } else {
             if(editIndex !== null) {
                 Swal.fire({
@@ -56,9 +67,9 @@ export default function Leave() {
                     backdrop: true,
                 }).then(result => {
                     if(result.isConfirmed) {
-                        const updateLeave = [...arr];
-                        updateLeave[editIndex] = newEntry;
-                        setArr(updateLeave);
+                        const updateAppointment = [...slct_app];
+                        updateAppointment[editIndex] = newEntry;
+                        setApp(updateAppointment);
                         setIsEditing(false);
                         setEditIndex(null);
 
@@ -80,27 +91,21 @@ export default function Leave() {
                         });
 
                         setCode("");
-                        setLeave("");
+                        setNature("");
                     }
                 })
             }
         }
     };
 
-    const handleClear = () => {
-        setCode("");
-        setLeave("");
-        setIsEditing(false);
-    };
-
     const handleDelete = (type: string) => {
         if(code) {
             setCode("");
-            setLeave("");
+            setNature("");
             setIsEditing(false);
         }
 
-         Swal.fire({
+        Swal.fire({
             text: `Are you sure you want to delete the "${type}" record?`,
             icon: "info",
             showCancelButton: true,
@@ -109,27 +114,34 @@ export default function Leave() {
             backdrop: true,
         }).then(result => {
             if(result.isConfirmed) {
-                const res = arr.filter(s => s.leave != type);
-                setArr(res);
+                const arr = slct_app.filter(s => s.nature != type);
+                setApp(arr);
             }
         })
     };
 
-    const handleEdit = (obj: LeaveEntry, index: number) => {
+    const handleEdit = (obj: AppointmentItem, index: number) => {
         setEditIndex(index);
         setCode(obj.code);
-        setLeave(obj.leave);
+        setNature(obj.nature);
         setIsEditing(true);
     };
-    
+
+    const handleClear = () => {
+        setCode("");
+        setNature("");
+        setIsEditing(false);
+    };
+
     return (
-        <div className={modalStyles.Modal}>
+       <div className={modalStyles.Modal}>
             <div className={modalStyles.modalContent}>
                 <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Leave</h2>
+                    <h2 className={modalStyles.mainTitle}>Nature Of Appointment</h2>
                 </div>
+
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.LeaveForm} onSubmit={onSubmit}>
+                    <form className={styles.AppointmentForm} onSubmit={onSubmit}>
                         <label>Code</label>
                         <input
                             type="text"
@@ -140,11 +152,24 @@ export default function Leave() {
                         <label>Nature</label>
                         <input
                             type="text"
-                            value={leave}
-                            onChange={e => setLeave(e.target.value)}
+                            value={nature}
+                            onChange={e => setNature(e.target.value)}
                             required={true}
                         />
-                         <div className={styles.buttonGroup}>
+                        {/* <select
+                            onChange={handleChange}
+                            value={appointment}
+                            required
+                            className={styles.selectField}>
+                            <option value="">-- Select --</option>
+                                {appointments.map((app, index) => (
+                                    <option key={index} value={app.type}>
+                                        {app.type}
+                                        </option>
+                                    ))}
+                        </select> */}
+
+                        <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
                                 {isEditing ? "Update" : "Save"}
                             </button>
@@ -158,31 +183,31 @@ export default function Leave() {
                         </div>
                     </form>
 
-                    {arr.length > 0 && (
-                         <div className={styles.LeaveTable}>
+                    {slct_app.length > 0 && (
+                        <div className={styles.AppointmentTable}>
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Code</th>
-                                        <th>Leave Type</th>
+                                        <th>Appointment</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {arr.map((a, indx) => (
-                                        <tr key={a.code ?? `row-${indx}`}>
-                                             <td>{a.code}</td>
-                                             <td>{a.leave}</td>
+                                    {slct_app.map((m, indx) => (
+                                        <tr key={m.code ?? `row-${indx}`}>
+                                            <td>{m.code}</td>
+                                             <td>{m.nature}</td>
                                              <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(a, indx)}
+                                                    onClick={() => handleEdit(m, indx)}
                                                     title="Edit">
                                                     <FaRegEdit />
                                                 </button>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(a.leave)}
+                                                    onClick={() => handleDelete(m.nature)}
                                                     title="Delete">
                                                     <FaTrashAlt />
                                                 </button>
@@ -191,10 +216,10 @@ export default function Leave() {
                                     ))}
                                 </tbody>
                             </table>
-                         </div>
+                        </div>
                     )}
                 </div>
             </div>
-        </div>
+       </div>
     )
-};
+}

@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/OfficialEngagement.module.scss";
+import styles from "@/styles/Officialengagement.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import Swal from "sweetalert2";
 
-export default function OfficialEngagement() {
+export default function Officialengagement() {
     type OfficialItem = {
         code: string;
         engagement: string;
@@ -29,18 +30,66 @@ export default function OfficialEngagement() {
 
         if(!isEditing) {
             setArr([...arr, newEntry]);
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "bottom-end",
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                }
+            });
+
+            Toast.fire({
+                icon: "success",
+                title: "Successfully Created!"
+            });
+            
+            setCode("");
+            setEngagement("");
         } else {
             if(editIndex !== null) {
-                const updateOfficial = [...arr];
-                updateOfficial[editIndex] = newEntry;
-                setArr(updateOfficial);
-                setIsEditing(false);
-                setEditIndex(null);
-            }
-        }
+                Swal.fire({
+                    text: `Are you sure you want to update this record?`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: "Update",
+                    allowOutsideClick: true,
+                    backdrop: true,
+                }).then(result => {
+                    if(result.isConfirmed) {
+                        const updateOfficial = [...arr];
+                        updateOfficial[editIndex] = newEntry;
+                        setArr(updateOfficial);
+                        setIsEditing(false);
+                        setEditIndex(null);
 
-        setCode("");
-        setEngagement("");
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: "bottom-end",
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.onmouseenter = Swal.stopTimer;
+                                toast.onmouseleave = Swal.resumeTimer;
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: "success",
+                            title: "Successfully Updated!"
+                        });
+
+                        setCode("");
+                        setEngagement("");
+                    }
+                })
+            }
+        } 
     };
 
     const handleClear = () => {
@@ -61,8 +110,19 @@ export default function OfficialEngagement() {
             setIsEditing(false);
         }
 
-       const res = arr.filter(s => s.engagement != type);
-        setArr(res);
+        Swal.fire({
+            text: `Are you sure you want to delete the "${type}" record?`,
+            icon: "info",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            allowOutsideClick: true,
+            backdrop: true,
+        }).then(result => {
+            if(result.isConfirmed) {
+                const res = arr.filter(s => s.engagement != type);
+                setArr(res);
+            }
+        })
     };
 
     const handleEdit = (obj: OfficialItem, index: number) => {
@@ -79,7 +139,7 @@ export default function OfficialEngagement() {
                     <h2 className={modalStyles.mainTitle}>Official Engagement</h2>
                 </div>
                 <div className={modalStyles.modalBody}>
-                     <form className={styles.OfficialEngagement} onSubmit={onSubmit}>
+                     <form className={styles.OfficialForm} onSubmit={onSubmit}>
                         <label>Code</label>
                         <input
                             type="text"
@@ -87,7 +147,7 @@ export default function OfficialEngagement() {
                             onChange={e => setCode(e.target.value)}
                             required={true}
                         />
-                        <label>Name</label>
+                        <label>Nature</label>
                         <input
                             type="text"
                             value={engagement}
