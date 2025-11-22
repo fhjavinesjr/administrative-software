@@ -2,29 +2,35 @@
 
 import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/Leave.module.scss";
+import styles from "@/styles/CivilStatus.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 
-export default function Leave() {
-    type LeaveEntry = {
+export default function CivilStatus() {
+    type CivilStatusItem = {
         code: string;
-        leave: string;
-    };
+        status: string;
+    }
 
     const [code, setCode] = useState("");
-    const [leave, setLeave] = useState("");
-    const [isEditing, setIsEditing] = useState(false);
+    const [status, setStatus] = useState("");
+    const [datas, setData] = useState<CivilStatusItem[]>([]);
     const [editIndex, setEditIndex] = useState<number | null>(null)
-    const [arr, setArr] = useState<LeaveEntry[]>([]);
+    const [isEditing, setIsEditing] = useState(false);
+
+    const handleClear = () => {
+        setCode("");
+        setStatus("");
+        setIsEditing(false);
+    };
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry: LeaveEntry = { code, leave };
-        
+        const newEntry: CivilStatusItem = {code, status};
+
         if(!isEditing) {
-            setArr([...arr, newEntry]);
+            setData([...datas, newEntry]);
 
             const Toast = Swal.mixin({
                 toast: true,
@@ -40,11 +46,11 @@ export default function Leave() {
 
             Toast.fire({
                 icon: "success",
-                title: "Successfully Added!"
+                title: "Successfully Created!"
             });
 
             setCode("");
-            setLeave("");
+            setStatus("");
         } else {
             if(editIndex !== null) {
                 Swal.fire({
@@ -56,9 +62,9 @@ export default function Leave() {
                     backdrop: true,
                 }).then(result => {
                     if(result.isConfirmed) {
-                        const updateLeave = [...arr];
-                        updateLeave[editIndex] = newEntry;
-                        setArr(updateLeave);
+                        const updateAppointment = [...datas];
+                        updateAppointment[editIndex] = newEntry;
+                        setData(updateAppointment);
                         setIsEditing(false);
                         setEditIndex(null);
 
@@ -80,27 +86,23 @@ export default function Leave() {
                         });
 
                         setCode("");
-                        setLeave("");
+                        setStatus("");
                     }
                 })
+                
             }
         }
-    };
-
-    const handleClear = () => {
-        setCode("");
-        setLeave("");
-        setIsEditing(false);
+        
     };
 
     const handleDelete = (type: string) => {
         if(code) {
             setCode("");
-            setLeave("");
+            setStatus("");
             setIsEditing(false);
         }
 
-         Swal.fire({
+        Swal.fire({
             text: `Are you sure you want to delete the "${type}" record?`,
             icon: "info",
             showCancelButton: true,
@@ -109,27 +111,28 @@ export default function Leave() {
             backdrop: true,
         }).then(result => {
             if(result.isConfirmed) {
-                const res = arr.filter(s => s.leave != type);
-                setArr(res);
+                const arr = datas.filter(s => s.status != type);
+                setData(arr);
             }
         })
     };
 
-    const handleEdit = (obj: LeaveEntry, index: number) => {
+    const handleEdit = (obj: CivilStatusItem, index: number) => {
         setEditIndex(index);
         setCode(obj.code);
-        setLeave(obj.leave);
+        setStatus(obj.status);
         setIsEditing(true);
     };
-    
+        
     return (
         <div className={modalStyles.Modal}>
             <div className={modalStyles.modalContent}>
                 <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Leave</h2>
+                    <h2 className={modalStyles.mainTitle}>Civil Status</h2>
                 </div>
+
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.LeaveForm} onSubmit={onSubmit}>
+                    <form className={styles.CivilStatusForm} onSubmit={onSubmit}>
                         <label>Code</label>
                         <input
                             type="text"
@@ -137,14 +140,15 @@ export default function Leave() {
                             onChange={e => setCode(e.target.value)}
                             required={true}
                         />
-                        <label>Nature</label>
+                        <label>Status</label>
                         <input
                             type="text"
-                            value={leave}
-                            onChange={e => setLeave(e.target.value)}
+                            value={status}
+                            onChange={e => setStatus(e.target.value)}
                             required={true}
                         />
-                         <div className={styles.buttonGroup}>
+
+                        <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
                                 {isEditing ? "Update" : "Save"}
                             </button>
@@ -158,31 +162,31 @@ export default function Leave() {
                         </div>
                     </form>
 
-                    {arr.length > 0 && (
-                         <div className={styles.LeaveTable}>
+                    {datas.length > 0 && (
+                        <div className={styles.CivilStatusTable}>
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Code</th>
-                                        <th>Leave Type</th>
+                                        <th>Gender</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {arr.map((a, indx) => (
-                                        <tr key={a.code ?? `row-${indx}`}>
-                                             <td>{a.code}</td>
-                                             <td>{a.leave}</td>
+                                    {datas.map((m, indx) => (
+                                        <tr key={m.code ?? `row-${indx}`}>
+                                            <td>{m.code}</td>
+                                             <td>{m.status}</td>
                                              <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(a, indx)}
+                                                    onClick={() => handleEdit(m, indx)}
                                                     title="Edit">
                                                     <FaRegEdit />
                                                 </button>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(a.leave)}
+                                                    onClick={() => handleDelete(m.status)}
                                                     title="Delete">
                                                     <FaTrashAlt />
                                                 </button>
@@ -191,10 +195,10 @@ export default function Leave() {
                                     ))}
                                 </tbody>
                             </table>
-                         </div>
+                        </div>
                     )}
                 </div>
             </div>
         </div>
     )
-};
+}

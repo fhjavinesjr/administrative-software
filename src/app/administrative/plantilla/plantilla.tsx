@@ -1,307 +1,157 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Plantilla.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
-import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
 
-const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
-
 export default function Plantilla() {
-    type PlantillaAPI = {
-        plantillaId: number;
-        plantillaName: string;
-        jobPositionId: number;
-    };
-
-    type JobPositionItem = {
-        jobPositionId: number;
-        jobPositionName: string;
-        salaryGrade: string;
-        salaryStep: string;
-    };
-
     type PlantillaItem = {
         plantillID: string;
         itemNo: string;
         position: string;
         grade: string;
-        step: string;
     }
 
     const [plantilla, setPlantilla] = useState<PlantillaItem[]>([]);
-    const [jobPositions, setJobPositions] = useState<JobPositionItem[]>([]);
+
+    const [plantillID, setPlantillID] = useState("");
     const [itemNo, setItemNo] = useState("");
     const [position, setPosition] = useState("");
     const [grade, setGrade] = useState("");
-    const [step, setStep] = useState("");
+
     const [isEditing, setIsEditing] = useState(false);
-    const [plantillaRaw, setPlantillaRaw] = useState<PlantillaAPI[]>([]);
-    const [selectedPlantillaId, setSelectedPlantillaId] = useState<number | null>(null);
-    const [selectedJobPositionId, setSelectedJobPositionId] = useState<number | null>(null);
+    const [editIndex, setEditIndex] = useState<number | null>(null)
 
-    useEffect(() => {
-        const loadPlantilla = async () => {
-            try {
-                const res = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`);
-                if (!res.ok) throw new Error(await res.text());
-                const data = await res.json();
-                setPlantillaRaw(data);  // <-- NEW temporary state
-            } catch (err) {
-                console.error("Failed to load plantilla:", err);
-            }
-        };
-        loadPlantilla();
-    }, []);
+    const positions = [
+        {id: 1, position: 'Software Engineer', grade: 3},
+        {id: 2, position: 'Frontend Developer', grade: 4},
+        {id: 3, position: 'Backend Developer', grade: 5},
+        {id: 4, position: 'Full Stack Developer', grade: 6},
+        {id: 5, position: 'DevOps Engineer', grade: 7}
+    ];
 
-    useEffect(() => {
-        if (jobPositions.length === 0 || plantillaRaw.length === 0) return;
-
-        const formatted = plantillaRaw.map((p) => {
-            const job = jobPositions.find(j => j.jobPositionId === p.jobPositionId);
-
-            return {
-                plantillID: p.plantillaId.toString(),
-                itemNo: p.plantillaName,
-                position: job ? job.jobPositionName : "",
-                grade: job ? job.salaryGrade : "",
-                step: job ? job.salaryStep : "",
-            };
-        });
-
-        setPlantilla(formatted);
-
-    }, [jobPositions, plantillaRaw]);
-
-    // 🔵 FETCH JOB POSITIONS FROM BACKEND
-    useEffect(() => {
-        const loadJobPositions = async () => {
-        try {
-            const res = await fetchWithAuth(
-            `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`
-            );
-            if (!res.ok) throw new Error(await res.text());
-
-            const data = (await res.json()) as JobPositionItem[];
-
-            const sorted = data.sort((a, b) =>
-            a.jobPositionName.localeCompare(b.jobPositionName)
-            );
-
-            setJobPositions(sorted);
-        } catch (err) {
-            console.error("Failed to load job positions:", err);
-        }
-        };
-
-        loadJobPositions();
-    }, []);
-
-    // 🔵 AUTO-FILL GRADE WHEN POSITION SELECTED
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedName = e.target.value;
-        setPosition(selectedName);
+        const selected = e.target.value;
+        setPosition(selected);
+        
+        const res = positions.find(pos => pos.position == selected);
 
-        const found = jobPositions.find(
-        (p) => p.jobPositionName === selectedName
-        );
-
-        if (found) {
-            setSelectedJobPositionId(found.jobPositionId);
-            setGrade(found.salaryGrade); // salary grade only
-            setStep(found.salaryStep); // salary step only
-        } else {
-            setGrade("");
-            setStep("");
+        if(res) {
+            setPlantillID(res.id.toString());
+            setGrade(res.grade.toString());
         }
     };
 
-    // FORM SUBMIT
-    const onSubmit = async (e: React.FormEvent) => {
+    const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const payload = {
-            plantillaName: itemNo,
-            jobPositionId: Number(selectedJobPositionId),
-        };
+        // const newEntry = { plantillID, itemNo, position, grade };
+        const newEntry: PlantillaItem = { plantillID, itemNo, position, grade };
 
-        try {
-            if (!isEditing) {
-                // CREATE
-                const res = await fetchWithAuth(
-                    `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/create`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload),
-                    }
-                );
+        if(!isEditing) {
+            setPlantilla([...plantilla, newEntry]);
 
-                if (!res.ok) {
-                    throw new Error(await res.text());
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "bottom-end",
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
                 }
+            });
 
-                Swal.fire({
-                    icon: "success",
-                    title: "Success",
-                    text: "Plantilla saved successfully!",
-                    timer: 1500,
-                    showConfirmButton: false
-                });
+            Toast.fire({
+                icon: "success",
+                title: "Successfully Created!"
+            });
 
-            } else {
-                // UPDATE
-                const res = await fetchWithAuth(
-                    `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/update/${selectedPlantillaId}`,
-                    {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload),
-                    }
-                );
-
-                if (!res.ok) {
-                    throw new Error(await res.text());
-                }
-                
-                Swal.fire({
-                    icon: "success",
-                    title: "Updated",
-                    text: "Plantilla updated successfully!",
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-
-                setIsEditing(false);
-            }
-
-            // REFRESH DATA
-            const refresh = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`
-            );
-            const list = await refresh.json();
-            setPlantilla(
-                list.map((p: PlantillaAPI) => {
-                    const job = jobPositions.find(j => j.jobPositionId === p.jobPositionId);
-
-                    return {
-                        plantillID: p.plantillaId.toString(),
-                        itemNo: p.plantillaName,
-                        position: job ? job.jobPositionName : "",
-                        grade: job ? job.salaryGrade : "",
-                        step: job ? job.salaryStep : "",
-                    };
-                })
-            );
-
-            // CLEAR FIELDS
             setItemNo("");
             setPosition("");
             setGrade("");
-            setStep("");
+        } else {
+            if (editIndex !== null) {
+                Swal.fire({
+                    text: `Are you sure you want to update this record?`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: "Update",
+                    allowOutsideClick: true,
+                    backdrop: true,
+                }).then(result => {
+                    if(result.isConfirmed) {
+                        const updatePlantilla = [...plantilla];
+                        updatePlantilla[editIndex] = newEntry;
+                        setPlantilla(updatePlantilla);
+                        setIsEditing(false);
+                        setEditIndex(null);
 
-        } catch (err) {
-            console.error("Error saving plantilla:", err);
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "Failed to save plantilla. Please try again.",
-            });
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: "bottom-end",
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.onmouseenter = Swal.stopTimer;
+                                toast.onmouseleave = Swal.resumeTimer;
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: "success",
+                            title: "Successfully Updated!"
+                        });
+                        setItemNo("");
+                        setPosition("");
+                        setGrade("");
+                    }
+                })
+            }
         }
     };
 
-    // EDIT BUTTON
-    const handleEdit = (obj: PlantillaItem) => {
-        // 1. plantillaId from table
-        setSelectedPlantillaId(Number(obj.plantillID));
-
-        // 2. Find jobPositionId from position name
-        const job = jobPositions.find(j => j.jobPositionName === obj.position);
-        setSelectedJobPositionId(job ? job.jobPositionId : null);
-
+    const handleEdit = (obj: PlantillaItem, index: number) => {
+        setEditIndex(index);
+        setPlantillID(obj.plantillID);
         setItemNo(obj.itemNo);
         setPosition(obj.position);
         setGrade(obj.grade);
-        setStep(obj.step);
         setIsEditing(true);
     };
 
-
-
-    // DELETE
-    const handleDelete = async (id: number) => {
-        const result = await Swal.fire({
-            title: "Are you sure?",
-            text: "This action cannot be undone.",
-            icon: "warning",
+    const handleDelete = (id: number) => {
+        if(itemNo) {
+            setItemNo("");
+            setPosition("");
+            setGrade("");
+            setIsEditing(false);
+        }
+        
+        Swal.fire({
+            text: `Are you sure you want to delete this record?`,
+            icon: "info",
             showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, delete it!",
-        });
-
-        if (!result.isConfirmed) {
-            return;
-        }
-
-        try {
-            const res = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/delete/${id}`,
-                { method: "DELETE" }
-            );
-
-            if (!res.ok) {
-                throw new Error(await res.text());
+            confirmButtonText: "Delete",
+            allowOutsideClick: true,
+            backdrop: true,
+        }).then(result => {
+            if(result.isConfirmed) {
+                const arr = plantilla.filter(plntll => plntll.plantillID != id.toString());
+                setPlantilla(arr);
             }
-
-            Swal.fire({
-                icon: "success",
-                title: "Deleted",
-                text: "Plantilla deleted successfully!",
-                timer: 1500,
-                showConfirmButton: false
-            });
-
-            // Refresh table
-            const refresh = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`
-            );
-            const list = await refresh.json();
-
-            setPlantilla(
-                list.map((p: PlantillaAPI) => {
-                    const job = jobPositions.find(j => j.jobPositionId === p.jobPositionId);
-
-                    return {
-                        plantillID: p.plantillaId.toString(),
-                        itemNo: p.plantillaName,
-                        position: job ? job.jobPositionName : "",
-                        grade: job ? job.salaryGrade : "",
-                        step: job ? job.salaryStep : "",
-                    };
-                })
-            );
-
-        } catch (err) {
-            console.error("Delete failed:", err);
-            Swal.fire({
-                icon: "error",
-                title: "Delete Failed",
-                text: "Unable to delete plantilla.",
-            });
-        }
-
-        setIsEditing(false);
+        })
     };
 
-    // CLEAR BUTTON
     const handleClear = () => {
         setItemNo("");
         setPosition("");
         setGrade("");
-        setStep("");
+
         setIsEditing(false);
     };
 
@@ -313,7 +163,7 @@ export default function Plantilla() {
                 </div>
 
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.Plantilla} onSubmit={onSubmit}>
+                    <form className={styles.PlantillaForm} onSubmit={onSubmit}>
                         <label>Plantilla/Item No</label>
                         <input
                             type="text"
@@ -330,13 +180,9 @@ export default function Plantilla() {
                             className={styles.selectField}
                             >
                             <option value="">-- Select --</option>
-
-                            {jobPositions.map((pos) => (
-                                <option
-                                key={pos.jobPositionId}
-                                value={pos.jobPositionName}
-                                >
-                                {pos.jobPositionName}
+                            {positions.map((pos, index) => (
+                                <option key={index} value={pos.position}>
+                                {pos.position}
                                 </option>
                             ))}
                         </select>
@@ -349,28 +195,15 @@ export default function Plantilla() {
                             required={true}
                         />
 
-                        <label>Salary Step</label>
-                        <input
-                            readOnly
-                            value={step}
-                            type="text"
-                            required
-                        />
-
                         <div className={styles.buttonGroup}>
-                            <button
-                                type="submit"
-                                className={
-                                isEditing ? styles.updateButton : styles.saveButton
-                                }
-                            >
+                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
                                 {isEditing ? "Update" : "Save"}
                             </button>
                             <button
                                 type="button"
                                 className={styles.clearButton}
                                 onClick={handleClear}
-                            >
+                                >
                                 Clear
                             </button>
                         </div>
@@ -384,35 +217,31 @@ export default function Plantilla() {
                                         <th>Plantilla/Item No</th>
                                         <th>Position</th>
                                         <th>Salary Grade</th>
-                                        <th>Salary Step</th> 
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {plantilla.map((pl, indx) => (
-                                        <tr key={pl.plantillID ?? `row-${indx}`}>
-                                        <td>{pl.itemNo}</td>
-                                        <td>{pl.position}</td>
-                                        <td>{pl.grade}</td>
-                                        <td>{pl.step}</td>
-                                        <td>
+                                    {plantilla.map((plntll, indx) => (
+                                        <tr key={plntll.plantillID ?? `row-${indx}`}>
+                                            <td>{plntll.itemNo}</td>
+                                            <td>{plntll.position}</td>
+                                            <td>{plntll.grade}</td>
+                                            <td>
                                             <button
-                                            className={`${styles.iconButton} ${styles.editIcon}`}
-                                            onClick={() => handleEdit(pl)}
-                                            title="Edit"
+                                                className={`${styles.iconButton} ${styles.editIcon}`}
+                                                onClick={() => handleEdit(plntll, indx)}
+                                                title="Edit"
                                             >
-                                            <FaRegEdit />
+                                                <FaRegEdit />
                                             </button>
                                             <button
-                                            className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                            onClick={() =>
-                                                handleDelete(Number(pl.plantillID))
-                                            }
-                                            title="Delete"
+                                                className={`${styles.iconButton} ${styles.deleteIcon}`}
+                                                onClick={() => handleDelete(Number(plntll.plantillID))}
+                                                title="Delete"
                                             >
-                                            <FaTrashAlt />
+                                                <FaTrashAlt />
                                             </button>
-                                        </td>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

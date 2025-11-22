@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/NatureOfAppointment.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 export default function NatureOfAppointment() {
     type AppointmentItem = {
@@ -35,17 +36,65 @@ export default function NatureOfAppointment() {
 
         if(!isEditing) {
             setApp([...slct_app, newEntry]);
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "bottom-end",
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                }
+            });
+
+            Toast.fire({
+                icon: "success",
+                title: "Successfully Added!"
+            });
+
+            setCode("");
+            setNature("");
         } else {
             if(editIndex !== null) {
-                const updateAppointment = [...slct_app];
-                updateAppointment[editIndex] = newEntry;
-                setApp(updateAppointment);
-                setIsEditing(false);
-                setEditIndex(null);
+                Swal.fire({
+                    text: `Are you sure you want to update this record?`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: "Update",
+                    allowOutsideClick: true,
+                    backdrop: true,
+                }).then(result => {
+                    if(result.isConfirmed) {
+                        const updateAppointment = [...slct_app];
+                        updateAppointment[editIndex] = newEntry;
+                        setApp(updateAppointment);
+                        setIsEditing(false);
+                        setEditIndex(null);
+
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: "bottom-end",
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.onmouseenter = Swal.stopTimer;
+                                toast.onmouseleave = Swal.resumeTimer;
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: "success",
+                            title: "Successfully Updated!"
+                        });
+                        setCode("");
+                        setNature("");
+                    }
+                })
             }
         }
-        setCode("");
-        setNature("");
     };
 
     const handleDelete = (type: string) => {
@@ -55,8 +104,19 @@ export default function NatureOfAppointment() {
             setIsEditing(false);
         }
         
-        const arr = slct_app.filter(s => s.nature != type);
-        setApp(arr);
+        Swal.fire({
+            text: `Are you sure you want to delete the "${type}" record?`,
+            icon: "info",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            allowOutsideClick: true,
+            backdrop: true,
+        }).then(result => {
+            if(result.isConfirmed) {
+                const arr = slct_app.filter(s => s.nature != type);
+                setApp(arr);
+            }
+        })      
     };
 
     const handleEdit = (obj: AppointmentItem, index: number) => {
