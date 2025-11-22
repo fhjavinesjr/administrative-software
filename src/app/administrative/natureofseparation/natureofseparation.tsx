@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Natureofseparation.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 export default function Natureofseparation() {
     type SeparationEntry = {
@@ -41,18 +42,66 @@ export default function Natureofseparation() {
 
         if(!isEditing) {
             setApp([...slct_app, newEntry]);
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "bottom-end",
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                }
+            });
+
+            Toast.fire({
+                icon: "success",
+                title: "Successfully Added!"
+            });
+
+            setCode("");
+            setNature("");
         } else {
             if(editIndex !== null) {
-                const updateSeparation = [...slct_app];
-                updateSeparation[editIndex] = newEntry;
-                setApp(updateSeparation);
-                setIsEditing(false);
-                setEditIndex(null);
+               Swal.fire({
+                    text: `Are you sure you want to update this record?`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: "Update",
+                    allowOutsideClick: true,
+                    backdrop: true,
+                }).then(result => {
+                    if(result.isConfirmed) {
+                        const updateSeparation = [...slct_app];
+                        updateSeparation[editIndex] = newEntry;
+                        setApp(updateSeparation);
+                        setIsEditing(false);
+                        setEditIndex(null);
+
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: "bottom-end",
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.onmouseenter = Swal.stopTimer;
+                                toast.onmouseleave = Swal.resumeTimer;
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: "success",
+                            title: "Successfully Updated!"
+                        });
+
+                        setCode("");
+                        setNature("");
+                    }
+                })
             }
         }
-
-        setCode("");
-        setNature("");
     };
 
     const handleDelete = (type: string) => {
@@ -62,8 +111,19 @@ export default function Natureofseparation() {
             setIsEditing(false);
         }
 
-        const arr = slct_app.filter(s => s.nature != type);
-        setApp(arr);
+        Swal.fire({
+            text: `Are you sure you want to delete the "${type}" record?`,
+            icon: "info",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            allowOutsideClick: true,
+            backdrop: true,
+        }).then(result => {
+            if(result.isConfirmed) {
+                const arr = slct_app.filter(s => s.nature != type);
+                setApp(arr);
+            }
+        })        
     };
 
     const handleEdit = (obj: SeparationEntry, index: number) => {

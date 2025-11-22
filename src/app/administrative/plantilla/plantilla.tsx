@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Plantilla.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 export default function Plantilla() {
     type PlantillaItem = {
@@ -51,18 +52,67 @@ export default function Plantilla() {
 
         if(!isEditing) {
             setPlantilla([...plantilla, newEntry]);
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "bottom-end",
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                }
+            });
+
+            Toast.fire({
+                icon: "success",
+                title: "Successfully Created!"
+            });
+
+            setItemNo("");
+            setPosition("");
+            setGrade("");
         } else {
             if (editIndex !== null) {
-                const updatePlantilla = [...plantilla];
-                updatePlantilla[editIndex] = newEntry;
-                setPlantilla(updatePlantilla);
-                setIsEditing(false);
-                setEditIndex(null);
+                Swal.fire({
+                    text: `Are you sure you want to update this record?`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: "Update",
+                    allowOutsideClick: true,
+                    backdrop: true,
+                }).then(result => {
+                    if(result.isConfirmed) {
+                        const updatePlantilla = [...plantilla];
+                        updatePlantilla[editIndex] = newEntry;
+                        setPlantilla(updatePlantilla);
+                        setIsEditing(false);
+                        setEditIndex(null);
+
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: "bottom-end",
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.onmouseenter = Swal.stopTimer;
+                                toast.onmouseleave = Swal.resumeTimer;
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: "success",
+                            title: "Successfully Updated!"
+                        });
+                        setItemNo("");
+                        setPosition("");
+                        setGrade("");
+                    }
+                })
             }
         }
-        setItemNo("");
-        setPosition("");
-        setGrade("");
     };
 
     const handleEdit = (obj: PlantillaItem, index: number) => {
@@ -82,8 +132,19 @@ export default function Plantilla() {
             setIsEditing(false);
         }
         
-        const arr = plantilla.filter(plntll => plntll.plantillID != id.toString());
-        setPlantilla(arr);
+        Swal.fire({
+            text: `Are you sure you want to delete this record?`,
+            icon: "info",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            allowOutsideClick: true,
+            backdrop: true,
+        }).then(result => {
+            if(result.isConfirmed) {
+                const arr = plantilla.filter(plntll => plntll.plantillID != id.toString());
+                setPlantilla(arr);
+            }
+        })
     };
 
     const handleClear = () => {

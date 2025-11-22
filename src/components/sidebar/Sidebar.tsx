@@ -51,6 +51,18 @@ const hrItems = [
     label: "Leave",
     goto: "/administrative/leave",
   },
+  {
+    id: 7,
+    icon: "/genders.png",
+    label: "Gender",
+    goto: "/administrative/gender",
+  },
+  {
+    id: 8,
+    icon: "/status.png",
+    label: "Civil Status",
+    goto: "/administrative/civilstatus",
+  },
 ];
 
 const userManagementItem = [

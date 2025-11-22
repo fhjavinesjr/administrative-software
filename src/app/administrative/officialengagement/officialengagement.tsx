@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Officialengagement.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 export default function Officialengagement() {
     type OfficialItem = {
@@ -29,18 +30,66 @@ export default function Officialengagement() {
 
         if(!isEditing) {
             setArr([...arr, newEntry]);
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "bottom-end",
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                }
+            });
+
+            Toast.fire({
+                icon: "success",
+                title: "Successfully Created!"
+            });
+            
+            setCode("");
+            setEngagement("");
         } else {
             if(editIndex !== null) {
-                const updateOfficial = [...arr];
-                updateOfficial[editIndex] = newEntry;
-                setArr(updateOfficial);
-                setIsEditing(false);
-                setEditIndex(null);
-            }
-        }
+                Swal.fire({
+                    text: `Are you sure you want to update this record?`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: "Update",
+                    allowOutsideClick: true,
+                    backdrop: true,
+                }).then(result => {
+                    if(result.isConfirmed) {
+                        const updateOfficial = [...arr];
+                        updateOfficial[editIndex] = newEntry;
+                        setArr(updateOfficial);
+                        setIsEditing(false);
+                        setEditIndex(null);
 
-        setCode("");
-        setEngagement("");
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: "bottom-end",
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.onmouseenter = Swal.stopTimer;
+                                toast.onmouseleave = Swal.resumeTimer;
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: "success",
+                            title: "Successfully Updated!"
+                        });
+
+                        setCode("");
+                        setEngagement("");
+                    }
+                })
+            }
+        } 
     };
 
     const handleClear = () => {
@@ -61,8 +110,19 @@ export default function Officialengagement() {
             setIsEditing(false);
         }
 
-       const res = arr.filter(s => s.engagement != type);
-        setArr(res);
+        Swal.fire({
+            text: `Are you sure you want to delete the "${type}" record?`,
+            icon: "info",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            allowOutsideClick: true,
+            backdrop: true,
+        }).then(result => {
+            if(result.isConfirmed) {
+                const res = arr.filter(s => s.engagement != type);
+                setArr(res);
+            }
+        })
     };
 
     const handleEdit = (obj: OfficialItem, index: number) => {

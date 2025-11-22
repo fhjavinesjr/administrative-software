@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Usersetting.module.scss";
+import { AiFillEye , AiFillEyeInvisible  } from "react-icons/ai";
 import Swal from "sweetalert2";
 
 export default function UserSetting() {
@@ -172,20 +173,26 @@ export default function UserSetting() {
                             {showPassword && (
                                 <>
                                     <label>Password</label>
-                                    <input
-                                        type={hidePassword ? "text" : "password"}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Enter password"
-                                    />
-                                    { displayIcon && (
-                                        <span
-                                            className={styles.showIcon}
-                                            onClick={() => setHidePassword(!hidePassword)}
-                                        >
-                                            {hidePassword ? "🙈" : "👁️"}
-                                        </span>
-                                    )}
+                                    <div className={styles.passwordContainer}>
+                                        <input
+                                            type={hidePassword ? "text" : "password"}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Enter password"
+                                        />
+                                        { displayIcon && (
+                                            <div
+                                                className={styles.showIcon}
+                                                onClick={() => setHidePassword(!hidePassword)}
+                                            >
+                                                {hidePassword ? (
+                                                    <AiFillEyeInvisible size={23} />
+                                                ) : (
+                                                    <AiFillEye size={23} />
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </>
                             )}
                             
