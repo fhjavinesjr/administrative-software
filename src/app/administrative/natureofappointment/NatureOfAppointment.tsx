@@ -13,12 +13,12 @@ export default function NatureOfAppointment() {
     type NatureAPI = {
         natureOfAppointmentId: number;
         code: string;
-        name: string;   // <-- updated
+        nature: string;
     };
 
     const [slct_app, setApp] = useState<NatureAPI[]>([]);
     const [code, setCode] = useState("");
-    const [name, setName] = useState("");  // <-- updated
+    const [nature, setNature] = useState("");  // <-- updated
 
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
@@ -45,7 +45,7 @@ export default function NatureOfAppointment() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const payload = { code, name };
+        const payload = { code, nature };
 
         try {
             if (!isEditing) {
@@ -96,7 +96,7 @@ export default function NatureOfAppointment() {
 
             // Reset form
             setCode("");
-            setName("");
+            setNature("");
 
         } catch (err) {
             console.error("Save failed:", err);
@@ -108,7 +108,7 @@ export default function NatureOfAppointment() {
     const handleEdit = (obj: NatureAPI) => {
         setEditId(obj.natureOfAppointmentId);
         setCode(obj.code);
-        setName(obj.name); // <-- updated
+        setNature(obj.nature); // <-- updated
         setIsEditing(true);
     };
 
@@ -151,7 +151,7 @@ export default function NatureOfAppointment() {
 
     const handleClear = () => {
         setCode("");
-        setName("");
+        setNature("");
         setIsEditing(false);
         setEditId(null);
     };
@@ -178,8 +178,8 @@ export default function NatureOfAppointment() {
                         <label>Nature</label>
                         <input
                             type="text"
-                            value={name}
-                            onChange={e => setName(e.target.value)}   // <-- updated
+                            value={nature}
+                            onChange={e => setNature(e.target.value)}   // <-- updated
                             required
                         />
 
@@ -215,7 +215,7 @@ export default function NatureOfAppointment() {
                                     {slct_app.map((item) => (
                                         <tr key={item.natureOfAppointmentId}>
                                             <td>{item.code}</td>
-                                            <td>{item.name}</td>
+                                            <td>{item.nature}</td>
                                             <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
