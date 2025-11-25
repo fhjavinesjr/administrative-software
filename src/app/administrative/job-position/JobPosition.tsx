@@ -25,7 +25,7 @@ export default function JobPosition() {
   const [jobPositionId, setJobPositionId] = useState(0);
   const [jobPositionName, setJobPositionName] = useState("");
   const [salaryGrade, setSalaryGrade] = useState("");
-  const [salaryStep, setSalaryStep] = useState("1");
+  const [salaryStep, setSalaryStep] = useState("0");
 
   // salary grades fetched from latest salary schedule
   const [grades, setGrades] = useState<number[]>([]);
@@ -128,15 +128,28 @@ export default function JobPosition() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleGradeChange = (g: string) => {
+    setSalaryGrade(g);
+
+    if (g === "0") {
+      setSalaryStep("0");
+      return;
+    }
+
+    // For real grades, pick the first real step
+    const steps = gradeSteps[g];
+    if (steps && steps.length > 0) {
+      setSalaryStep(String(steps[0]));
+    } else {
+      setSalaryStep("");
+    }
+  };
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!jobPositionName.trim()) {
       await Swal.fire("Missing Title", "Please enter a job position title.", "warning");
-      return;
-    }
-    if (!salaryGrade) {
-      await Swal.fire("Missing Grade", "Please select a salary grade.", "warning");
       return;
     }
     if (!salaryStep) {
@@ -197,7 +210,7 @@ export default function JobPosition() {
       setEditIndex(null);
       setJobPositionName("");
       setSalaryGrade("");
-      setSalaryStep("1");
+      setSalaryStep("0");
 
       await Swal.fire({
         icon: "success",
@@ -237,7 +250,7 @@ export default function JobPosition() {
     setJobPositionId(0);
     setJobPositionName("");
     setSalaryGrade("");
-    setSalaryStep("1");
+    setSalaryStep("0");
     setIsEditing(false);
   };
 
@@ -335,7 +348,7 @@ export default function JobPosition() {
               <label>Salary Grade</label>
               <select
                 value={salaryGrade}
-                onChange={(e) => setSalaryGrade(e.target.value)}
+                onChange={(e) => handleGradeChange(e.target.value)}
                 required
               >
                 {loadingGrades ? (
@@ -360,17 +373,19 @@ export default function JobPosition() {
                 value={salaryStep}
                 onChange={(e) => setSalaryStep(e.target.value)}
                 required
-                disabled={!salaryGrade}
               >
-                <option value="0">0</option>
-                {salaryGrade && gradeSteps[salaryGrade] ? (
-                  gradeSteps[salaryGrade].map((s) => (
-                    <option key={s} value={String(s)}>
-                      Step {s}
-                    </option>
-                  ))
+                {salaryGrade === "0" ? (
+                  <option value="0">0</option>
                 ) : (
-                  <option value="">-- select step --</option>
+                  <>
+                    <option value="">-- select step --</option>
+                    <option value="0">0</option>
+                    {gradeSteps[salaryGrade]?.map((s) => (
+                      <option key={s} value={String(s)}>
+                        Step {s}
+                      </option>
+                    ))}
+                  </>
                 )}
               </select>
 

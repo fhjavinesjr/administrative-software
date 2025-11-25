@@ -1,182 +1,201 @@
-"use client"
+"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/NatureOfAppointment.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
 
+const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
 export default function NatureOfAppointment() {
-    type AppointmentItem = {
+    type NatureAPI = {
+        natureOfAppointmentId: number;
         code: string;
-        nature: string;
-    }
+        name: string;   // <-- updated
+    };
 
+    const [slct_app, setApp] = useState<NatureAPI[]>([]);
     const [code, setCode] = useState("");
-    const [nature, setNature] = useState("");
-    const [slct_app, setApp] = useState<AppointmentItem[]>([]);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
+    const [name, setName] = useState("");  // <-- updated
+
     const [isEditing, setIsEditing] = useState(false);
+    const [editId, setEditId] = useState<number | null>(null);
 
-    // const appointments = [
-    //     { id: 1, type: 'Permanent' },
-    //     { id: 2, type: 'Temporary' },
-    //     { id: 3, type: 'Provisional' },
-    //     { id: 4, type: 'Casual' },
-    //     { id: 6, type: 'Contractual' },
-    //     { id: 7, type: 'Co-terminous' },
-    //     { id: 8, type: 'Job Order' },
-    //     { id: 9, type: 'Contract of Service' },
-    // ];
+    // LOAD DATA
+    useEffect(() => {
+        loadAppointmentData();
+    }, []);
 
-    const onSubmit = (e: React.FormEvent) => {
+    const loadAppointmentData = async () => {
+        try {
+            const res = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/natureOfAppointment/get-all`
+            );
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            setApp(data);
+        } catch (err) {
+            console.error("Failed to load:", err);
+        }
+    };
+
+    // SAVE + UPDATE
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry: AppointmentItem = {code, nature};
+        const payload = { code, name };
 
-        if(!isEditing) {
-            setApp([...slct_app, newEntry]);
-
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
-
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Added!"
-            });
-
-            setCode("");
-            setNature("");
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateAppointment = [...slct_app];
-                        updateAppointment[editIndex] = newEntry;
-                        setApp(updateAppointment);
-                        setIsEditing(false);
-                        setEditIndex(null);
-
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-                        setCode("");
-                        setNature("");
+        try {
+            if (!isEditing) {
+                const res = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/natureOfAppointment/create`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
                     }
-                })
-            }
-        }
-    };
+                );
 
-    const handleDelete = (type: string) => {
-        if(code) {
+                if (!res.ok) throw new Error(await res.text());
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Saved!",
+                    text: "Nature of Appointment created successfully.",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+
+            } else {
+                const res = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/natureOfAppointment/update/${editId}`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                if (!res.ok) throw new Error(await res.text());
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Updated!",
+                    text: "Nature of Appointment updated successfully.",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+
+                setIsEditing(false);
+                setEditId(null);
+            }
+
+            await loadAppointmentData();
+
+            // Reset form
             setCode("");
-            setNature("");
-            setIsEditing(false);
+            setName("");
+
+        } catch (err) {
+            console.error("Save failed:", err);
+            Swal.fire("Error", "Failed to save record.", "error");
         }
-        
-        Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
-            icon: "info",
-            showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                const arr = slct_app.filter(s => s.nature != type);
-                setApp(arr);
-            }
-        })      
     };
 
-    const handleEdit = (obj: AppointmentItem, index: number) => {
-        setEditIndex(index);
+    // EDIT BUTTON
+    const handleEdit = (obj: NatureAPI) => {
+        setEditId(obj.natureOfAppointmentId);
         setCode(obj.code);
-        setNature(obj.nature);
+        setName(obj.name); // <-- updated
         setIsEditing(true);
+    };
+
+    // DELETE with Swal confirm
+    const handleDelete = async (id: number) => {
+        const result = await Swal.fire({
+            icon: "warning",
+            title: "Are you sure?",
+            text: "This action cannot be undone.",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const res = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/natureOfAppointment/delete/${id}`,
+                { method: "DELETE" }
+            );
+
+            if (!res.ok) throw new Error(await res.text());
+
+            Swal.fire({
+                icon: "success",
+                title: "Deleted!",
+                text: "Record has been deleted.",
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+            await loadAppointmentData();
+
+        } catch (err) {
+            console.error(err);
+            Swal.fire("Error", "Failed to delete record.", "error");
+        }
     };
 
     const handleClear = () => {
         setCode("");
-        setNature("");
+        setName("");
         setIsEditing(false);
+        setEditId(null);
     };
 
     return (
-       <div className={modalStyles.Modal}>
+        <div className={modalStyles.Modal}>
             <div className={modalStyles.modalContent}>
+                
                 <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Nature Of Appointment</h2>
+                    <h2 className={modalStyles.mainTitle}>Nature of Appointment123</h2>
                 </div>
 
                 <div className={modalStyles.modalBody}>
+                    
                     <form className={styles.NatureOfAppointment} onSubmit={onSubmit}>
                         <label>Code</label>
                         <input
                             type="text"
                             value={code}
                             onChange={e => setCode(e.target.value)}
-                            required={true}
+                            required
                         />
+
                         <label>Nature</label>
                         <input
                             type="text"
-                            value={nature}
-                            onChange={e => setNature(e.target.value)}
-                            required={true}
-                        />
-                        {/* <select
-                            onChange={handleChange}
-                            value={appointment}
+                            value={name}
+                            onChange={e => setName(e.target.value)}   // <-- updated
                             required
-                            className={styles.selectField}>
-                            <option value="">-- Select --</option>
-                                {appointments.map((app, index) => (
-                                    <option key={index} value={app.type}>
-                                        {app.type}
-                                        </option>
-                                    ))}
-                        </select> */}
+                        />
 
                         <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
+                            <button
+                                type="submit"
+                                className={isEditing ? styles.updateButton : styles.saveButton}
+                            >
                                 {isEditing ? "Update" : "Save"}
                             </button>
+
                             <button
                                 type="button"
                                 className={styles.clearButton}
                                 onClick={handleClear}
-                                >
+                            >
                                 Clear
                             </button>
                         </div>
@@ -188,37 +207,39 @@ export default function NatureOfAppointment() {
                                 <thead>
                                     <tr>
                                         <th>Code</th>
-                                        <th>Appointment</th>
+                                        <th>Nature</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {slct_app.map((m, indx) => (
-                                        <tr key={m.code ?? `row-${indx}`}>
-                                            <td>{m.code}</td>
-                                             <td>{m.nature}</td>
-                                             <td>
+                                    {slct_app.map((item) => (
+                                        <tr key={item.natureOfAppointmentId}>
+                                            <td>{item.code}</td>
+                                            <td>{item.name}</td>
+                                            <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(m, indx)}
-                                                    title="Edit">
+                                                    onClick={() => handleEdit(item)}
+                                                >
                                                     <FaRegEdit />
                                                 </button>
+
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(m.nature)}
-                                                    title="Delete">
+                                                    onClick={() => handleDelete(item.natureOfAppointmentId)}
+                                                >
                                                     <FaTrashAlt />
                                                 </button>
-                                             </td>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
                     )}
+
                 </div>
             </div>
-       </div>
-    )
+        </div>
+    );
 }
