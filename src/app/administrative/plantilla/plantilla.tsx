@@ -33,8 +33,6 @@ export default function Plantilla() {
 
     const [plantilla, setPlantilla] = useState<PlantillaItem[]>([]);
     const [jobPositions, setJobPositions] = useState<JobPositionItem[]>([]);
-
-    const [plantillaID, setPlantillaID] = useState("");
     const [itemNo, setItemNo] = useState("");
     const [position, setPosition] = useState("");
     const [grade, setGrade] = useState("");
@@ -118,7 +116,6 @@ export default function Plantilla() {
             setGrade(found.salaryGrade); // salary grade only
             setStep(found.salaryStep); // salary step only
         } else {
-            setPlantillaID("");
             setGrade("");
             setStep("");
         }
