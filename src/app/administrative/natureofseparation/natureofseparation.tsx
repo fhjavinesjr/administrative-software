@@ -1,130 +1,161 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Natureofseparation.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+
+const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 
 export default function Natureofseparation() {
     type SeparationEntry = {
+        natureOfSeparationId?: number;
         code: string;
         nature: string;
     };
+    
+    useEffect(() => {
+        fetchAll();
+    }, []);
+
+    const fetchAll = async () => {
+        try {
+            const res = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/natureOfSeparation/get-all`);
+            if (!res.ok) throw new Error("Failed to fetch");
+
+            const data = await res.json();
+            setApp(data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
 
     const [code, setCode] = useState("");
     const [nature, setNature] = useState("");
     const [slct_app, setApp] = useState<SeparationEntry[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const [editIndex, setEditIndex] = useState<number | null>(null)
-        
 
-    // const appointments = [
-    //     {id: 1, type: 'Resignation'},
-    //     {id: 2, type: 'Retirement (Compulsory)'},
-    //     {id: 3, type: 'Retirement (Optional)'},
-    //     {id: 4, type: 'Death'},
-    //     {id: 6, type: 'Dropped from Rolls'},
-    //     {id: 7, type: 'Dismissal/Removal'},
-    //     {id: 8, type: 'Separation Due to Reorganization'},
-    //     {id: 9, type: 'Others'}
-    // ];
-
-    // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    //     const selected = e.target.value;
-    //     setAppointment(selected);
-    // };
-
-    const onSubmit = (e: React.FormEvent) => {
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry: SeparationEntry = {code, nature};
-
-        if(!isEditing) {
-            setApp([...slct_app, newEntry]);
-
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
+        if (!isEditing) {
+            const response = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/natureOfSeparation/create`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code, nature }),
                 }
-            });
+            );
 
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Added!"
-            });
+            const result = await response.json();
+
+            if (response.ok) {
+                fetchAll(); // reload list
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "bottom-end",
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    }
+                });
+
+                Toast.fire({
+                    icon: "success",
+                    title: "Successfully Added!"
+                });
+            } else {
+                Swal.fire({ icon: "error", title: result.message || "Failed to save" });
+            }
 
             setCode("");
             setNature("");
         } else {
-            if(editIndex !== null) {
-               Swal.fire({
+            if (editIndex !== null) {
+                Swal.fire({
                     text: `Are you sure you want to update this record?`,
                     icon: "info",
                     showCancelButton: true,
                     confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateSeparation = [...slct_app];
-                        updateSeparation[editIndex] = newEntry;
-                        setApp(updateSeparation);
-                        setIsEditing(false);
-                        setEditIndex(null);
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        const selected = slct_app[editIndex];
 
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
+                        const response = await fetchWithAuth(
+                            `${API_BASE_URL_ADMINISTRATIVE}/api/natureOfSeparation/update/${selected.natureOfSeparationId}`,
+                            {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ code, nature }),
                             }
-                        });
+                        );
 
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: "bottom-end",
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                }
+                            });
+
+                            Toast.fire({
+                                icon: "success",
+                                title: "Successfully Updated!"
+                            });
+
+                            fetchAll();
+                        } else {
+                            Swal.fire({ icon: "error", title: data.message || "Update failed" });
+                        }
 
                         setCode("");
                         setNature("");
+                        setIsEditing(false);
+                        setEditIndex(null);
                     }
-                })
+                });
             }
         }
     };
 
-    const handleDelete = (type: string) => {
-        if(code) {
-            setCode("");
-            setNature("");
-            setIsEditing(false);
-        }
-
+    const handleDelete = (natureType: string, id: number) => {
         Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
+            text: `Are you sure you want to delete "${natureType}"?`,
             icon: "info",
             showCancelButton: true,
             confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                const arr = slct_app.filter(s => s.nature != type);
-                setApp(arr);
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const response = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/natureOfSeparation/delete/${id}`,
+                    { method: "DELETE" }
+                );
+
+                if (response.ok) {
+                    Swal.fire({ icon: "success", title: "Deleted!" });
+                    fetchAll();
+                } else {
+                    Swal.fire({ icon: "error", title: "Failed to delete" });
+                }
             }
-        })        
+        });
     };
+
 
     const handleEdit = (obj: SeparationEntry, index: number) => {
         setEditIndex(index);
@@ -161,18 +192,6 @@ export default function Natureofseparation() {
                             onChange={e => setNature(e.target.value)}
                             required={true}
                         />
-                        {/* <select
-                            onChange={handleChange}
-                            value={appointment}
-                            required
-                            className={styles.selectField}>
-                            <option value="">-- Select --</option>
-                                {appointments.map((app, index) => (
-                                    <option key={index} value={app.type}>
-                                        {app.type}
-                                        </option>
-                                    ))}
-                        </select> */}
 
                         <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
@@ -212,8 +231,8 @@ export default function Natureofseparation() {
                                                 </button>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(m.nature)}
-                                                    title="Delete">
+                                                    onClick={() => handleDelete(m.nature, m.natureOfSeparationId!)}
+                                                >
                                                     <FaTrashAlt />
                                                 </button>
                                              </td>
