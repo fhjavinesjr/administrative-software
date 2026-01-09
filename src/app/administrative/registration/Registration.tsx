@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 export const dynamic = "force-dynamic"; //It ensures the page is always rendered dynamically (server-rendered or client-rendered) and skips static generation during build time.
 
@@ -70,7 +70,7 @@ export default function Registration() {
         backdrop: true,
       }).then((result) => {
         if (result.isConfirmed) {
-          router.push("/administrative");
+          router.push("/employee-portal");
         }
       });
     } catch (error) {
@@ -85,8 +85,7 @@ export default function Registration() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.Registration} >
-
+    <form onSubmit={handleSubmit} className={styles.Registration}>
       <InputFieldForm />
 
       <div className={styles.buttonGroup}>

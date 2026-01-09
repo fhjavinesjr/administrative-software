@@ -2,21 +2,22 @@
 
 import type { Metadata } from "next";
 import './globals.css';
+import PageAuthentication from "./PageAuthentication";
 
 export const metadata: Metadata = {
   title: "Administrative",
   description: "Powered by NextJS",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="Administrative" >
-        {children}
+
+        <PageAuthentication>
+          {children}
+        </PageAuthentication>
+
       </body>
     </html>
   );

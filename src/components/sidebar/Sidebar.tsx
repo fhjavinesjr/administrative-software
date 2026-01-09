@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { MenuItem } from "./MenuItem";
 import styles from "@/styles/DashboardSidebar.module.scss";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { authLogout } from "@/lib/utils/authLogout";
 
 const menuItems = [
   {
@@ -111,6 +113,12 @@ const otherItems = [
     label: "Help",
     goto: "/administrative",
   },
+  {
+    id: 3,
+    icon: "/logout.png",
+    label: "Logout",
+    action: "logout",
+  },
 ];
 
 export default function Sidebar() {
@@ -119,6 +127,7 @@ export default function Sidebar() {
   const [tkOpen, setTkOpen] = useState(false);
   const [payrollOpen, setPayrollOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const router = useRouter();
 
   // 👇 Auto-open HR section if current route matches
   useEffect(() => {
@@ -269,9 +278,11 @@ export default function Sidebar() {
               key={item.id}
               icon={item.icon}
               label={item.label}
-              goto={item.goto}
-              isActive={pathname === item.goto}
-              onClick={() => {}}
+              isActive={item.goto ? pathname === item.goto : false}
+              onClick={() => {
+                authLogout(); // sets LOGOUT_SIGNAL for all tabs
+                router.replace("/administrative/login"); // redirect current tab
+              }}
             />
           ))}
         </div>
