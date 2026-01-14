@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import { AiFillEye , AiFillEyeInvisible  } from "react-icons/ai";
-import styles from "@/styles/UserSetting.module.scss";
+import styles from "@/styles/Usersetting.module.scss";
 import Swal from "sweetalert2";
 
 export default function UserSetting() {
