@@ -1,11 +1,11 @@
 import React from 'react'
-import Leave from "./Leave"
+import LeaveTypes from "./LeaveTypes"
 import Main from "../main/Main"
 
-export default function LeavePage() {
+export default function LeaveTypesPage() {
     return(
         <Main>
-            <Leave />
+            <LeaveTypes />
         </Main>
     );
 }
