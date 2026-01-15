@@ -135,7 +135,7 @@ export default function LeaveTypes() {
     <div className={modalStyles.Modal}>
       <div className={modalStyles.modalContent}>
         <div className={modalStyles.modalHeader}>
-          <h2 className={modalStyles.mainTitle}>Leave</h2>
+          <h2 className={modalStyles.mainTitle}>Leave Types</h2>
         </div>
 
         <div className={modalStyles.modalBody}>
