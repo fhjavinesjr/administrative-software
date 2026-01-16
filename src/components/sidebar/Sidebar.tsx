@@ -280,8 +280,12 @@ export default function Sidebar() {
               label={item.label}
               isActive={item.goto ? pathname === item.goto : false}
               onClick={() => {
-                authLogout(); // sets LOGOUT_SIGNAL for all tabs
-                router.replace("/administrative/login"); // redirect current tab
+                if (item.action === "logout") {
+                  authLogout();
+                  router.replace("/administrative/login");
+                } else if (item.goto) {
+                  router.push(item.goto);
+                }
               }}
             />
           ))}

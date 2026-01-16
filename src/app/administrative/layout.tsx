@@ -3,6 +3,7 @@
 import type { Metadata } from "next";
 import './globals.css';
 import PageAuthentication from "./PageAuthentication";
+import LayoutClientWrapper from "./layoutClientWrapper";
 
 export const metadata: Metadata = {
   title: "Administrative",
@@ -15,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="Administrative" >
 
         <PageAuthentication>
+          <LayoutClientWrapper>
           {children}
+          </LayoutClientWrapper>
         </PageAuthentication>
 
       </body>

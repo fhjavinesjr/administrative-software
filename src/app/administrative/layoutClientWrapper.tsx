@@ -15,21 +15,20 @@ export default function LayoutClientWrapper({
 
   // Hide sidebar on auth pages
   const hideSidebar =
-    pathname.endsWith("/login") ||
-    pathname.endsWith("/registration");
+    pathname.endsWith("/login") || pathname.endsWith("/registration");
 
   // Auth pages → content only
   if (hideSidebar) {
     return <main style={{ padding: 20 }}>{children}</main>;
   }
 
-  // Protected pages → sidebar + content
+  /// Protected pages → sidebar + content
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       {/* Sidebar */}
       <aside
         style={{
-          width: 240,
+          width: 400,
           flexShrink: 0,
           position: "sticky",
           top: 0,

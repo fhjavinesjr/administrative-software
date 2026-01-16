@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect } from "react";
 import styles from "@/styles/LoginForm.module.scss";
@@ -13,7 +13,6 @@ import { setCookie } from "@/lib/utils/cookies";
 import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_HRM;
-const { INACTIVITY_LIMIT } = AUTH_CONFIG;
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -50,9 +49,12 @@ export default function AdminLoginPage() {
       localStorageUtil.set(token); //Store authToken
 
       // Set auth cookies and last activity
+      // Set cookies and localStorage for session persistence
       const now = Date.now();
-      setCookie(AUTH_CONFIG.COOKIE.IS_LOGGED_IN, "true", INACTIVITY_LIMIT);
-      setCookie(AUTH_CONFIG.COOKIE.LAST_ACTIVITY, now.toString(), INACTIVITY_LIMIT);
+      const COOKIE_EXPIRY = AUTH_CONFIG.INACTIVITY_LIMIT; // in seconds
+
+      setCookie(AUTH_CONFIG.COOKIE.IS_LOGGED_IN, "true", COOKIE_EXPIRY);
+      setCookie(AUTH_CONFIG.COOKIE.LAST_ACTIVITY, now.toString(), COOKIE_EXPIRY);
 
       localStorage.setItem(AUTH_CONFIG.COOKIE.IS_LOGGED_IN, "true");
       localStorage.setItem(AUTH_CONFIG.COOKIE.LAST_ACTIVITY, now.toString());
@@ -65,10 +67,11 @@ export default function AdminLoginPage() {
         confirmButtonText: "OK",
         allowOutsideClick: false,
         backdrop: true,
-      }).then(() => {
-        router.push("/administrative/dashboard");
+      }).then((result) => {
+        if (result.isConfirmed) {
+          router.replace("/administrative/dashboard");
+        }
       });
-
     } catch (error) {
       console.error("Login error:", error);
       Swal.fire({
