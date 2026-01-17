@@ -1,204 +1,215 @@
-"use client"
+"use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Gender.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+
+const API_BASE_URL_ADMINISTRATIVE =
+  process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
+type GenderItem = {
+  genderId?: number;
+  code: string;
+  name: string;
+};
 
 export default function Gender() {
-    type GenderItem = {
-        code: string;
-        gender: string;
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [datas, setData] = useState<GenderItem[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editItem, setEditItem] = useState<GenderItem | null>(null);
+
+  /* ------------------ Toast Helper ------------------ */
+  const toast = (icon: "success" | "error", title: string) =>
+    Swal.mixin({
+      toast: true,
+      position: "bottom-end",
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+    }).fire({ icon, title });
+
+  /* ------------------ Load Data ------------------ */
+  const loadGenders = useCallback(async () => {
+    try {
+      const response = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/gender/get-all`
+      );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      const data: GenderItem[] = await response.json();
+      setData(data);
+    } catch {
+      toast("error", "Failed to load genders");
     }
+  }, []);
 
-    const [code, setCode] = useState("");
-    const [gender, setGender] = useState("");
-    const [datas, setData] = useState<GenderItem[]>([]);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
-    const [isEditing, setIsEditing] = useState(false);
+  useEffect(() => {
+    loadGenders();
+  }, [loadGenders]);
 
-    const handleClear = () => {
-        setCode("");
-        setGender("");
-        setIsEditing(false);
-    };
+  /* ------------------ Submit ------------------ */
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const payload = { code, name };
 
-        const newEntry: GenderItem = {code, gender};
+    try {
+      if (!isEditing) {
+        await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/gender/create`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }
+        );
 
-        if(!isEditing) {
-            setData([...datas, newEntry]);
+        toast("success", "Successfully Created!");
+      } else if (editItem?.genderId) {
+        await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/gender/update/${editItem.genderId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          }
+        );
 
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
+        toast("success", "Successfully Updated!");
+      }
 
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Created!"
-            });
+      handleClear();
+      loadGenders();
+    } catch {
+      toast("error", "Operation failed");
+    }
+  };
 
-            setCode("");
-            setGender("");
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateAppointment = [...datas];
-                        updateAppointment[editIndex] = newEntry;
-                        setData(updateAppointment);
-                        setIsEditing(false);
-                        setEditIndex(null);
+  /* ------------------ Clear ------------------ */
+  const handleClear = () => {
+    setCode("");
+    setName("");
+    setIsEditing(false);
+    setEditItem(null);
+  };
 
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
+  /* ------------------ Edit ------------------ */
+  const handleEdit = (item: GenderItem) => {
+    setEditItem(item);
+    setCode(item.code);
+    setName(item.name);
+    setIsEditing(true);
+  };
 
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
+  /* ------------------ Delete ------------------ */
+  const handleDelete = (item: GenderItem) => {
+    Swal.fire({
+      text: `Are you sure you want to delete "${item.name}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed && item.genderId) {
+        try {
+          await fetchWithAuth(
+            `${API_BASE_URL_ADMINISTRATIVE}/api/gender/delete/${item.genderId}`,
+            { method: "DELETE" }
+          );
 
-                        setCode("");
-                        setGender("");
-                    }
-                })
-                
-            }
+          toast("success", "Successfully Deleted!");
+          loadGenders();
+        } catch {
+          toast("error", "Delete failed");
         }
-        
-    };
+      }
+    });
+  };
 
-    const handleDelete = (type: string) => {
-        if(code) {
-            setCode("");
-            setGender("");
-            setIsEditing(false);
-        }
-
-        Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
-            icon: "info",
-            showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                const arr = datas.filter(s => s.gender != type);
-                setData(arr);
-            }
-        })
-    };
-
-    const handleEdit = (obj: GenderItem, index: number) => {
-        setEditIndex(index);
-        setCode(obj.code);
-        setGender(obj.gender);
-        setIsEditing(true);
-    };
-        
-    return (
-        <div className={modalStyles.Modal}>
-            <div className={modalStyles.modalContent}>
-                <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Gender</h2>
-                </div>
-
-                <div className={modalStyles.modalBody}>
-                    <form className={styles.GenderForm} onSubmit={onSubmit}>
-                        <label>Code</label>
-                        <input
-                            type="text"
-                            value={code}
-                            onChange={e => setCode(e.target.value)}
-                            required={true}
-                        />
-                        <label>Gender</label>
-                        <input
-                            type="text"
-                            value={gender}
-                            onChange={e => setGender(e.target.value)}
-                            required={true}
-                        />
-
-                        <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
-                                {isEditing ? "Update" : "Save"}
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.clearButton}
-                                onClick={handleClear}
-                                >
-                                Clear
-                            </button>
-                        </div>
-                    </form>
-
-                    {datas.length > 0 && (
-                        <div className={styles.GenderTable}>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Code</th>
-                                        <th>Gender</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {datas.map((m, indx) => (
-                                        <tr key={m.code ?? `row-${indx}`}>
-                                            <td>{m.code}</td>
-                                             <td>{m.gender}</td>
-                                             <td>
-                                                <button
-                                                    className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(m, indx)}
-                                                    title="Edit">
-                                                    <FaRegEdit />
-                                                </button>
-                                                <button
-                                                    className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(m.gender)}
-                                                    title="Delete">
-                                                    <FaTrashAlt />
-                                                </button>
-                                             </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
+  return (
+    <div className={modalStyles.Modal}>
+      <div className={modalStyles.modalContent}>
+        <div className={modalStyles.modalHeader}>
+          <h2 className={modalStyles.mainTitle}>Gender</h2>
         </div>
-    )
+
+        <div className={modalStyles.modalBody}>
+          <form className={styles.GenderForm} onSubmit={onSubmit}>
+            <label>Code</label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+            />
+
+            <label>Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+
+            <div className={styles.buttonGroup}>
+              <button
+                type="submit"
+                className={isEditing ? styles.updateButton : styles.saveButton}
+              >
+                {isEditing ? "Update" : "Save"}
+              </button>
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={handleClear}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+
+          {datas.length > 0 && (
+            <div className={styles.GenderTable}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Gender</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {datas.map((item) => (
+                    <tr key={item.genderId}>
+                      <td>{item.code}</td>
+                      <td>{item.name}</td>
+                      <td>
+                        <button
+                          className={`${styles.iconButton} ${styles.editIcon}`}
+                          onClick={() => handleEdit(item)}
+                        >
+                          <FaRegEdit />
+                        </button>
+                        <button
+                          className={`${styles.iconButton} ${styles.deleteIcon}`}
+                          onClick={() => handleDelete(item)}
+                        >
+                          <FaTrashAlt />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
