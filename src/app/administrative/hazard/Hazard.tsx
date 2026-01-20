@@ -100,6 +100,10 @@ export default function Hazard() {
                                                 <button className={styles.myButton} onClick={addGrade}>
                                                     + Add
                                                 </button>
+                                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                <button className={styles.myButton} onClick={addGrade}>
+                                                    + Remove
+                                                </button>
                                             </td>
                                         </tr>
                                     </tbody>
