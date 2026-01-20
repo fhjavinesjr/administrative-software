@@ -1,7 +1,7 @@
-import { authToken } from './localStorageUtil';
+import { localStorageUtil } from './localStorageUtil';
 
 export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
-  const token = authToken.get();
+  const token = localStorageUtil.get();
 
   return fetch(url, {
     ...options,

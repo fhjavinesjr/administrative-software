@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { MenuItem } from "./MenuItem";
 import styles from "@/styles/DashboardSidebar.module.scss";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { authLogout } from "@/lib/utils/authLogout";
 
 const menuItems = [
   {
@@ -48,8 +50,8 @@ const hrItems = [
   {
     id: 6,
     icon: "/leave.png",
-    label: "Leave Types",
-    goto: "/administrative/leavetypes",
+    label: "Leave",
+    goto: "/administrative/leave",
   },
   {
     id: 7,
@@ -96,42 +98,6 @@ const payrollItems = [
     label: "Salary Schedule",
     goto: "/administrative/salaryschedule",
   },
-  {
-    id: 2,
-    icon: "/earningtable.png",
-    label: "Earning Leave Table",
-    goto: "/administrative/earningleave",
-  },
-  {
-    id: 3,
-    icon: "/daytable.png",
-    label: "Day Equivalent Table",
-    goto: "/administrative/dayequivalent",
-  },
-  {
-    id: 4,
-    icon: "/hazard.png",
-    label: "Hazard Pay Table",
-    goto: "/administrative/hazard",
-  },
-  {
-    id: 5,
-    icon: "/table.png",
-    label: "GSIS Contribution Table",
-    goto: "/administrative/gsis",
-  },
-  {
-    id: 6,
-    icon: "/health.png",
-    label: "PhilHealth Contribution Table",
-    goto: "/administrative/philHealth",
-  },
-    {
-    id: 7,
-    icon: "/tax.png",
-    label: "With-Holding Tax Table",
-    goto: "/administrative/tax",
-  },
 ];
 
 const otherItems = [
@@ -147,6 +113,12 @@ const otherItems = [
     label: "Help",
     goto: "/administrative",
   },
+  {
+    id: 3,
+    icon: "/logout.png",
+    label: "Logout",
+    action: "logout",
+  },
 ];
 
 export default function Sidebar() {
@@ -155,6 +127,7 @@ export default function Sidebar() {
   const [tkOpen, setTkOpen] = useState(false);
   const [payrollOpen, setPayrollOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const router = useRouter();
 
   // 👇 Auto-open HR section if current route matches
   useEffect(() => {
@@ -305,9 +278,15 @@ export default function Sidebar() {
               key={item.id}
               icon={item.icon}
               label={item.label}
-              goto={item.goto}
-              isActive={pathname === item.goto}
-              onClick={() => {}}
+              isActive={item.goto ? pathname === item.goto : false}
+              onClick={() => {
+                if (item.action === "logout") {
+                  authLogout();
+                  router.replace("/administrative/login");
+                } else if (item.goto) {
+                  router.push(item.goto);
+                }
+              }}
             />
           ))}
         </div>
