@@ -16,7 +16,7 @@ type OfficialItem = {
   name: string;
 };
 
-export default function Officialengagement() {
+export default function OfficialEngagement() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [arr, setArr] = useState<OfficialItem[]>([]);
