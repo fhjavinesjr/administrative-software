@@ -1,11 +1,11 @@
 import React from 'react'
-import Officialengagement from "./officialengagement"
+import OfficialEngagement from './officialengagement'
 import Main from "../main/Main"
 
 export default function OfficialengagementPage() {
     return(
         <Main>
-            <Officialengagement />
+            <OfficialEngagement />
         </Main>
     );
 }
