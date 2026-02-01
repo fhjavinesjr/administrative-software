@@ -97,6 +97,41 @@ const payrollItems = [
     icon: "/salaryschedule.png",
     label: "Salary Schedule",
     goto: "/administrative/salaryschedule",
+  },{
+    id: 2,
+    icon: "/earningtable.png",
+    label: "Earning Leave Table",
+    goto: "/administrative/earningleave",
+  },
+  {
+    id: 3,
+    icon: "/daytable.png",
+    label: "Day Equivalent Table",
+    goto: "/administrative/dayequivalent",
+  },
+  {
+    id: 4,
+    icon: "/hazard.png",
+    label: "Hazard Pay Table",
+    goto: "/administrative/hazard",
+  },
+  {
+    id: 5,
+    icon: "/table.png",
+    label: "GSIS Contribution Table",
+    goto: "/administrative/gsis",
+  },
+  {
+    id: 6,
+    icon: "/health.png",
+    label: "PhilHealth Contribution Table",
+    goto: "/administrative/philHealth",
+  },
+    {
+    id: 7,
+    icon: "/tax.png",
+    label: "With-Holding Tax Table",
+    goto: "/administrative/tax",
   },
 ];
 

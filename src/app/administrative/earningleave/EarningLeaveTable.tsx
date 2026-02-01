@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import styles from "@/styles/EarningLeaveTable.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import Swal from "sweetalert2";
@@ -28,6 +28,7 @@ export default function EarningLeaveTable() {
   const [loading, setLoading] = useState(false);
   const [effectivityDate, setEffectivityDate] = useState<string>("");
   const [history, setHistory] = useState<EarningLeaveHistory[]>([]);
+  const skipFetchRef = useRef(false);
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
@@ -71,8 +72,9 @@ export default function EarningLeaveTable() {
   /* ========================
      Fetch existing data
   ========================= */
-  const fetchEarningLeave = useCallback(async () => {
-    if (!effectivityDate) return;
+  const fetchEarningLeave = useCallback(async (dateToFetch?: string) => {
+    const dateValue = dateToFetch || effectivityDate;
+    if (!dateValue) return;
 
     try {
       setLoading(true);
@@ -88,7 +90,7 @@ export default function EarningLeaveTable() {
       const data: EarningLeaveItem[] = await response.json();
 
       const filtered = data.filter(
-        item => item.effectivityDate?.startsWith(effectivityDate)
+        item => item.effectivityDate?.startsWith(dateValue)
       );
 
       if (filtered.length > 0) {
@@ -112,6 +114,10 @@ export default function EarningLeaveTable() {
   }, [effectivityDate]);
 
   useEffect(() => {
+    if (skipFetchRef.current) {
+      skipFetchRef.current = false;
+      return;
+    }
     fetchEarningLeave();
     fetchHistory();
   }, [fetchEarningLeave, fetchHistory]);
@@ -197,7 +203,8 @@ export default function EarningLeaveTable() {
 
       Swal.fire("Success", "Earning Leave saved successfully", "success");
 
-      fetchEarningLeave();
+      // Refresh data by manually fetching instead of relying on effectivityDate change
+      await fetchEarningLeave(effectivityDate);
       fetchHistory();
     } catch (err) {
       console.error(err);
@@ -261,7 +268,7 @@ export default function EarningLeaveTable() {
       const data: EarningLeaveItem[] = await response.json();
 
       if (data.length > 0) {
-        setEffectivityDate(selectedDate); // update date input with the selected date
+        // Set rows first, then set the date to avoid race condition
         setRows(
           data.map(item => ({
             earningLeaveId: item.earningLeaveId,
@@ -270,8 +277,13 @@ export default function EarningLeaveTable() {
             earn: item.earn ?? "",
           }))
         );
+        // Mark to skip the automatic fetch in useEffect
+        skipFetchRef.current = true;
+        setEffectivityDate(selectedDate);
       } else {
         setRows([{ day: "1", earn: "" }]);
+        skipFetchRef.current = true;
+        setEffectivityDate(selectedDate);
       }
     } catch (err) {
       console.error(err);
