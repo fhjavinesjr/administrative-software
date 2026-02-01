@@ -51,7 +51,7 @@ const hrItems = [
     id: 6,
     icon: "/leave.png",
     label: "Leave",
-    goto: "/administrative/leave",
+    goto: "/administrative/leavetypes",
   },
   {
     id: 7,
