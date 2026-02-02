@@ -1,348 +1,356 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/PhilHealth.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 import Swal from "sweetalert2";
 
+const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
 export default function PhilHealth() {
-    type PhilHealtEntry = {
-        date: string;
-        rate: string;
-        monthlyRange: string;
-        monthlyRangeTo: string;
-        personal: string;
-        personalTo: string;
-        employer: string;
-        employerTo: string;
-        totalPremium: string;
-        totalPremiumTo: string;
-        above: boolean;
-        [key: string]: string | boolean;
-        
+    type PhilHealthContributionItem = {
+        philhealthContributionId: number;
+        effectivityDate: string;
+        ratePercentage: string;
+        monthlySalaryRangeFrom: string;
+        monthlySalaryRangeTo: string;
+        personalShareFrom: string;
+        personalShareTo: string;
+        employerShareFrom: string;
+        employerShareTo: string;
     };
 
-    const [date, setDate] = useState("");
-    const [rate, setRate] = useState("");
-    const [percentageOf, setPercentageOf] = useState("");
-    const [monthlyRange, setMonthlyRange] = useState("");
-    const [monthlyRangeTo, setMonthlyRangeTo] = useState("");
-    const [above, setAbove] = useState(false);
-    const [personal, setPersonal] = useState("");
-    const [personalTo] = useState("0.0");
-    const [employer, setEmployer] = useState("");
-    const [employerTo] = useState("0.0");
-    const [totalPremium, setTotalPremium] = useState("");
-    const [totalPremiumTo] = useState("0.0");
+    const [philHealthData, setPhilHealthData] = useState<PhilHealthContributionItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [effectivityDate, setEffectivityDate] = useState("");
+    const [ratePercentage, setRatePercentage] = useState("");
+    const [monthlySalaryRangeFrom, setMonthlySalaryRangeFrom] = useState("");
+    const [monthlySalaryRangeTo, setMonthlySalaryRangeTo] = useState("");
+    const [personalShareFrom, setPersonalShareFrom] = useState("");
+    const [personalShareTo, setPersonalShareTo] = useState("");
+    const [employerShareFrom, setEmployerShareFrom] = useState("");
+    const [employerShareTo, setEmployerShareTo] = useState("");
     const [isEditing, setIsEditing] = useState(false);
-    const [entry, setEntry] = useState<PhilHealtEntry[]>([]);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
+    const [editId, setEditId] = useState<number | null>(null);
 
+    // LOAD DATA
     useEffect(() => {
-    const personalValue = parseFloat(personal) || 0;
-    const employerValue = parseFloat(employer) || 0;
+        loadPhilHealthData();
+    }, []);
 
-    const total = personalValue + employerValue;
-
-    setTotalPremium(total.toFixed(2)); 
-    }, [personal, employer]);
+    const loadPhilHealthData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/philHealthContribution/get-all`
+            );
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            setPhilHealthData(data);
+        } catch (err) {
+            console.error("Failed to load PhilHealth data:", err);
+            Swal.fire("Error", "Failed to load PhilHealth contribution data.", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const formatNumber = (value: string) => {
-        const num = parseFloat(value.replace(/,/g, "")); // remove commas first
+        const num = parseFloat(value.replace(/,/g, ""));
         if (isNaN(num)) return "";
         return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
-    const onSubmit = (e: React.FormEvent) => {
+    // SAVE + UPDATE
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry: PhilHealtEntry = { date, rate, monthlyRange, monthlyRangeTo, personal, personalTo, employer, employerTo, totalPremium, totalPremiumTo, above,
-            range: `${monthlyRange} - ${monthlyRangeTo}`,
-            per: `${personal} - ${personalTo}`,
-            emp: `${employer} - ${employerTo}`,
-            prem: `${totalPremium} - ${totalPremiumTo}`,
+        if (!effectivityDate || !ratePercentage || !monthlySalaryRangeFrom || !monthlySalaryRangeTo ||
+            !personalShareFrom || !personalShareTo || !employerShareFrom || !employerShareTo) {
+            Swal.fire("Validation Error", "All fields are required.", "warning");
+            return;
+        }
+
+        const payload = {
+            effectivityDate: toCustomFormat(effectivityDate, true),
+            ratePercentage,
+            monthlySalaryRangeFrom,
+            monthlySalaryRangeTo,
+            personalShareFrom,
+            personalShareTo,
+            employerShareFrom,
+            employerShareTo,
         };
-        // (newEntry as any)['range'] = `${newEntry.monthlyRange} - ${newEntry.monthlyRangeTo}`;
-        // (newEntry as any)['per'] = `${newEntry.personal} - ${newEntry.personalTo}`;
-        // (newEntry as any)['emp'] = `${newEntry.employer} - ${newEntry.employerTo}`;
-        // (newEntry as any)['prem']  = `${newEntry.totalPremium} - ${newEntry.totalPremiumTo}`;
-       
-        if(!isEditing) {
-            setEntry([...entry, newEntry]);
 
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
-
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Created!"
-            });
-
-            handleClear();
-            setTotalPremium("");
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateLeave = [...entry];
-                        updateLeave[editIndex] = newEntry;
-                        setEntry(updateLeave);
-                        setIsEditing(false);
-                        setEditIndex(null);
-
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-
-                       handleClear();
+        try {
+            if (!isEditing) {
+                const res = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/philHealthContribution/create`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
                     }
-                })
+                );
+
+                if (!res.ok) throw new Error(await res.text());
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Saved!",
+                    text: "PhilHealth Contribution created successfully.",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+            } else {
+                const res = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/philHealthContribution/update/${editId}`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                if (!res.ok) throw new Error(await res.text());
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Updated!",
+                    text: "PhilHealth Contribution updated successfully.",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+
+                setIsEditing(false);
+                setEditId(null);
             }
+
+            await loadPhilHealthData();
+            handleClear();
+        } catch (err) {
+            console.error("Save failed:", err);
+            Swal.fire("Error", "Failed to save record.", "error");
+        }
+    };
+
+    // EDIT BUTTON
+    const handleEdit = (obj: PhilHealthContributionItem) => {
+        setEditId(obj.philhealthContributionId);
+        setEffectivityDate(toDateInputValue(obj.effectivityDate));
+        setRatePercentage(obj.ratePercentage);
+        setMonthlySalaryRangeFrom(obj.monthlySalaryRangeFrom);
+        setMonthlySalaryRangeTo(obj.monthlySalaryRangeTo);
+        setPersonalShareFrom(obj.personalShareFrom);
+        setPersonalShareTo(obj.personalShareTo);
+        setEmployerShareFrom(obj.employerShareFrom);
+        setEmployerShareTo(obj.employerShareTo);
+        setIsEditing(true);
+    };
+
+    // DELETE with Swal confirm
+    const handleDelete = async (id: number) => {
+        const result = await Swal.fire({
+            icon: "warning",
+            title: "Are you sure?",
+            text: "This action cannot be undone.",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const res = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/philHealthContribution/delete/${id}`,
+                { method: "DELETE" }
+            );
+
+            if (!res.ok) throw new Error(await res.text());
+
+            Swal.fire({
+                icon: "success",
+                title: "Deleted!",
+                text: "Record has been deleted.",
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+            await loadPhilHealthData();
+        } catch (err) {
+            console.error(err);
+            Swal.fire("Error", "Failed to delete record.", "error");
         }
     };
 
     const handleClear = () => {
-        setDate("");
-        setRate("");
-        setMonthlyRange("");
-        setMonthlyRangeTo("");
-        setPersonal("");
-        setEmployer("");
-        setTotalPremium("");
+        setEffectivityDate("");
+        setRatePercentage("");
+        setMonthlySalaryRangeFrom("");
+        setMonthlySalaryRangeTo("");
+        setPersonalShareFrom("");
+        setPersonalShareTo("");
+        setEmployerShareFrom("");
+        setEmployerShareTo("");
         setIsEditing(false);
-        setAbove(false);
-    };
-
-    const handleDelete = (indx: number) => {
-        if(date) {
-            handleClear();
-            setTotalPremium("");
-        }
-
-            Swal.fire({
-            text: `Are you sure you want to delete this record?`,
-            icon: "info",
-            showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                setEntry(prev => prev.filter((_, i) => i != indx));
-            }
-        })
-    };
-
-    const handleEdit = (obj: PhilHealtEntry, index: number) => {
-        setEditIndex(index);
-        setDate(obj.date);
-        setRate(obj.rate);
-        setMonthlyRange(obj.monthlyRange);
-        setMonthlyRangeTo(obj.monthlyRangeTo);
-        setPersonal(obj.personal);
-        setEmployer(obj.employer);
-        setTotalPremium(obj.totalPremium);
-        setAbove(obj.above);
-        setIsEditing(true);
+        setEditId(null);
     };
 
     return (
         <div className={modalStyles.Modal}>
-             <div className={modalStyles.modalContent}>
+            <div className={modalStyles.modalContent}>
                 <div className={modalStyles.modalHeader}>
                     <h2 className={modalStyles.mainTitle}>PhilHealth Contribution Table</h2>
                 </div>
+
                 <div className={modalStyles.modalBody}>
                     <form className={styles.PhilHealthForm} onSubmit={onSubmit}>
                         <label>Effectivity Date</label>
                         <input
                             className={styles.date}
                             type="date"
-                            value={date}
-                            onChange={e => setDate(e.target.value)}
-                            required={true}
+                            value={effectivityDate}
+                            onChange={e => setEffectivityDate(e.target.value)}
+                            required
                         />
-                        <label>Rate</label>
+
+                        <label>Rate (%)</label>
                         <input
                             type="text"
-                            value={rate}
-                            onChange={e => setRate(e.target.value)}
-                            required={true}
+                            value={ratePercentage}
+                            onChange={e => setRatePercentage(e.target.value)}
+                            required
                         />
-                        <span className={styles.percent}>%</span>
-                        <select
-                            value={percentageOf}
-                            onChange={(e) => setPercentageOf(e.target.value)}>
-                                <option value="Percentage of">Percentage of</option>
-                                <option value="Fixed Amount">Fixed Amount</option>
-                        </select>
-                        
-                        <label>Monthly Salary Range</label>
+
+                        <label>Monthly Salary Range From</label>
                         <input
                             className={styles.rate}
                             type="text"
-                            value={monthlyRange}
+                            value={monthlySalaryRangeFrom}
                             onChange={e => {
                                 const rawValue = e.target.value.replace(/,/g, "");
                                 if (!isNaN(Number(rawValue)) || rawValue === "") {
-                                    setMonthlyRange(rawValue); 
+                                    setMonthlySalaryRangeFrom(rawValue);
                                 }
                             }}
-                            onBlur={e => setMonthlyRange(formatNumber(e.target.value))}
-                            required={true}/>
-                        <span className={styles.to}>To</span>
+                            onBlur={e => setMonthlySalaryRangeFrom(formatNumber(e.target.value))}
+                            required
+                        />
 
-                        <div className={styles.inlineGroup}>
-                            <input
-                                className={styles.rate}
-                                type="text"
-                                value={monthlyRangeTo}
-                                onChange={e => {
-                                    const rawValue = e.target.value.replace(/,/g, "");
-                                    if (!isNaN(Number(rawValue)) || rawValue === "") {
-                                        setMonthlyRangeTo(rawValue); 
-                                    }
-                                }}
-                                onBlur={e => setMonthlyRangeTo(formatNumber(e.target.value))}
-                                required={true}
-                            />
-                            <label className={styles.aboveCheckbox}>
-                                <input
-                                    className={styles.checkbox}
-                                    type="checkbox"
-                                    checked={above}
-                                    onChange={(e) => setAbove(e.target.checked)}
-                                />
-                                <span className={styles.check}>Please Check if &quot;Above&quot;</span>
-                            </label>
-                        </div>
-                        
-                        <label>Personal Share</label>
+                        <label>Monthly Salary Range To</label>
                         <input
                             className={styles.rate}
                             type="text"
-                            value={personal}
-                            onChange={e => setPersonal(e.target.value)}
-                            required={true}
+                            value={monthlySalaryRangeTo}
+                            onChange={e => {
+                                const rawValue = e.target.value.replace(/,/g, "");
+                                if (!isNaN(Number(rawValue)) || rawValue === "") {
+                                    setMonthlySalaryRangeTo(rawValue);
+                                }
+                            }}
+                            onBlur={e => setMonthlySalaryRangeTo(formatNumber(e.target.value))}
+                            required
                         />
-                        <span className={styles.to}>To</span>
+
+                        <label>Personal Share From</label>
                         <input
                             className={styles.rate}
                             type="text"
-                            value={personalTo}
-                            required={true}
+                            value={personalShareFrom}
+                            onChange={e => setPersonalShareFrom(e.target.value)}
+                            required
                         />
-                        <span className={styles.note}>[(Monthly Basic Salary * rate) / 2]</span>
-                        <label>Employer Share</label>
-                            <input
-                            className={styles.rate}
-                            type="text"
-                            value={employer}
-                            onChange={e => setEmployer(e.target.value)}
-                            required={true}
-                        />
-                        <span className={styles.to}>To</span>
+
+                        <label>Personal Share To</label>
                         <input
                             className={styles.rate}
                             type="text"
-                            value={employerTo}
-                            required={true}
+                            value={personalShareTo}
+                            onChange={e => setPersonalShareTo(e.target.value)}
+                            required
                         />
-                        <span className={styles.note}>(PS = ES)</span>
-                        <label>Total Monthly Premium</label>
-                            <input
-                            className={styles.rate}
-                            type="text"
-                            value={totalPremium}
-                            onChange={e => setTotalPremium(e.target.value)}
-                            required={true}
-                        />
-                        <span className={styles.to}>To</span>
+
+                        <label>Employer Share From</label>
                         <input
                             className={styles.rate}
                             type="text"
-                            value={totalPremiumTo}
-                            required={true}
+                            value={employerShareFrom}
+                            onChange={e => setEmployerShareFrom(e.target.value)}
+                            required
                         />
-                        <span className={styles.note}>(Monthly Basic Salary * rate)</span>
+
+                        <label>Employer Share To</label>
+                        <input
+                            className={styles.rate}
+                            type="text"
+                            value={employerShareTo}
+                            onChange={e => setEmployerShareTo(e.target.value)}
+                            required
+                        />
+
                         <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
+                            <button
+                                type="submit"
+                                className={isEditing ? styles.updateButton : styles.saveButton}
+                                disabled={loading}
+                            >
                                 {isEditing ? "Update" : "Save"}
                             </button>
+
                             <button
                                 type="button"
                                 className={styles.clearButton}
-                                onClick={handleClear}>
+                                onClick={handleClear}
+                                disabled={loading}
+                            >
                                 Clear
                             </button>
                         </div>
                     </form>
-                    {entry.length > 0 && (
+
+                    {philHealthData.length > 0 && (
                         <div>
-                            <h4 className={styles.tableHeader}>PHILHEALTHSCHEDULE OF CONTRIBUTIONS FOR EMPLOYED MEMBERS EFFECTIVE &quot;SET DATE&quot;</h4>
+                            <h4 className={styles.tableHeader}>PHILHEALTH SCHEDULE OF CONTRIBUTIONS FOR EMPLOYED MEMBERS</h4>
                             <div className={styles.PhilHealthTable}>
                                 <table className={styles.table}>
                                     <thead>
                                         <tr>
                                             <th>Effectivity Date</th>
                                             <th>Monthly Salary Range</th>
-                                            <th>Rate</th>
-                                            <th>Total Monthly Premium Contribution</th>
-                                            <th>Personal Share (PS)</th>
-                                            <th>Employer Share (ES)</th>
+                                            <th>Rate (%)</th>
+                                            <th>Personal Share</th>
+                                            <th>Employer Share</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {entry.map((ent, indx) => (
-                                            <tr key={ent.date ?? `row-${indx}`}>
-                                                <td>{ent.date}</td>
-                                                <td>{ent.range}</td>
-                                                <td>{ent.rate}</td>
-                                                <td>{ent.prem}</td>
-                                                <td>{ent.per}</td>
-                                                <td>{ent.emp}</td>
+                                        {philHealthData.map((item) => (
+                                            <tr key={item.philhealthContributionId}>
+                                                <td>{item.effectivityDate}</td>
+                                                <td>{item.monthlySalaryRangeFrom} - {item.monthlySalaryRangeTo}</td>
+                                                <td>{item.ratePercentage}</td>
+                                                <td>{item.personalShareFrom} - {item.personalShareTo}</td>
+                                                <td>{item.employerShareFrom} - {item.employerShareTo}</td>
                                                 <td>
                                                     <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(ent, indx)}
-                                                        title="Edit">
+                                                        onClick={() => handleEdit(item)}
+                                                        title="Edit"
+                                                        disabled={loading}
+                                                    >
                                                         <FaRegEdit />
                                                     </button>
+
                                                     <button
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(indx)}
-                                                        title="Delete">
+                                                        onClick={() => handleDelete(item.philhealthContributionId)}
+                                                        title="Delete"
+                                                        disabled={loading}
+                                                    >
                                                         <FaTrashAlt />
                                                     </button>
                                                 </td>
@@ -354,7 +362,7 @@ export default function PhilHealth() {
                         </div>
                     )}
                 </div>
-             </div>
+            </div>
         </div>
-    )
+    );
 }
