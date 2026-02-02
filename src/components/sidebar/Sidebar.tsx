@@ -19,15 +19,15 @@ const menuItems = [
 const hrItems = [
   {
     id: 1,
-    icon: "/plantilla.png",
-    label: "Plantilla",
-    goto: "/administrative/plantilla",
-  },
-  {
-    id: 2,
     icon: "/jobposition.png",
     label: "Job Position",
     goto: "/administrative/job-position",
+  },
+  {
+    id: 2,
+    icon: "/plantilla.png",
+    label: "Plantilla",
+    goto: "/administrative/plantilla",
   },
   {
     id: 3,
