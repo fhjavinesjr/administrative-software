@@ -63,8 +63,6 @@ export default function UserSetting() {
                         backdrop: true,
                     }).then((result) => {
                         if(result.isConfirmed) {
-                            console.log(selectedEmployee);
-                            console.log(password);
                             setInputValue("");
                             setPassword("");
                             setShowPassword(false);
@@ -119,7 +117,6 @@ export default function UserSetting() {
             if(selectedEmployee == null) {
                 setIsSearch(true);
                 setDisplayIcon(false);
-                console.log('here');
             }
         }
     }, [inputValue, selectedEmployee])

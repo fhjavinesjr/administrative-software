@@ -7,6 +7,21 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { authLogout } from "@/lib/utils/authLogout";
 
+type MenuChild = {
+  id: number;
+  icon: string;
+  label: string;
+  goto: string;
+}
+
+type MenuItemType = {
+  id: number;
+  icon: string;
+  label: string;
+  goto: string;
+  children?: MenuChild[];
+}
+
 const menuItems = [
   {
     id: 1,
@@ -16,7 +31,16 @@ const menuItems = [
   },
 ];
 
-const hrItems = [
+const systemSetupItems = [
+  {
+    id: 1,
+    icon: "/gear.png",
+    label: "Settings",
+    goto: "/administrative/systemsetup",
+  },
+];
+
+const hrItems: MenuItemType[] = [
   {
     id: 1,
     icon: "/jobposition.png",
@@ -64,6 +88,44 @@ const hrItems = [
     icon: "/status.png",
     label: "Civil Status",
     goto: "/administrative/civilstatus",
+  },
+  {
+    id: 9,
+    icon: "/work.png",
+    label: "Workforce Structure Management",
+    goto: "",
+    children: [
+      {
+        id: 1,
+        icon: "/areas.png",
+        label: "Areas",
+        goto: "/administrative/areas",
+      },
+      {
+        id: 2,
+        icon: "/business.png",
+        label: "Business Units",
+        goto: "/administrative/businessunits",
+      },
+      {
+        id: 3,
+        icon: "/manage.png",
+        label: "Manage Personnel",
+        goto: "/administrative/managepersonnel",
+      },
+      {
+        id: 4,
+        icon: "/request.png",
+        label: "Employee Requests",
+        goto: "/administrative/employeerequest",
+      },
+      {
+        id: 5,
+        icon: "/approval.png",
+        label: "Approval Workflow",
+        goto: "/administrative/approvalworkflow",
+      },
+    ],
   },
 ];
 
@@ -133,6 +195,42 @@ const payrollItems = [
     label: "With-Holding Tax Table",
     goto: "/administrative/tax",
   },
+  {
+    id: 2,
+    icon: "/earningtable.png",
+    label: "Earning Leave Table",
+    goto: "/administrative/earningleave",
+  },
+  {
+    id: 3,
+    icon: "/daytable.png",
+    label: "Day Equivalent Table",
+    goto: "/administrative/dayequivalent",
+  },
+  {
+    id: 4,
+    icon: "/hazard.png",
+    label: "Hazard Pay Table",
+    goto: "/administrative/hazard",
+  },
+  {
+    id: 5,
+    icon: "/table.png",
+    label: "GSIS Contribution Table",
+    goto: "/administrative/gsis",
+  },
+  {
+    id: 6,
+    icon: "/health.png",
+    label: "PhilHealth Contribution Table",
+    goto: "/administrative/philHealth",
+  },
+    {
+    id: 7,
+    icon: "/tax.png",
+    label: "With-Holding Tax Table",
+    goto: "/administrative/tax",
+  },
 ];
 
 const otherItems = [
@@ -155,6 +253,8 @@ const otherItems = [
     action: "logout",
   },
 ];
+
+
 
 export default function Sidebar() {
   const pathname = usePathname() || "";
@@ -180,6 +280,11 @@ export default function Sidebar() {
     }
   }, [pathname]);
 
+  const isChildActive = (item: MenuItemType) =>
+    item.children?.some((child) =>
+    pathname.startsWith(child.goto)
+  );
+
   return (
     <nav
       className={styles.Sidebar}
@@ -191,6 +296,7 @@ export default function Sidebar() {
         <div className={styles.brandIcon}>AUI</div>
         <div className={styles.brandName}>Administrative UI</div>
       </div>
+      
 
       {/* Human Resource (collapsible) */}
       <div className={styles.menuSection}>
@@ -206,16 +312,12 @@ export default function Sidebar() {
             />
           ))}
         </div>
-        <h2
-          className={styles.menuHeader}
-          onClick={() => setHrOpen(!hrOpen)}
-          style={{ cursor: "pointer" }}
-        >
-          HUMAN RESOURCE {hrOpen ? "▲" : "▼"}
-        </h2>
-        {hrOpen && (
+        
+         {/* SYSTEM SETUP */}
+        <div className={styles.menuSection}>
+          <h2 className={styles.menuHeader}>SYSTEM SETUP</h2>
           <div role="menu">
-            {hrItems.map((item) => (
+            {systemSetupItems.map((item) => (
               <MenuItem
                 key={item.id}
                 icon={item.icon}
@@ -225,6 +327,62 @@ export default function Sidebar() {
                 onClick={() => {}}
               />
             ))}
+          </div>
+        </div>
+
+        <h2
+          className={styles.menuHeader}
+          onClick={() => setHrOpen(!hrOpen)}
+          style={{ cursor: "pointer" }}
+        >
+          HUMAN RESOURCE {hrOpen ? "▲" : "▼"}
+        </h2>
+        {hrOpen && (
+          <div role="menu">
+            {/* {hrItems.map((item) => (
+              <MenuItem
+                key={item.id}
+                icon={item.icon}
+                label={item.label}
+                goto={item.goto}
+                isActive={pathname === item.goto}
+                onClick={() => {}}
+              />
+
+            ))} */}
+            {hrItems.map((item) => {
+              const childActive = isChildActive(item);
+
+              return (
+                <div
+                  key={item.id}
+                  className={`${styles.menuItemWrapper} ${
+                    childActive ? styles.open : ""
+                  }`}>
+                  <MenuItem
+                    icon={item.icon}
+                    label={item.label}
+                    goto={item.goto}
+                    isActive={pathname === item.goto || childActive}
+                    onClick={() => {}}/>
+
+                  {item.children && (
+                    <div className={styles.subMenu}>
+                      {item.children.map((child) => (
+                        <MenuItem
+                          key={child.id}
+                          icon={child.icon}
+                          label={child.label}
+                          goto={child.goto}
+                          isActive={pathname === child.goto}
+                          onClick={() => {}}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -2,10 +2,10 @@ import React from 'react'
 import Natureofseparation from "./natureofseparation"
 import Main from "../main/Main"
 
-export default function NatureofseparationPage() {
+export default function NatureOfSeparationPage() {
     return(
         <Main>
-            <Natureofseparation />
+            <NatureOfSeparation />
         </Main>
     );
 }
