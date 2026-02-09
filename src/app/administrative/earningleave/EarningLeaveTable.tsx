@@ -28,6 +28,7 @@ export default function EarningLeaveTable() {
   const [loading, setLoading] = useState(false);
   const [effectivityDate, setEffectivityDate] = useState<string>("");
   const [history, setHistory] = useState<EarningLeaveHistory[]>([]);
+  const [deletedRows, setDeletedRows] = useState<EarningLeaveItem[]>([]);
   const skipFetchRef = useRef(false);
 
   useEffect(() => {
@@ -134,7 +135,14 @@ export default function EarningLeaveTable() {
   };
 
   const removeRow = () => {
-    setRows(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    setRows(prev => {
+      if (prev.length <= 1) return prev;
+      const removed = prev[prev.length - 1];
+      if (removed && removed.earningLeaveId) {
+        setDeletedRows(d => [...d, removed]);
+      }
+      return prev.slice(0, -1);
+    });
   };
 
   const checkExistingByEffectivityDate = async (date: string) => {
@@ -200,6 +208,21 @@ export default function EarningLeaveTable() {
         method: isEditing ? "PUT" : "POST",
         body: JSON.stringify(payload),
       });
+
+      // If there are removed rows that have persisted IDs, call deleteById endpoint
+      if (deletedRows.length > 0) {
+        try {
+          const delPayload = deletedRows.map(r => ({ earningLeaveId: r.earningLeaveId }));
+          await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/deleteById`, {
+            method: "DELETE",
+            body: JSON.stringify(delPayload),
+          });
+          // clear deleted rows after successful deletion
+          setDeletedRows([]);
+        } catch (err) {
+          console.error("Failed to delete removed rows:", err);
+        }
+      }
 
       Swal.fire("Success", "Earning Leave saved successfully", "success");
 
