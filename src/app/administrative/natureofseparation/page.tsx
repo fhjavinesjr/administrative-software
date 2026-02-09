@@ -1,11 +1,11 @@
 import React from 'react'
-import Natureofseparation from "./NatureOfSeparation"
+import NatureOfSeparation from "./NatureOfSeparation"
 import Main from "../main/Main"
 
-export default function NatureofseparationPage() {
+export default function NatureOfSeparationPage() {
     return(
         <Main>
-            <Natureofseparation />
+            <NatureOfSeparation />
         </Main>
     );
 }
