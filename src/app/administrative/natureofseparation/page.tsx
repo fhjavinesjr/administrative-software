@@ -1,5 +1,5 @@
 import React from 'react'
-import NatureOfSeparation from "./NatureOfSeparation"
+import Natureofseparation from "./natureofseparation"
 import Main from "../main/Main"
 
 export default function NatureOfSeparationPage() {

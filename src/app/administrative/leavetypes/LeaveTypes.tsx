@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/CivilStatus.module.scss";
+import styles from "@/styles/Leave.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
@@ -10,20 +10,20 @@ import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 const API_BASE_URL_ADMINISTRATIVE =
   process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 
-type CivilStatusItem = {
-  civilStatusId?: number;
+type LeaveType = {
+  leaveTypesId?: number;
   code: string;
   name: string;
 };
 
-export default function CivilStatus() {
+export default function LeaveTypes() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [datas, setDatas] = useState<CivilStatusItem[]>([]);
+  const [arr, setArr] = useState<LeaveType[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [editItem, setEditItem] = useState<CivilStatusItem | null>(null);
+  const [editItem, setEditItem] = useState<LeaveType | null>(null);
 
-  /* ------------------ Toast ------------------ */
+  /* ------------------ Toast Helper ------------------ */
   const toast = (icon: "success" | "error", title: string) =>
     Swal.mixin({
       toast: true,
@@ -34,32 +34,26 @@ export default function CivilStatus() {
     }).fire({ icon, title });
 
   /* ------------------ Load Data ------------------ */
-  const loadCivilStatus = useCallback(async () => {
+  const loadLeaveTypes = useCallback(async () => {
     try {
-      const res = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/civilStatus/get-all`
+      const response = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/leaveTypes/get-all`
       );
 
-      if (!res.ok) throw new Error("Fetch failed");
+      if (!response.ok) {
+        throw new Error();
+      }
 
-      const data: CivilStatusItem[] = await res.json();
-      setDatas(data);
+      const data: LeaveType[] = await response.json();
+      setArr(data);
     } catch {
-      toast("error", "Failed to load records");
+      toast("error", "Failed to load leave types");
     }
   }, []);
 
   useEffect(() => {
-    loadCivilStatus();
-  }, [loadCivilStatus]);
-
-  /* ------------------ Clear ------------------ */
-  const handleClear = () => {
-    setCode("");
-    setName("");
-    setIsEditing(false);
-    setEditItem(null);
-  };
+    loadLeaveTypes();
+  }, [loadLeaveTypes]);
 
   /* ------------------ Submit ------------------ */
   const onSubmit = async (e: React.FormEvent) => {
@@ -70,33 +64,43 @@ export default function CivilStatus() {
     try {
       if (!isEditing) {
         await fetchWithAuth(
-          `${API_BASE_URL_ADMINISTRATIVE}/api/civilStatus/create`,
+          `${API_BASE_URL_ADMINISTRATIVE}/api/leaveTypes/create`,
           {
             method: "POST",
             body: JSON.stringify(payload),
           }
         );
+
         toast("success", "Successfully Created!");
-      } else if (editItem?.civilStatusId) {
+      } else if (editItem?.leaveTypesId) {
         await fetchWithAuth(
-          `${API_BASE_URL_ADMINISTRATIVE}/api/civilStatus/update/${editItem.civilStatusId}`,
+          `${API_BASE_URL_ADMINISTRATIVE}/api/leaveTypes/update/${editItem.leaveTypesId}`,
           {
             method: "PUT",
             body: JSON.stringify(payload),
           }
         );
+
         toast("success", "Successfully Updated!");
       }
 
       handleClear();
-      loadCivilStatus();
+      loadLeaveTypes();
     } catch {
       toast("error", "Operation failed");
     }
   };
 
+  /* ------------------ Clear ------------------ */
+  const handleClear = () => {
+    setCode("");
+    setName("");
+    setIsEditing(false);
+    setEditItem(null);
+  };
+
   /* ------------------ Edit ------------------ */
-  const handleEdit = (item: CivilStatusItem) => {
+  const handleEdit = (item: LeaveType) => {
     setEditItem(item);
     setCode(item.code);
     setName(item.name);
@@ -104,21 +108,22 @@ export default function CivilStatus() {
   };
 
   /* ------------------ Delete ------------------ */
-  const handleDelete = (item: CivilStatusItem) => {
+  const handleDelete = (item: LeaveType) => {
     Swal.fire({
       text: `Are you sure you want to delete "${item.name}"?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Delete",
     }).then(async (result) => {
-      if (result.isConfirmed && item.civilStatusId) {
+      if (result.isConfirmed && item.leaveTypesId) {
         try {
           await fetchWithAuth(
-            `${API_BASE_URL_ADMINISTRATIVE}/api/civilStatus/delete/${item.civilStatusId}`,
+            `${API_BASE_URL_ADMINISTRATIVE}/api/leaveTypes/delete/${item.leaveTypesId}`,
             { method: "DELETE" }
           );
+
           toast("success", "Successfully Deleted!");
-          loadCivilStatus();
+          loadLeaveTypes();
         } catch {
           toast("error", "Delete failed");
         }
@@ -130,11 +135,11 @@ export default function CivilStatus() {
     <div className={modalStyles.Modal}>
       <div className={modalStyles.modalContent}>
         <div className={modalStyles.modalHeader}>
-          <h2 className={modalStyles.mainTitle}>Civil Status</h2>
+          <h2 className={modalStyles.mainTitle}>Leave Types</h2>
         </div>
 
         <div className={modalStyles.modalBody}>
-          <form className={styles.CivilStatusForm} onSubmit={onSubmit}>
+          <form className={styles.LeaveForm} onSubmit={onSubmit}>
             <label>Code</label>
             <input
               type="text"
@@ -168,19 +173,19 @@ export default function CivilStatus() {
             </div>
           </form>
 
-          {datas.length > 0 && (
-            <div className={styles.CivilStatusTable}>
+          {arr.length > 0 && (
+            <div className={styles.LeaveTable}>
               <table className={styles.table}>
                 <thead>
                   <tr>
                     <th>Code</th>
-                    <th>Status</th>
+                    <th>Leave Type</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {datas.map((item) => (
-                    <tr key={item.civilStatusId}>
+                  {arr.map((item) => (
+                    <tr key={item.leaveTypesId}>
                       <td>{item.code}</td>
                       <td>{item.name}</td>
                       <td>

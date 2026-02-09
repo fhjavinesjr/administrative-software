@@ -1,222 +1,215 @@
-"use client"
+"use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Officialengagement.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-export default function Officialengagement() {
-    type OfficialItem = {
-        code: string;
-        engagement: string;
-    }
-    
-    const [code, setCode] = useState("");
-    const [engagement, setEngagement] = useState("");
-    const [isEditing, setIsEditing] = useState(false);
-    const [editIndex, setEditIndex] = useState<number | null>(null);
-    const [arr, setArr] = useState<OfficialItem[]>([]);
+const API_BASE_URL_ADMINISTRATIVE =
+  process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 
-    // const officials = [
-    //     { id: 1, type: 'Official Business' },
-    //     { id: 2, type: 'Official Time' },
-    // ];
-
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const newEntry: OfficialItem = { code, engagement };
-
-        if(!isEditing) {
-            setArr([...arr, newEntry]);
-
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
-
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Created!"
-            });
-            
-            setCode("");
-            setEngagement("");
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateOfficial = [...arr];
-                        updateOfficial[editIndex] = newEntry;
-                        setArr(updateOfficial);
-                        setIsEditing(false);
-                        setEditIndex(null);
-
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-
-                        setCode("");
-                        setEngagement("");
-                    }
-                })
-            }
-        } 
-    };
-
-    const handleClear = () => {
-        setCode("");
-        setEngagement("");
-        setIsEditing(false);
-    }
-
-    // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    //     const selected = e.target.value;
-    //     setOfficial(selected);
-    // };
-
-    const handleDelete = (type: string) => {
-        if(code) {
-            setCode("");
-            setEngagement("");
-            setIsEditing(false);
-        }
-
-        Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
-            icon: "info",
-            showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                const res = arr.filter(s => s.engagement != type);
-                setArr(res);
-            }
-        })
-    };
-
-    const handleEdit = (obj: OfficialItem, index: number) => {
-        setEditIndex(index);
-        setCode(obj.code);
-        setEngagement(obj.engagement);
-        setIsEditing(true);
-    };
-
-    return (
-        <div className={modalStyles.Modal}>
-            <div className={modalStyles.modalContent}>
-                <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Official Engagement</h2>
-                </div>
-                <div className={modalStyles.modalBody}>
-                     <form className={styles.OfficialForm} onSubmit={onSubmit}>
-                        <label>Code</label>
-                        <input
-                            type="text"
-                            value={code}
-                            onChange={e => setCode(e.target.value)}
-                            required={true}
-                        />
-                        <label>Nature</label>
-                        <input
-                            type="text"
-                            value={engagement}
-                            onChange={e => setEngagement(e.target.value)}
-                            required={true}
-                        />
-                        {/* <select
-                            onChange={handleChange}
-                            value={official}
-                            required
-                            className={styles.selectField}>
-                            <option value="">-- Select --</option>
-                                {officials.map((off, index) => (
-                                    <option key={index} value={off.type}>
-                                        {off.type}
-                                        </option>
-                                    ))}
-                        </select> */}
-                        <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
-                                {isEditing ? "Update" : "Save"}
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.clearButton}
-                                onClick={handleClear}
-                                >
-                                Clear
-                            </button>
-                        </div>
-                     </form>
-
-                      {arr.length > 0 && (
-                         <div className={styles.OfficialTable}>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Code</th>
-                                        <th>Engagement</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {arr.map((a, indx) => (
-                                        <tr key={a.code ?? `row-${indx}`}>
-                                            <td>{a.code}</td>
-                                             <td>{a.engagement}</td>
-                                             <td>
-                                                <button
-                                                    className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(a, indx)}
-                                                    title="Edit">
-                                                    <FaRegEdit />
-                                                </button>
-                                                <button
-                                                    className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(a.engagement)}
-                                                    title="Delete">
-                                                    <FaTrashAlt />
-                                                </button>
-                                             </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                         </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    )
+type OfficialItem = {
+  officialEngagementId?: number;
+  code: string;
+  name: string;
 };
+
+export default function OfficialEngagement() {
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [arr, setArr] = useState<OfficialItem[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editItem, setEditItem] = useState<OfficialItem | null>(null);
+
+  /* ------------------ Toast Helper ------------------ */
+  const toast = (icon: "success" | "error", title: string) =>
+    Swal.mixin({
+      toast: true,
+      position: "bottom-end",
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+    }).fire({ icon, title });
+
+    /* ------------------ Load Data ------------------ */
+    const loadOfficialEngagements = useCallback(async () => {
+        try {
+            const response = await fetchWithAuth(
+            `${API_BASE_URL_ADMINISTRATIVE}/api/officialEngagement/get-all`
+            );
+
+            if (!response.ok) {
+            throw new Error("Failed to fetch official engagements");
+            }
+
+            const data: OfficialItem[] = await response.json();
+            setArr(data);
+        } catch {
+            toast("error", "Failed to load records");
+        }
+    }, []);
+
+    useEffect(() => {
+        loadOfficialEngagements();
+    }, [loadOfficialEngagements]);
+
+  /* ------------------ Submit ------------------ */
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const payload = { code, name };
+
+    try {
+      if (!isEditing) {
+        await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/officialEngagement/create`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }
+        );
+
+        toast("success", "Successfully Created!");
+      } else if (editItem?.officialEngagementId) {
+        await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/officialEngagement/update/${editItem.officialEngagementId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          }
+        );
+
+        toast("success", "Successfully Updated!");
+      }
+
+      handleClear();
+      loadOfficialEngagements();
+    } catch {
+      toast("error", "Operation failed");
+    }
+  };
+
+  /* ------------------ Clear ------------------ */
+  const handleClear = () => {
+    setCode("");
+    setName("");
+    setIsEditing(false);
+    setEditItem(null);
+  };
+
+  /* ------------------ Edit ------------------ */
+  const handleEdit = (item: OfficialItem) => {
+    setEditItem(item);
+    setCode(item.code);
+    setName(item.name);
+    setIsEditing(true);
+  };
+
+  /* ------------------ Delete ------------------ */
+  const handleDelete = (item: OfficialItem) => {
+    Swal.fire({
+      text: `Are you sure you want to delete "${item.name}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed && item.officialEngagementId) {
+        try {
+          await fetchWithAuth(
+            `${API_BASE_URL_ADMINISTRATIVE}/api/officialEngagement/delete/${item.officialEngagementId}`,
+            { method: "DELETE" }
+          );
+
+          toast("success", "Successfully Deleted!");
+          loadOfficialEngagements();
+        } catch {
+          toast("error", "Delete failed");
+        }
+      }
+    });
+  };
+
+  return (
+    <div className={modalStyles.Modal}>
+      <div className={modalStyles.modalContent}>
+        <div className={modalStyles.modalHeader}>
+          <h2 className={modalStyles.mainTitle}>Official Engagement</h2>
+        </div>
+
+        <div className={modalStyles.modalBody}>
+          <form className={styles.OfficialForm} onSubmit={onSubmit}>
+            <label>Code</label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+            />
+
+            <label>Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+
+            <div className={styles.buttonGroup}>
+              <button
+                type="submit"
+                className={isEditing ? styles.updateButton : styles.saveButton}
+              >
+                {isEditing ? "Update" : "Save"}
+              </button>
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={handleClear}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+
+          {arr.length > 0 && (
+            <div className={styles.OfficialTable}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Engagement</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {arr.map((item) => (
+                    <tr key={item.officialEngagementId}>
+                      <td>{item.code}</td>
+                      <td>{item.name}</td>
+                      <td>
+                        <button
+                          className={`${styles.iconButton} ${styles.editIcon}`}
+                          onClick={() => handleEdit(item)}
+                        >
+                          <FaRegEdit />
+                        </button>
+                        <button
+                          className={`${styles.iconButton} ${styles.deleteIcon}`}
+                          onClick={() => handleDelete(item)}
+                        >
+                          <FaTrashAlt />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

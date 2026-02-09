@@ -1,131 +1,173 @@
-"use client"
+"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Gsis.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 import Swal from "sweetalert2";
 
+const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
 export default function Gsis() {
-    type GsisEntry = {
-        date: string;
-        erShare: string;
-        eeShare: string;
+    type GsisContributionItem = {
+        gsisContributionId: number;
+        effectivityDate: string;
+        employerSharePercentage: string;
+        employeeSharePercentage: string;
     };
 
-    const [date, setDate] = useState("");
-    const [erShare, setErShare] = useState("");
-    const [eeShare, setEeShare] = useState("");
+    const [gsisData, setGsisData] = useState<GsisContributionItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [effectivityDate, setEffectivityDate] = useState("");
+    const [employerSharePercentage, setEmployerSharePercentage] = useState("");
+    const [employeeSharePercentage, setEmployeeSharePercentage] = useState("");
     const [isEditing, setIsEditing] = useState(false);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
-    const [entry, setEntry] = useState<GsisEntry[]>([]);
+    const [editId, setEditId] = useState<number | null>(null);
 
-    const handleEdit = (obj: GsisEntry, index: number) => {
-        setEditIndex(index);
-        setDate(obj.date);
-        setEeShare(obj.eeShare);
-        setErShare(obj.erShare);
+    // LOAD DATA
+    useEffect(() => {
+        loadGsisData();
+    }, []);
+
+    const loadGsisData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/gsisContribution/get-all`
+            );
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            setGsisData(data);
+        } catch (err) {
+            console.error("Failed to load GSIS data:", err);
+            Swal.fire("Error", "Failed to load GSIS contribution data.", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // SAVE + UPDATE
+    const onSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!effectivityDate || !employerSharePercentage || !employeeSharePercentage) {
+            Swal.fire("Validation Error", "All fields are required.", "warning");
+            return;
+        }
+
+        const payload = {
+            effectivityDate: toCustomFormat(effectivityDate, false),
+            employerSharePercentage,
+            employeeSharePercentage,
+        };
+
+        try {
+            if (!isEditing) {
+                const res = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/gsisContribution/create`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                if (!res.ok) throw new Error(await res.text());
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Saved!",
+                    text: "GSIS Contribution created successfully.",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+            } else {
+                const res = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/gsisContribution/update/${editId}`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                if (!res.ok) throw new Error(await res.text());
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Updated!",
+                    text: "GSIS Contribution updated successfully.",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+
+                setIsEditing(false);
+                setEditId(null);
+            }
+
+            await loadGsisData();
+            setEffectivityDate("");
+            setEmployerSharePercentage("");
+            setEmployeeSharePercentage("");
+        } catch (err) {
+            console.error("Save failed:", err);
+            Swal.fire("Error", "Failed to save record.", "error");
+        }
+    };
+
+    // EDIT BUTTON
+    const handleEdit = (obj: GsisContributionItem) => {
+        setEditId(obj.gsisContributionId);
+        setEffectivityDate(toDateInputValue(obj.effectivityDate));
+        setEmployerSharePercentage(obj.employerSharePercentage);
+        setEmployeeSharePercentage(obj.employeeSharePercentage);
         setIsEditing(true);
     };
 
-    const handleDelete = (indx: number) => {
-        if(date) {
-            setDate("");
-            setErShare("");
-            setEeShare("");
-            setIsEditing(false);
-        }
+    // DELETE with Swal confirm
+    const handleDelete = async (id: number) => {
+        const result = await Swal.fire({
+            icon: "warning",
+            title: "Are you sure?",
+            text: "This action cannot be undone.",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const res = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/gsisContribution/delete/${id}`,
+                { method: "DELETE" }
+            );
+
+            if (!res.ok) throw new Error(await res.text());
 
             Swal.fire({
-            text: `Are you sure you want to delete this record?`,
-            icon: "info",
-            showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                setEntry(prev => prev.filter((_, i) => i != indx));
-            }
-        })
+                icon: "success",
+                title: "Deleted!",
+                text: "Record has been deleted.",
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+            await loadGsisData();
+        } catch (err) {
+            console.error(err);
+            Swal.fire("Error", "Failed to delete record.", "error");
+        }
     };
 
     const handleClear = () => {
-        setDate("");
-        setErShare("");
-        setEeShare("");;
+        setEffectivityDate("");
+        setEmployerSharePercentage("");
+        setEmployeeSharePercentage("");
         setIsEditing(false);
-    };
-
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const newEntry: GsisEntry = { date, erShare, eeShare};
-
-        if(!isEditing) {
-            setEntry([...entry, newEntry]);
-
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
-
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Created!"
-            });
-
-            setDate("");
-            setErShare("");
-            setEeShare("");
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateLeave = [...entry];
-                        updateLeave[editIndex] = newEntry;
-                        setEntry(updateLeave);
-                        setIsEditing(false);
-                        setEditIndex(null);
-
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-
-                        setDate("");
-                        setErShare("");
-                        setEeShare("");
-                    }
-                })
-            }
-        }
+        setEditId(null);
     };
 
     return (
@@ -134,43 +176,54 @@ export default function Gsis() {
                 <div className={modalStyles.modalHeader}>
                     <h2 className={modalStyles.mainTitle}>GSIS Contribution Table</h2>
                 </div>
+
                 <div className={modalStyles.modalBody}>
                     <form className={styles.GsisForm} onSubmit={onSubmit}>
                         <label>Effectivity Date</label>
                         <input
                             type="date"
-                            value={date}
-                            onChange={e => setDate(e.target.value)}
-                            required={true}
+                            value={effectivityDate}
+                            onChange={e => setEffectivityDate(e.target.value)}
+                            required
                         />
-                        <label className={styles.empLabel}>Employer&apos;s Share</label>
+
+                        <label className={styles.empLabel}>Employer&apos;s Share (%)</label>
                         <input
                             type="text"
-                            value={erShare}
-                            onChange={e => setErShare(e.target.value)}
-                            required={true}
-                            /><span className={styles.percent}>%</span>
-                        <label className={styles.empLabel}>Employee&apos;s Share</label>
+                            value={employerSharePercentage}
+                            onChange={e => setEmployerSharePercentage(e.target.value)}
+                            required
+                        />
+
+                        <label className={styles.empLabel}>Employee&apos;s Share (%)</label>
                         <input
                             type="text"
-                            value={eeShare}
-                            onChange={e => setEeShare(e.target.value)}
-                            required={true}
-                            /><span className={styles.percent}>%</span>
-                         <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
+                            value={employeeSharePercentage}
+                            onChange={e => setEmployeeSharePercentage(e.target.value)}
+                            required
+                        />
+
+                        <div className={styles.buttonGroup}>
+                            <button
+                                type="submit"
+                                className={isEditing ? styles.updateButton : styles.saveButton}
+                                disabled={loading}
+                            >
                                 {isEditing ? "Update" : "Save"}
                             </button>
+
                             <button
                                 type="button"
                                 className={styles.clearButton}
-                                onClick={handleClear}>
+                                onClick={handleClear}
+                                disabled={loading}
+                            >
                                 Clear
                             </button>
                         </div>
                     </form>
 
-                    {entry.length > 0 && (
+                    {gsisData.length > 0 && (
                         <div>
                             <h4 className={styles.tableHeader}>GSIS SCHEDULE OF CONTRIBUTION FOR EMPLOYED MEMBERS</h4>
                             <div className={styles.GsisTable}>
@@ -178,28 +231,33 @@ export default function Gsis() {
                                     <thead>
                                         <tr>
                                             <th>Effectivity Date</th>
-                                            <th>Employer Share</th>
-                                            <th>Employee Share</th>
+                                            <th>Employer Share (%)</th>
+                                            <th>Employee Share (%)</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {entry.map((ent, indx) => (
-                                            <tr key={ent.date ?? `row-${indx}`}>
-                                                <td>{ent.date}</td>
-                                                <td>{ent.erShare}</td>
-                                                <td>{ent.eeShare}</td>
+                                        {gsisData.map((item) => (
+                                            <tr key={item.gsisContributionId}>
+                                                <td>{item.effectivityDate}</td>
+                                                <td>{item.employerSharePercentage}</td>
+                                                <td>{item.employeeSharePercentage}</td>
                                                 <td>
                                                     <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
-                                                        onClick={() => handleEdit(ent, indx)}
-                                                        title="Edit">
+                                                        onClick={() => handleEdit(item)}
+                                                        title="Edit"
+                                                        disabled={loading}
+                                                    >
                                                         <FaRegEdit />
                                                     </button>
+
                                                     <button
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(indx)}
-                                                        title="Delete">
+                                                        onClick={() => handleDelete(item.gsisContributionId)}
+                                                        title="Delete"
+                                                        disabled={loading}
+                                                    >
                                                         <FaTrashAlt />
                                                     </button>
                                                 </td>
@@ -213,5 +271,5 @@ export default function Gsis() {
                 </div>
             </div>
         </div>
-    )
+    );
 }

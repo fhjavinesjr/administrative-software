@@ -161,7 +161,7 @@ export default function NatureOfAppointment() {
             <div className={modalStyles.modalContent}>
                 
                 <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Nature of Appointment123</h2>
+                    <h2 className={modalStyles.mainTitle}>Nature of Appointment</h2>
                 </div>
 
                 <div className={modalStyles.modalBody}>

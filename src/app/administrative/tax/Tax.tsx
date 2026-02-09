@@ -1,230 +1,136 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Tax.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
 export default function Tax() {
-    type BaseEntry = {
-        indexNo: string;
-        fixed: string;
-        percentage: string;
-        amount: string;
+    type WTAXContributionItem = {
+        wTaxContributionId: number;
+        salaryType: string;
+        fixedAmount: string;
+        percentageOverBase: string;
+        taxAmount: string;
     };
-
-    type DailyEntry = BaseEntry & {
-        salaryType: "Daily";
-    };
-
-    type WeeklyEntry = BaseEntry & {
-        salaryType: "Weekly";
-    };
-
-    type SemiMonthly = BaseEntry & {
-        salaryType: "Semi-Monthly";
-    };
-
-    type MonthlyEntry = BaseEntry & {
-        salaryType: "Monthly";
-    };
-
-    type SalaryEntry = DailyEntry | WeeklyEntry | SemiMonthly | MonthlyEntry;
 
     const [salaryType, setSalaryType] = useState("Monthly");
     const [fixed, setFixed] = useState("");
-    const [indexNo, setIndexNo] = useState("1");
     const [percentage, setPercentage] = useState("");
-    const [daily, setDaily] = useState<SalaryEntry[]>([]);
-    const [monthly, setMonthly] = useState<SalaryEntry[]>([]);
-    const [weekly, setWeekly] = useState<SalaryEntry[]>([]);
-    const [semiMonthly, setSemiMonthly] = useState<SalaryEntry[]>([]);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editIndex, setEditIndex] = useState<number | null>(null);
     const [amount, setAmount] = useState("");
+    const [monthly, setMonthly] = useState<WTAXContributionItem[]>([]);
+    const [semiMonthly, setSemiMonthly] = useState<WTAXContributionItem[]>([]);
+    const [weekly, setWeekly] = useState<WTAXContributionItem[]>([]);
+    const [daily, setDaily] = useState<WTAXContributionItem[]>([]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editId, setEditId] = useState<number | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    const indexExists = (list: SalaryEntry[], indexNo: string) => {
-        return list.some(item => item.indexNo === indexNo);
-    };
+    const loadTaxData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/get-all`);
+            if (!res.ok) throw new Error(await res.text());
+            const data: WTAXContributionItem[] = await res.json();
 
-    const onSubmit = (e: React.FormEvent) => {
+            setMonthly(data.filter(d => d.salaryType === "Monthly"));
+            setSemiMonthly(data.filter(d => d.salaryType === "Semi-Monthly"));
+            setWeekly(data.filter(d => d.salaryType === "Weekly"));
+            setDaily(data.filter(d => d.salaryType === "Daily"));
+        } catch (err) {
+            console.error("Failed to load tax data:", err);
+            Swal.fire("Error", "Failed to load tax contribution data.", "error");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { loadTaxData(); }, [loadTaxData]);
+
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        let newEntry: SalaryEntry;
-
-        switch (salaryType) {
-            case "Daily":
-                newEntry = {
-                    salaryType: "Daily",
-                    indexNo,
-                    fixed,
-                    percentage,
-                    amount
-                };
-                break;
-
-            case "Weekly":
-                newEntry = {
-                    salaryType: "Weekly",
-                    indexNo,
-                    fixed,
-                    percentage,
-                    amount
-                };
-                break;
-            
-            case "Semi-Monthly":
-                newEntry = {
-                    salaryType: "Semi-Monthly",
-                    indexNo,
-                    fixed,
-                    percentage,
-                    amount
-                };
-                break;
-
-            default:
-                newEntry = {
-                    salaryType: "Monthly",
-                    indexNo,
-                    fixed,
-                    percentage,
-                    amount
-                };
-            break;
+        if (!fixed || !percentage || !amount) {
+            Swal.fire("Validation Error", "All fields are required.", "warning");
+            return;
         }
 
-        if(!isEditing) {
-            let targetList: SalaryEntry[] = [];
+        const payload = {
+            salaryType,
+            fixedAmount: fixed,
+            percentageOverBase: percentage,
+            taxAmount: amount,
+        };
 
-            if (salaryType == "Daily") targetList = daily;
-            if (salaryType == "Weekly") targetList = weekly;
-            if (salaryType == "Semi-Monthly") targetList = semiMonthly;
-            if (salaryType == "Monthly") targetList = monthly;
-
-            if (indexExists(targetList, indexNo)) {
-      
-                Swal.fire({
-                    icon: "error",
-                    title: "Duplicate Index No",
-                    text: `Index No. ${indexNo} already exists for ${salaryType}.`,
+        try {
+            if (!isEditing) {
+                const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/create`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
                 });
-                return;
+                if (!res.ok) throw new Error(await res.text());
+                Swal.fire({ icon: "success", title: "Saved!", timer: 1500, showConfirmButton: false });
+            } else {
+                const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/update/${editId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                Swal.fire({ icon: "success", title: "Updated!", timer: 1500, showConfirmButton: false });
+                setIsEditing(false);
+                setEditId(null);
             }
 
-            if (salaryType == "Daily") setDaily([...daily, newEntry]);
-            if (salaryType == "Weekly") setWeekly([...weekly, newEntry]);
-            if (salaryType == "Semi-Monthly") setSemiMonthly([...semiMonthly, newEntry]);
-            if (salaryType == "Monthly") setMonthly([...monthly, newEntry]);
-  
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
-
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Created!"
-            });
+            await loadTaxData();
             handleClear();
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateSalType = salaryType == 'Daily' ? [...daily]
-                                            : salaryType == 'Weekly' ? [...weekly]
-                                            : salaryType == 'Semi-Monthly' ? [...semiMonthly]
-                                            : [...monthly];
-
-                        updateSalType[editIndex] = newEntry;
-
-                        if (salaryType == "Daily") setDaily(updateSalType);
-                        if (salaryType == "Weekly") setWeekly(updateSalType);
-                        if (salaryType == "Semi-Monthly") setSemiMonthly(updateSalType);
-                        if (salaryType == "Monthly") setMonthly(updateSalType);
-
-                        setIsEditing(false);
-                        setEditIndex(null);
-
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-
-                        handleClear();
-                    }
-                })
-            }
+        } catch (err) {
+            console.error("Save failed:", err);
+            Swal.fire("Error", "Failed to save record.", "error");
         }
     };
 
     const handleClear = () => {
-        setSalaryType("Daily");
+        setSalaryType("Monthly");
         setFixed("");
-        setIndexNo("1");
         setPercentage("");
         setAmount("");
         setIsEditing(false);
+        setEditId(null);
     };
 
-    const handleEdit = (obj: SalaryEntry, index: number) => {
-        setEditIndex(index);
+    const handleEdit = (obj: WTAXContributionItem) => {
+        setEditId(obj.wTaxContributionId);
         setSalaryType(obj.salaryType);
-        setIndexNo(obj.indexNo);
-        setFixed(obj.fixed);
-        setPercentage(obj.percentage);
-        setAmount(obj.amount);
+        setFixed(obj.fixedAmount);
+        setPercentage(obj.percentageOverBase);
+        setAmount(obj.taxAmount);
         setIsEditing(true);
     };
 
-    const handleDelete = (obj: SalaryEntry, indx: number) => {
-        if(indexNo) {
-            handleClear();
-            setSalaryType("Daily");
-        }
-
-        Swal.fire({
-            text: `Are you sure you want to delete this record?`,
-            icon: "info",
+    const handleDelete = async (idOrObj: number | WTAXContributionItem) => {
+        const id = typeof idOrObj === "number" ? idOrObj : idOrObj.wTaxContributionId;
+        const result = await Swal.fire({
+            icon: "warning",
+            title: "Are you sure?",
+            text: "This action cannot be undone.",
             showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                if (obj.salaryType == "Daily") setDaily(prev => prev.filter((_, i) => i != indx));
-                if (obj.salaryType == "Weekly") setWeekly(prev => prev.filter((_, i) => i != indx));
-                if (obj.salaryType == "Semi-Monthly") setSemiMonthly(prev => prev.filter((_, i) => i != indx));
-                if (obj.salaryType == "Monthly") setMonthly(prev => prev.filter((_, i) => i != indx));
-            }
-        })
+            confirmButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+        });
+        if (!result.isConfirmed) return;
+        try {
+            const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/delete/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error(await res.text());
+            Swal.fire({ icon: "success", title: "Deleted!", timer: 1500, showConfirmButton: false });
+            await loadTaxData();
+        } catch (err) {
+            console.error(err);
+            Swal.fire("Error", "Failed to delete record.", "error");
+        }
     };
 
     return (
@@ -243,18 +149,6 @@ export default function Tax() {
                                 <option value="Semi-Monthly">Semi-Monthly</option>
                                 <option value="Weekly">Weekly</option>
                                 <option value="Daily">Daily</option>
-                        </select>
-                        <label>Index No.</label>
-                        <select
-                            className={styles.indexNo}
-                            value={indexNo}
-                            required
-                            onChange={(e) => setIndexNo(e.target.value)}>
-                                {Array.from({ length: 20 }, (_, i) => (
-                                    <option key={i + 1} value={i + 1}>
-                                        {i + 1}
-                                    </option>
-                                ))}
                         </select>
                         <label>Fixed Amount</label>
                         <input
@@ -281,13 +175,14 @@ export default function Tax() {
                             required={true}
                         />
                         <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
+                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton} disabled={loading}>
                                 {isEditing ? "Update" : "Save"}
                             </button>
                             <button
                                 type="button"
                                 onClick={handleClear}
-                                className={styles.clearButton}>
+                                className={styles.clearButton}
+                                disabled={loading}>
                                 Clear
                             </button>
                         </div>
@@ -301,28 +196,28 @@ export default function Tax() {
                                     <thead>
                                         <tr>
                                             <th>Salary Type</th>
-                                            {monthly.map((m) => (
-                                            <th key={m.indexNo}>{m.indexNo}</th>
-                                            ))}
+                                            {monthly.map((m, idx) => (
+                                                <th key={idx}>{idx + 1}</th>
+                                                ))}
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr>
                                             <td>{monthly[0]?.salaryType}</td>
                                             {monthly.map((m, mindx) => (
-                                            <td key={m.indexNo}>
-                                                <span>{m.fixed}</span>
-                                                <p>+ {m.percentage} Over</p>
-                                                <p>{m.amount}</p>
+                                            <td key={mindx}>
+                                                <span>{m.fixedAmount}</span>
+                                                <p>+ {m.percentageOverBase} Over</p>
+                                                <p>{m.taxAmount}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m, mindx)}
+                                                         onClick={() => handleEdit(m)}
                                                         title="Edit">
                                                         <FaRegEdit />
                                                     </button>
                                                     <button
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m, mindx)}
+                                                        onClick={() => handleDelete(m.wTaxContributionId)}
                                                         title="Delete">
                                                         <FaTrashAlt />
                                                     </button>
@@ -343,8 +238,8 @@ export default function Tax() {
                                     <thead>
                                         <tr>
                                             <th>Salary Type</th>
-                                            {semiMonthly.map((m) => (
-                                            <th key={m.indexNo}>{m.indexNo}</th>
+                                            {semiMonthly.map((m, idx) => (
+                                            <th key={idx}>{idx + 1}</th>
                                             ))}
                                         </tr>
                                         </thead>
@@ -352,19 +247,19 @@ export default function Tax() {
                                         <tr>
                                             <td>{semiMonthly[0]?.salaryType}</td>
                                             {semiMonthly.map((m, mindx) => (
-                                            <td key={m.indexNo}>
-                                                <span>{m.fixed}</span>
-                                                <p>+ {m.percentage} Over</p>
-                                                <p>{m.amount}</p>
+                                            <td key={mindx}>
+                                                <span>{m.fixedAmount}</span>
+                                                <p>+ {m.percentageOverBase} Over</p>
+                                                <p>{m.taxAmount}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m, mindx)}
+                                                         onClick={() => handleEdit(m)}
                                                         title="Edit">
                                                         <FaRegEdit />
                                                     </button>
                                                     <button
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m, mindx)}
+                                                        onClick={() => handleDelete(m.wTaxContributionId)}
                                                         title="Delete">
                                                         <FaTrashAlt />
                                                     </button>
@@ -385,8 +280,8 @@ export default function Tax() {
                                     <thead>
                                         <tr>
                                             <th>Salary Type</th>
-                                            {weekly.map((m) => (
-                                            <th key={m.indexNo}>{m.indexNo}</th>
+                                            {weekly.map((m, idx) => (
+                                            <th key={idx}>{idx + 1}</th>
                                             ))}
                                         </tr>
                                         </thead>
@@ -394,19 +289,19 @@ export default function Tax() {
                                         <tr>
                                             <td>{weekly[0]?.salaryType}</td>
                                             {weekly.map((m, mindx) => (
-                                            <td key={m.indexNo}>
-                                                <span>{m.fixed}</span>
-                                                <p>+ {m.percentage} Over</p>
-                                                <p>{m.amount}</p>
+                                            <td key={mindx}>
+                                                <span>{m.fixedAmount}</span>
+                                                <p>+ {m.percentageOverBase} Over</p>
+                                                <p>{m.taxAmount}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m, mindx)}
+                                                         onClick={() => handleEdit(m)}
                                                         title="Edit">
                                                         <FaRegEdit />
                                                     </button>
                                                     <button
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m, mindx)}
+                                                        onClick={() => handleDelete(m.wTaxContributionId)}
                                                         title="Delete">
                                                         <FaTrashAlt />
                                                     </button>
@@ -427,8 +322,8 @@ export default function Tax() {
                                     <thead>
                                         <tr>
                                             <th>Salary Type</th>
-                                            {daily.map((m) => (
-                                            <th key={m.indexNo}>{m.indexNo}</th>
+                                            {daily.map((m, idx) => (
+                                            <th key={idx}>{idx + 1}</th>
                                             ))}
                                         </tr>
                                         </thead>
@@ -436,19 +331,19 @@ export default function Tax() {
                                         <tr>
                                             <td>{daily[0]?.salaryType}</td>
                                             {daily.map((m, mindx) => (
-                                            <td key={m.indexNo}>
-                                                <span>{m.fixed}</span>
-                                                <p>+ {m.percentage} Over</p>
-                                                <p>{m.amount}</p>
+                                            <td key={mindx}>
+                                                <span>{m.fixedAmount}</span>
+                                                <p>+ {m.percentageOverBase} Over</p>
+                                                <p>{m.taxAmount}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m, mindx)}
+                                                         onClick={() => handleEdit(m)}
                                                         title="Edit">
                                                         <FaRegEdit />
                                                     </button>
                                                     <button
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m, mindx)}
+                                                        onClick={() => handleDelete(m.wTaxContributionId)}
                                                         title="Delete">
                                                         <FaTrashAlt />
                                                     </button>
