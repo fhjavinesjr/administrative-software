@@ -1,14 +1,18 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/SystemSetup.module.scss";
 import { FaCloudUploadAlt, FaRegEdit, FaTrashAlt } from "react-icons/fa";
-// import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
+
+const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 
 export default function SystemSetup() {
     type settingsEntry = {
+        settingsId?: number | null;
         date: string;
         companyName: string;
         shortName: string;
@@ -22,7 +26,10 @@ export default function SystemSetup() {
         tinNo: string;
         pagibigNo: string;
         philhealtNo: string;
-        
+        // optional base64 logo fields returned by backend
+        leftHeaderLogoBase64?: string | null;
+        mainLogoBase64?: string | null;
+        rightHeaderLogoBase64?: string | null;
     };
 
     const [date, setDate] = useState("");
@@ -40,73 +47,203 @@ export default function SystemSetup() {
     const [isDOH, setIsDOH] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [entry, setEntry] = useState<settingsEntry[]>([]);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
+
+    // backend id when editing
+    const [settingsId, setSettingsId] = useState<number | null>(null);
+
+    // logo base64 strings
+    const [leftLogoBase64, setLeftLogoBase64] = useState<string | null>(null);
+    const [mainLogoBase64, setMainLogoBase64] = useState<string | null>(null);
+    const [rightLogoBase64, setRightLogoBase64] = useState<string | null>(null);
+
+    type SettingsPayload = {
+        systemStartDate: string | null;
+        companyName: string;
+        shortName: string;
+        city: string;
+        address: string;
+        hospitalAgency: boolean;
+        isoNo: string;
+        zipCode: string;
+        telMobileNo: string;
+        emailAddress: string;
+        tinNo: string;
+        pagIbigNo: string;
+        philHealthNo: string;
+        leftHeaderLogo?: string | null;
+        mainLogo?: string | null;
+        rightHeaderLogo?: string | null;
+    };
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const payload: SettingsPayload = {
+            systemStartDate: date ? toCustomFormat(date, true) : null,
+            companyName,
+            shortName,
+            city,
+            address,
+            hospitalAgency: isDOH,
+            isoNo: iso,
+            zipCode: zipcode,
+            telMobileNo: telNo,
+            emailAddress: email,
+            tinNo,
+            pagIbigNo: pagibigNo,
+            philHealthNo: philhealtNo,
+            leftHeaderLogo: stripDataUrlPrefix(leftLogoBase64),
+            mainLogo: stripDataUrlPrefix(mainLogoBase64),
+            rightHeaderLogo: stripDataUrlPrefix(rightLogoBase64)
+        };
 
-        const newEntry: settingsEntry = {date,companyName,shortName,city,address,isDOH,iso,zipcode,telNo,email,tinNo,pagibigNo,philhealtNo}
-        
-        if(!isEditing) {
-            
-            setEntry([...entry, newEntry]);
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
+        const Toast = Swal.mixin({
+            toast: true,
+            position: "bottom-end",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+
+        if (!isEditing) {
+            // create
+            fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/settings/create`, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(async res => {
+                if (!res.ok) throw await res.text();
+                return res.json();
+            })
+            .then(() => {
+                Toast.fire({ icon: "success", title: "Successfully Created!" });
+                handleClear();
+                fetchSettings();
+            })
+            .catch(err => {
+                Swal.fire({ icon: 'error', text: String(err) });
+            });
+        } else {
+            // update
+            if (settingsId == null) {
+                Swal.fire({ icon: 'error', text: 'Missing settings id for update' });
+                return;
+            }
+
+            Swal.fire({
+                text: `Are you sure you want to update this record?`,
+                icon: "info",
+                showCancelButton: true,
+                confirmButtonText: "Update",
+                allowOutsideClick: true,
+                backdrop: true,
+            }).then(result => {
+                if (result.isConfirmed) {
+                    fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/settings/update/${settingsId}`, {
+                        method: "PUT",
+                        body: JSON.stringify(payload)
+                    })
+                    .then(async res => {
+                        if (!res.ok) throw await res.text();
+                        return res.json();
+                    })
+                    .then(() => {
+                        Toast.fire({ icon: "success", title: "Successfully Updated!" });
+                        handleClear();
+                        fetchSettings();
+                    })
+                    .catch(err => Swal.fire({ icon: 'error', text: String(err) }));
                 }
             });
-
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Created!"
-            });
-
-            handleClear();
-        } else {
-            if(editIndex !== null) {
-                 Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateLeave = [...entry];
-                        updateLeave[editIndex] = newEntry;
-                        setEntry(updateLeave);
-                        setIsEditing(false);
-                        setEditIndex(null);
-
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-
-                        handleClear();
-                    }
-                })
-            }
         }
+    };
+
+    useEffect(() => {
+        fetchSettings();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    type BackendSettings = {
+        settingsId?: number;
+        systemStartDate?: string;
+        companyName?: string;
+        shortName?: string;
+        city?: string;
+        address?: string;
+        hospitalAgency?: boolean;
+        isoNo?: string;
+        zipCode?: string;
+        telMobileNo?: string;
+        emailAddress?: string;
+        tinNo?: string;
+        pagIbigNo?: string;
+        philHealthNo?: string;
+        leftHeaderLogoBase64?: string | null;
+        mainLogoBase64?: string | null;
+        rightHeaderLogoBase64?: string | null;
+    };
+
+    const fetchSettings = () => {
+        fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/settings/get-all`)
+            .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+            .then((data: BackendSettings[]) => {
+                // Map backend DTO to local structure
+                const mapped = data.map((d: BackendSettings) => ({
+                    settingsId: d.settingsId,
+                    date: d.systemStartDate ? toDateInputValue(d.systemStartDate) : "",
+                    companyName: d.companyName || "",
+                    shortName: d.shortName || "",
+                    city: d.city || "",
+                    address: d.address || "",
+                    isDOH: !!d.hospitalAgency,
+                    iso: d.isoNo || "",
+                    zipcode: d.zipCode || "",
+                    telNo: d.telMobileNo || "",
+                    email: d.emailAddress || "",
+                    tinNo: d.tinNo || "",
+                    pagibigNo: d.pagIbigNo || "",
+                    philhealtNo: d.philHealthNo || "",
+                    leftHeaderLogoBase64: d.leftHeaderLogoBase64 || null,
+                    mainLogoBase64: d.mainLogoBase64 || null,
+                    rightHeaderLogoBase64: d.rightHeaderLogoBase64 || null
+                } as settingsEntry));
+                setEntry(mapped);
+            })
+            .catch(err => console.error('fetchSettings err', err));
+    };
+
+    // convert File -> dataURL (Base64) helper
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const onFileChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+            const dataUrl = await fileToBase64(file);
+            if (index === 0) setLeftLogoBase64(dataUrl);
+            if (index === 1) setMainLogoBase64(dataUrl);
+            if (index === 2) setRightLogoBase64(dataUrl);
+        } catch (err) {
+            console.error('file to base64 error', err);
+            Swal.fire({ icon: 'error', text: 'Failed to read file' });
+        }
+    };
+
+    // Strip data URL prefix (e.g. "data:image/png;base64,...") to return only base64 payload
+    const stripDataUrlPrefix = (dataUrl?: string | null): string | null => {
+        if (!dataUrl) return null;
+        const comma = dataUrl.indexOf(',');
+        return comma >= 0 ? dataUrl.substring(comma + 1) : dataUrl;
     };
 
     const handleClear = () => {
@@ -124,14 +261,21 @@ export default function SystemSetup() {
         setPhilhealthNo("");
         setIsDOH(false);
         setIsEditing(false);
+        setSettingsId(null);
+        setLeftLogoBase64(null);
+        setMainLogoBase64(null);
+        setRightLogoBase64(null);
     };
 
     const handleDelete = (indx: number) => {
-        if(date) {
-            handleClear();
+        const target = entry[indx];
+        if (!target || !target.settingsId) {
+            // If no backend id, just remove locally
+            setEntry(prev => prev.filter((_, i) => i !== indx));
+            return;
         }
 
-            Swal.fire({
+        Swal.fire({
             text: `Are you sure you want to delete this record?`,
             icon: "info",
             showCancelButton: true,
@@ -139,14 +283,20 @@ export default function SystemSetup() {
             allowOutsideClick: true,
             backdrop: true,
         }).then(result => {
-            if(result.isConfirmed) {
-                setEntry(prev => prev.filter((_, i) => i != indx));
+            if (result.isConfirmed) {
+                fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/settings/delete/${target.settingsId}`, { method: 'DELETE' })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Delete failed');
+                        fetchSettings();
+                        Swal.fire({ icon: 'success', title: 'Deleted' });
+                    })
+                    .catch(err => Swal.fire({ icon: 'error', text: String(err) }));
             }
         })
     };
 
-    const handleEdit = (obj: settingsEntry, index: number) => {
-        setEditIndex(index);
+    const handleEdit = (obj: settingsEntry) => {
+        setSettingsId(obj.settingsId ?? null);
         setDate(obj.date);
         setCompanyName(obj.companyName);
         setShortName(obj.shortName);
@@ -160,6 +310,10 @@ export default function SystemSetup() {
         setPagibigNo(obj.pagibigNo);
         setPhilhealthNo(obj.philhealtNo);
         setIsEditing(true);
+        // load logos if present
+        setLeftLogoBase64(obj.leftHeaderLogoBase64 ?? null);
+        setMainLogoBase64(obj.mainLogoBase64 ?? null);
+        setRightLogoBase64(obj.rightHeaderLogoBase64 ?? null);
     };
 
     return (
@@ -172,7 +326,7 @@ export default function SystemSetup() {
                     <form className={styles.SystemSetup} onSubmit={onSubmit}>
                         <div className={styles.formGrid}>
                             <div className={styles.column}>
-                                 <label>Beginning Balance</label>
+                                 <label>System Start Date</label>
                                 <input
                                     className={styles.date}
                                     type="date"
@@ -210,7 +364,7 @@ export default function SystemSetup() {
                                     onChange={e => setAddress(e.target.value)}
                                     className={styles.address}
                                 />
-                                <label>Is DOH?</label>
+                                <label>Hospital Agency</label>
                                 <div className={styles.checkboxWrapper}>
                                     <input
                                         className={styles.checkbox}
@@ -286,13 +440,10 @@ export default function SystemSetup() {
                                 <div key={index}>
                                     <input
                                         type="file"
+                                        accept="image/*"
                                         id={`fileUpload-${index}`}
                                         style={{ display: "none" }} // hide the actual input
-                                        onChange={(e) => {
-                                        if (e.target.files && e.target.files[0]) {
-                                            console.log(`${label} file selected:`, e.target.files[0]);
-                                        }
-                                        }}
+                                        onChange={(e) => onFileChange(index, e)}
                                     />
                                     <button
                                         type="button"
@@ -371,7 +522,7 @@ export default function SystemSetup() {
                                                 <td>
                                                     <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
-                                                        onClick={() => handleEdit(ent, indx)}
+                                                        onClick={() => handleEdit(ent)}
                                                         title="Edit">
                                                         <FaRegEdit />
                                                     </button>
