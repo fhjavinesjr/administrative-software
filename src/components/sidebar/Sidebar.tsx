@@ -230,11 +230,12 @@ export default function Sidebar() {
 
   // 👇 Auto-open HR section if current route matches
   useEffect(() => {
-    if (hrItems.some((item) => pathname.startsWith(item.goto))) {
-      setHrOpen(true);
-    }
+    // if (hrItems.some((item) => pathname.startsWith(item.goto))) {
+    //   setHrOpen(true);
+    // }
     if (tkItems.some((item) => pathname.startsWith(item.goto))) {
       setTkOpen(true);
+      console.log('test');
     }
     if (payrollItems.some((item) => pathname.startsWith(item.goto))) {
       setPayrollOpen(true);
@@ -301,6 +302,7 @@ export default function Sidebar() {
         >
           HUMAN RESOURCE {hrOpen ? "▲" : "▼"}
         </h2>
+
         {hrOpen && (
           <div role="menu">
             {/* {hrItems.map((item) => (

@@ -32,6 +32,7 @@ export default function ManagePersonnel() {
     const [rowState, setRowState] = useState<Record<string, RowSelection>>({});
     const [entry, setEntry] = useState<ManagePersonnelEntry[]>([]);
     const [selectedArea, setSelectedArea] = useState<string>("");
+    const [selectedRow , setSelectedRow] = useState<number | undefined>();
     const [selectedUnit, setSelectedUnit] = useState<string>("");
     const [otherStatus, setOtherStatus] = useState<{ [key: string]: string }>({});
     const [base, setBase] = useState<{ [key: string]: string }>({});
@@ -39,13 +40,14 @@ export default function ManagePersonnel() {
     const [fieldTwo, setFieldTwo] = useState(false);
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
 
     const areas = [
         { code: 'HR', description: 'Human Resources' },
         { code: 'Admin', description: 'Administrative' },
         { code: 'Accounting', description: 'Accounting' },
     ];
+
+    const data_row = [5,7,9,10];
 
     const units = [
         { code: 'HR', description: 'Talent Acquisition' },
@@ -145,16 +147,18 @@ export default function ManagePersonnel() {
         emp.employeeName.toLowerCase().includes(search.toLowerCase())
     );
 
-    const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
+    const pageSize = selectedRow ?? 5;
+
+    const totalPages = Math.ceil(filteredEmployees.length / pageSize);
 
     const paginatedEmployees = filteredEmployees.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
     );
     
     useEffect(() => {
         setCurrentPage(1);
-    }, [search]);
+    }, [search, selectedRow]);
 
     const hasSelectedEmployee = filteredEmployees.some(
         (emp) => rowState[emp.employeeNo]?.selected
@@ -289,6 +293,24 @@ export default function ManagePersonnel() {
                                                     <span className={styles.iconSearch}><FaSearch /></span>
                                             </div>
                                             <div>
+                                                <select
+                                                    className={styles.row_select}
+                                                    id="businessUnit"
+                                                    value={selectedRow}
+                                                   onChange={(e) =>
+                                                        setSelectedRow(e.target.value ? Number(e.target.value) : undefined)
+                                                    }
+                                                    required>
+                                                    {/* <option value="">
+                                                    Rows
+                                                    </option> */}
+
+                                                    {data_row.map((a, aidx) => (
+                                                    <option key={`${a}-${aidx}`} value={a}>
+                                                        {a}
+                                                    </option>
+                                                    ))}
+                                                </select>
                                                 <button 
                                                     className={styles.pageBtn}
                                                     disabled={currentPage === 1}

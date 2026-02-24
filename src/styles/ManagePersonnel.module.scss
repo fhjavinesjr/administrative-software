@@ -81,7 +81,10 @@
     padding-left: 5px;
   }
   /* Specific colors */
-  .saveButton { background: #28a745; width: 8%;}
+  .saveButton { 
+    background: #28a745;
+    white-space: nowrap;
+  }
   .clearButton { background: #adb5bd; }
 
   /* Shared hover styles */
@@ -219,18 +222,18 @@
   }
 
   .editIcon {
-    color: #0d6efd; // Bootstrap primary blue
+    color: #0d6efd; 
 
     &:hover {
-      color: #0a58ca; // darker blue on hover
+      color: #0a58ca; 
     }
   }
 
   .deleteIcon {
-    color: #dc3545; // Bootstrap danger red
+    color: #dc3545; 
 
     &:hover {
-      color: #bb2d3b; // darker red on hover
+      color: #bb2d3b; 
     }
   }
 
@@ -305,7 +308,7 @@
 }
 
 .inputWrapper input {
-  padding-right: 30px; /* Add space for the icon on the right */
+  padding-right: 30px; 
   height: 35px;
   width: 200px;
   box-sizing: border-box;
@@ -313,10 +316,10 @@
 
 .inputWrapper .iconSearch {
   position: absolute;
-  right: 8px; /* Position it on the right */
+  right: 8px;
   top: 45%;
   transform: translateY(-50%);
-  pointer-events: none; /* So clicks go to the input */
+  pointer-events: none; 
   font-size: 16px;
   color: #726d6d;
 }
