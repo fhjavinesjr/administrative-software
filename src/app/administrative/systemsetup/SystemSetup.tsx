@@ -47,6 +47,7 @@ export default function SystemSetup() {
     const [isDOH, setIsDOH] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [entry, setEntry] = useState<settingsEntry[]>([]);
+    const [rawResponse, setRawResponse] = useState<BackendSettings[] | null>(null);
 
     // backend id when editing
     const [settingsId, setSettingsId] = useState<number | null>(null);
@@ -181,16 +182,19 @@ export default function SystemSetup() {
         tinNo?: string;
         pagIbigNo?: string;
         philHealthNo?: string;
-        leftHeaderLogoBase64?: string | null;
-        mainLogoBase64?: string | null;
-        rightHeaderLogoBase64?: string | null;
+        // backend DTO uses byte[] field names; Jackson serializes them as base64 strings
+        leftHeaderLogo?: string | null;
+        mainLogo?: string | null;
+        rightHeaderLogo?: string | null;
     };
 
     const fetchSettings = () => {
         fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/settings/get-all`)
             .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
             .then((data: BackendSettings[]) => {
-                // Map backend DTO to local structure
+                console.debug('GET /api/settings/get-all response', data);
+                setRawResponse(data);
+                // Map backend DTO to local structure (backend uses leftHeaderLogo/mainLogo/rightHeaderLogo)
                 const mapped = data.map((d: BackendSettings) => ({
                     settingsId: d.settingsId,
                     date: d.systemStartDate ? toDateInputValue(d.systemStartDate) : "",
@@ -206,10 +210,11 @@ export default function SystemSetup() {
                     tinNo: d.tinNo || "",
                     pagibigNo: d.pagIbigNo || "",
                     philhealtNo: d.philHealthNo || "",
-                    leftHeaderLogoBase64: d.leftHeaderLogoBase64 || null,
-                    mainLogoBase64: d.mainLogoBase64 || null,
-                    rightHeaderLogoBase64: d.rightHeaderLogoBase64 || null
+                    leftHeaderLogoBase64: d.leftHeaderLogo || null,
+                    mainLogoBase64: d.mainLogo || null,
+                    rightHeaderLogoBase64: d.rightHeaderLogo || null
                 } as settingsEntry));
+
                 setEntry(mapped);
             })
             .catch(err => console.error('fetchSettings err', err));
@@ -281,7 +286,7 @@ export default function SystemSetup() {
             showCancelButton: true,
             confirmButtonText: "Delete",
             allowOutsideClick: true,
-            backdrop: true,
+            backdrop: true
         }).then(result => {
             if (result.isConfirmed) {
                 fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/settings/delete/${target.settingsId}`, { method: 'DELETE' })
@@ -292,28 +297,31 @@ export default function SystemSetup() {
                     })
                     .catch(err => Swal.fire({ icon: 'error', text: String(err) }));
             }
-        })
+        });
+
     };
 
-    const handleEdit = (obj: settingsEntry) => {
-        setSettingsId(obj.settingsId ?? null);
-        setDate(obj.date);
-        setCompanyName(obj.companyName);
-        setShortName(obj.shortName);
-        setAddress(obj.address);
-        setCity(obj.city);
-        setISO(obj.iso);
-        setZipcode(obj.zipcode);
-        setTelNo(obj.telNo);
-        setEmail(obj.email);
-        setTinNo(obj.tinNo);
-        setPagibigNo(obj.pagibigNo);
-        setPhilhealthNo(obj.philhealtNo);
+    const handleEdit = (ent: settingsEntry) => {
         setIsEditing(true);
-        // load logos if present
-        setLeftLogoBase64(obj.leftHeaderLogoBase64 ?? null);
-        setMainLogoBase64(obj.mainLogoBase64 ?? null);
-        setRightLogoBase64(obj.rightHeaderLogoBase64 ?? null);
+        setSettingsId(ent.settingsId ?? null);
+
+        setDate(ent.date || "");
+        setCompanyName(ent.companyName || "");
+        setShortName(ent.shortName || "");
+        setCity(ent.city || "");
+        setAddress(ent.address || "");
+        setIsDOH(ent.isDOH || false);
+        setISO(ent.iso || "");
+        setZipcode(ent.zipcode || "");
+        setTelNo(ent.telNo || "");
+        setEmail(ent.email || "");
+        setTinNo(ent.tinNo || "");
+        setPagibigNo(ent.pagibigNo || "");
+        setPhilhealthNo(ent.philhealtNo || "");
+
+        setLeftLogoBase64(ent.leftHeaderLogoBase64 || null);
+        setMainLogoBase64(ent.mainLogoBase64 || null);
+        setRightLogoBase64(ent.rightHeaderLogoBase64 || null);
     };
 
     return (
@@ -436,7 +444,7 @@ export default function SystemSetup() {
                         </div>
                         <label>Upload Logo</label>
                         <div className={styles.buttonGroup}>
-                             {["Left Header", "Main Menu", "Right Header"].map((label, index) => (
+                             { ["Left Header", "Main Menu", "Right Header"].map((label, index) => (
                                 <div key={index}>
                                     <input
                                         type="file"
@@ -454,19 +462,7 @@ export default function SystemSetup() {
                                         {label}
                                     </button>
                                 </div>
-                            ))}
-                            {/* <button className={styles.iconButton}>
-                                <FaCloudUploadAlt className={styles.icon} />
-                                Left Header
-                            </button>
-                            <button className={styles.iconButton}>
-                                <FaCloudUploadAlt className={styles.icon} />
-                                Main Menu
-                            </button>
-                            <button className={styles.iconButton}>
-                                <FaCloudUploadAlt className={styles.icon} />
-                                Right Header
-                            </button> */}
+                            )) }
                         </div>
                          <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
@@ -505,28 +501,30 @@ export default function SystemSetup() {
                                     </thead>
                                     <tbody>
                                         {entry.map((ent, indx) => (
-                                            <tr key={ent.date ?? `row-${indx}`}>
-                                                <td>{ent.date}</td>
-                                                <td>{ent.companyName}</td>
-                                                <td>{ent.shortName}</td>
-                                                <td>{ent.city}</td>
-                                                <td>{ent.address}</td>
+                                            <tr key={ent.settingsId}>
+                                                <td>{ent.date || '-'}</td>
+                                                <td>{ent.companyName || '-'}</td>
+                                                <td>{ent.shortName || '-'}</td>
+                                                <td>{ent.city || '-'}</td>
+                                                <td>{ent.address || '-'}</td>
                                                 <td>{ent.isDOH ? "Yes" : "No"}</td>
-                                                <td>{ent.iso}</td>
-                                                <td>{ent.zipcode}</td>
-                                                <td>{ent.telNo}</td>
-                                                <td>{ent.email}</td>
-                                                <td>{ent.tinNo}</td>
-                                                <td>{ent.pagibigNo}</td>
-                                                <td>{ent.philhealtNo}</td>
+                                                <td>{ent.iso || '-'}</td>
+                                                <td>{ent.zipcode || '-'}</td>
+                                                <td>{ent.telNo || '-'}</td>
+                                                <td>{ent.email || '-'}</td>
+                                                <td>{ent.tinNo || '-'}</td>
+                                                <td>{ent.pagibigNo || '-'}</td>
+                                                <td>{ent.philhealtNo || '-'}</td>
                                                 <td>
                                                     <button
+                                                        type="button"
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
                                                         onClick={() => handleEdit(ent)}
                                                         title="Edit">
                                                         <FaRegEdit />
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
                                                         onClick={() => handleDelete(indx)}
                                                         title="Delete">
