@@ -47,7 +47,6 @@ export default function SystemSetup() {
     const [isDOH, setIsDOH] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [entry, setEntry] = useState<settingsEntry[]>([]);
-    const [rawResponse, setRawResponse] = useState<BackendSettings[] | null>(null);
 
     // backend id when editing
     const [settingsId, setSettingsId] = useState<number | null>(null);
@@ -193,7 +192,6 @@ export default function SystemSetup() {
             .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
             .then((data: BackendSettings[]) => {
                 console.debug('GET /api/settings/get-all response', data);
-                setRawResponse(data);
                 // Map backend DTO to local structure (backend uses leftHeaderLogo/mainLogo/rightHeaderLogo)
                 const mapped = data.map((d: BackendSettings) => ({
                     settingsId: d.settingsId,
