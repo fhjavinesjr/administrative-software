@@ -8,6 +8,34 @@
     margin-bottom: .3rem;
   }
 
+  .checkboxField {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 10px;
+    width: 300px;
+    min-width: 300px;
+  }
+
+  .checkboxField label {
+    font-weight: bold;
+    width: 100px;
+    margin: 0;
+  }
+
+  .checkboxField input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+  }
+
+  .flexibleSection {
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 2px solid #e5e7eb;
+    padding-top: 0.65rem;
+    margin-top: 0.5rem;
+  }
+
   input {
     border-radius: 4px;
     border: 1px solid #ccc;

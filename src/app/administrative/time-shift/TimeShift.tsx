@@ -12,19 +12,49 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 export default function TimeShift() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   type TimeShift = {
     timeShiftId: number;
     tsCode: string;
+    tsName: string;
+    tsFlexible: boolean;
     timeIn: string;
     breakOut: string;
     breakIn: string;
     timeOut: string;
+    monInTimeLimit: string;
+    tueInTimeLimit: string;
+    wedInTimeLimit: string;
+    thuInTimeLimit: string;
+    friInTimeLimit: string;
+    satInTimeLimit: string;
+    sunInTimeLimit: string;
   };
 
   const [form, setForm] = useState({
     timeShiftId: 0,
     code: "",
+    name: "",
+    tsFlexible: false,
+    flexibleDays: {
+      mon: false,
+      tue: false,
+      wed: false,
+      thu: false,
+      fri: false,
+      sat: false,
+      sun: false,
+    },
+    inTimeLimits: {
+      mon: { hour: "", minute: "", second: "00" },
+      tue: { hour: "", minute: "", second: "00" },
+      wed: { hour: "", minute: "", second: "00" },
+      thu: { hour: "", minute: "", second: "00" },
+      fri: { hour: "", minute: "", second: "00" },
+      sat: { hour: "", minute: "", second: "00" },
+      sun: { hour: "", minute: "", second: "00" },
+    },
     timeIn: { hour: "08", minute: "00", second: "00" },
     breakOut: { hour: "12", minute: "00", second: "00" },
     breakIn: { hour: "13", minute: "00", second: "00" },
@@ -69,6 +99,7 @@ export default function TimeShift() {
       setShifts(data);
     } catch (err) {
       console.error("Failed to fetch timeshifts:", err);
+      setMessage("Unable to load time shifts. Refresh the page or try again later.");
     }
   };
 
@@ -76,12 +107,33 @@ export default function TimeShift() {
     setForm({
       timeShiftId: 0,
       code: "",
+      name: "",
+      tsFlexible: false,
+      flexibleDays: {
+        mon: false,
+        tue: false,
+        wed: false,
+        thu: false,
+        fri: false,
+        sat: false,
+        sun: false,
+      },
+      inTimeLimits: {
+        mon: { hour: "", minute: "", second: "00" },
+        tue: { hour: "", minute: "", second: "00" },
+        wed: { hour: "", minute: "", second: "00" },
+        thu: { hour: "", minute: "", second: "00" },
+        fri: { hour: "", minute: "", second: "00" },
+        sat: { hour: "", minute: "", second: "00" },
+        sun: { hour: "", minute: "", second: "00" },
+      },
       timeIn: { hour: "08", minute: "00", second: "00" },
       breakOut: { hour: "12", minute: "00", second: "00" },
       breakIn: { hour: "13", minute: "00", second: "00" },
       timeOut: { hour: "17", minute: "00", second: "00" },
     });
 
+    setMessage(null);
     setIsEditing(false);
   };
 
@@ -130,8 +182,10 @@ export default function TimeShift() {
         
       setShifts((prev) => prev.filter((s) => s.timeShiftId !== id));
       handleClear();
+      setMessage("Time shift deleted successfully.");
     } catch (err) {
       console.error("Failed to delete shift:", err);
+      setMessage("Failed to delete shift. Please try again.");
     }
   };
 
@@ -145,6 +199,26 @@ export default function TimeShift() {
     setForm({
       timeShiftId: shift.timeShiftId,
       code: shift.tsCode,
+      name: shift.tsName,
+      tsFlexible: shift.tsFlexible ?? false,
+      flexibleDays: {
+        mon: !!shift.monInTimeLimit,
+        tue: !!shift.tueInTimeLimit,
+        wed: !!shift.wedInTimeLimit,
+        thu: !!shift.thuInTimeLimit,
+        fri: !!shift.friInTimeLimit,
+        sat: !!shift.satInTimeLimit,
+        sun: !!shift.sunInTimeLimit,
+      },
+      inTimeLimits: {
+        mon: { ...splitTime(shift.monInTimeLimit), second: "00" },
+        tue: { ...splitTime(shift.tueInTimeLimit), second: "00" },
+        wed: { ...splitTime(shift.wedInTimeLimit), second: "00" },
+        thu: { ...splitTime(shift.thuInTimeLimit), second: "00" },
+        fri: { ...splitTime(shift.friInTimeLimit), second: "00" },
+        sat: { ...splitTime(shift.satInTimeLimit), second: "00" },
+        sun: { ...splitTime(shift.sunInTimeLimit), second: "00" },
+      },
       timeIn: { ...splitTime(shift.timeIn), second: "00" },
       breakOut: shift.breakOut
         ? { ...splitTime(shift.breakOut), second: "00" }
@@ -176,13 +250,123 @@ export default function TimeShift() {
     setIsEditing(true);
   };
 
+  const validateForm = () => {
+    if (!form.code.trim()) {
+      setMessage("Code is required.");
+      return false;
+    }
+
+    if (!form.name.trim()) {
+      setMessage("Name is required.");
+      return false;
+    }
+
+    const requiredSections: Array<"timeIn" | "timeOut"> = ["timeIn", "timeOut"];
+    for (const sec of requiredSections) {
+      if (!form[sec].hour || !form[sec].minute) {
+        setMessage("Time In and Time Out must be complete.");
+        return false;
+      }
+    }
+
+    if (form.tsFlexible) {
+      const dayKeys: Array<keyof typeof form.flexibleDays> = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+      for (const day of dayKeys) {
+        if (form.flexibleDays[day]) {
+          const limit = form.inTimeLimits[day];
+          if (!limit.hour || !limit.minute) {
+            setMessage(`Please specify In-Time limit for ${day.toUpperCase()}.`);
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  };
+
+  type DayKey = keyof typeof form.flexibleDays;
+  const dayNames: Record<DayKey, string> = {
+    mon: "Monday",
+    tue: "Tuesday",
+    wed: "Wednesday",
+    thu: "Thursday",
+    fri: "Friday",
+    sat: "Saturday",
+    sun: "Sunday",
+  };
+
+  const toggleDay = (day: DayKey) => {
+    setForm((prev) => ({
+      ...prev,
+      flexibleDays: { ...prev.flexibleDays, [day]: !prev.flexibleDays[day] },
+    }));
+  };
+
+  const renderFlexibleLimit = (day: DayKey) => (
+    <div className={styles.timeGroup} style={{ marginTop: "8px" }}>
+      <label style={{ width: "100%", marginBottom: "4px" }}>
+        {dayNames[day]} In-Time Limit
+      </label>
+      <div style={{ display: "flex", gap: "6px" }}>
+        <select
+          className={styles.timeSelect}
+          value={form.inTimeLimits[day].hour}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              inTimeLimits: {
+                ...prev.inTimeLimits,
+                [day]: { ...prev.inTimeLimits[day], hour: e.target.value },
+              },
+            }))
+          }
+        >
+          <option value="">--</option>
+          {hours.map((h) => (
+            <option key={`${day}-in-hour-${h}`} value={h}>
+              {h}
+            </option>
+          ))}
+        </select>
+        <span className={styles.timeColon}>:</span>
+        <select
+          className={styles.timeSelect}
+          value={form.inTimeLimits[day].minute}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              inTimeLimits: {
+                ...prev.inTimeLimits,
+                [day]: { ...prev.inTimeLimits[day], minute: e.target.value },
+              },
+            }))
+          }
+        >
+          <option value="">--</option>
+          {minutesSeconds.map((m) => (
+            <option key={`${day}-in-minute-${m}`} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
 
     // ✅ Build the TimeShift model
     const payload: TimeShift = {
       timeShiftId: form.timeShiftId, // comes from your form state
       tsCode: form.code,
+      tsName: form.name,
+      tsFlexible: form.tsFlexible,
       timeIn: `${form.timeIn.hour}:${form.timeIn.minute}:${form.timeIn.second}`,
       breakOut: form.breakOut.hour
         ? `${form.breakOut.hour}:${form.breakOut.minute}:${form.breakOut.second}`
@@ -191,6 +375,27 @@ export default function TimeShift() {
         ? `${form.breakIn.hour}:${form.breakIn.minute}:${form.breakIn.second}`
         : "",
       timeOut: `${form.timeOut.hour}:${form.timeOut.minute}:${form.timeOut.second}`,
+      monInTimeLimit: form.flexibleDays.mon
+        ? `${form.inTimeLimits.mon.hour}:${form.inTimeLimits.mon.minute}:${form.inTimeLimits.mon.second}`
+        : "",
+      tueInTimeLimit: form.flexibleDays.tue
+        ? `${form.inTimeLimits.tue.hour}:${form.inTimeLimits.tue.minute}:${form.inTimeLimits.tue.second}`
+        : "",
+      wedInTimeLimit: form.flexibleDays.wed
+        ? `${form.inTimeLimits.wed.hour}:${form.inTimeLimits.wed.minute}:${form.inTimeLimits.wed.second}`
+        : "",
+      thuInTimeLimit: form.flexibleDays.thu
+        ? `${form.inTimeLimits.thu.hour}:${form.inTimeLimits.thu.minute}:${form.inTimeLimits.thu.second}`
+        : "",
+      friInTimeLimit: form.flexibleDays.fri
+        ? `${form.inTimeLimits.fri.hour}:${form.inTimeLimits.fri.minute}:${form.inTimeLimits.fri.second}`
+        : "",
+      satInTimeLimit: form.flexibleDays.sat
+        ? `${form.inTimeLimits.sat.hour}:${form.inTimeLimits.sat.minute}:${form.inTimeLimits.sat.second}`
+        : "",
+      sunInTimeLimit: form.flexibleDays.sun
+        ? `${form.inTimeLimits.sun.hour}:${form.inTimeLimits.sun.minute}:${form.inTimeLimits.sun.second}`
+        : "",
     };
 
     try {
@@ -210,16 +415,9 @@ export default function TimeShift() {
         throw new Error(`Failed to save timeshift: ${res.status}`);
       }
     
-      const saved: TimeShift = await res.json();
-
-      if (isEditing) {
-        setShifts((prev) =>
-          prev.map((s) => (s.timeShiftId === saved.timeShiftId ? saved : s))
-        );
-      } else {
-        setShifts((prev) => [...prev, saved]);
-      }
-
+      await res.json();
+      setMessage("Time shift saved successfully.");
+      await fetchShifts();
       handleClear();
     } catch (err) {
       console.error("Save failed:", err);
@@ -235,6 +433,16 @@ export default function TimeShift() {
         <div className={modalStyles.modalBody}>
           <div className={styles.TimeShiftWrapper}>
             <form ref={formRef} className={styles.TimeShiftForm} onSubmit={onSubmit}>
+              {message && (
+                <div
+                  style={{
+                    marginBottom: "0.75rem",
+                    color: message.includes("failed") || message.includes("Unable") ? "#b91c1c" : "#15803d",
+                  }}
+                >
+                  {message}
+                </div>
+              )}
               <label>Code</label>
               <input
                 type="text"
@@ -244,6 +452,53 @@ export default function TimeShift() {
                 }
                 required={true}
               />
+
+              <label>Name</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                required={true}
+              />
+
+              <div className={styles.checkboxField}>
+                <label>Is Flexible?</label>
+                <input
+                  type="checkbox"
+                  checked={form.tsFlexible}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, tsFlexible: e.target.checked }))
+                  }
+                />
+              </div>
+
+              {form.tsFlexible && (
+                <div className={styles.flexibleSection}>
+                  <label>Dynamic Flexible Schedule</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+                    {(Object.keys(form.flexibleDays) as Array<keyof typeof form.flexibleDays>).map((day) => (
+                      <label key={day} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                        <input
+                          type="checkbox"
+                          checked={form.flexibleDays[day]}
+                          onChange={() => toggleDay(day)}
+                        />
+                        {dayNames[day]}
+                      </label>
+                    ))}
+                  </div>
+
+                  {(Object.keys(form.flexibleDays) as Array<keyof typeof form.flexibleDays>)
+                    .filter((day) => form.flexibleDays[day])
+                    .map((day) => (
+                      <div key={`${day}-limit`} style={{ marginTop: "0.5rem" }}>
+                        {renderFlexibleLimit(day)}
+                      </div>
+                    ))}
+                </div>
+              )}
 
               <label>Time In</label>
               {renderTimeSelect("timeIn")}
@@ -277,6 +532,7 @@ export default function TimeShift() {
                   <thead>
                     <tr>
                       <th>Code</th>
+                      <th>Name</th>
                       <th>Time In</th>
                       <th>Break Out</th>
                       <th>Break In</th>
@@ -288,16 +544,17 @@ export default function TimeShift() {
                     {shifts.map((shift, idx) => (
                       <tr key={shift.timeShiftId ?? `row-${idx}`}>
                         <td>{shift.tsCode}</td>
-                        <td>{to12HourFormat(shift.timeIn)}</td>
+                        <td>{shift.tsName}</td>
+                        <td>{shift.timeIn + " [" + to12HourFormat(shift.timeIn) + "]"}</td>
                         <td>
                           {shift.breakOut
-                            ? to12HourFormat(shift.breakOut)
+                            ? shift.breakOut + " [" + to12HourFormat(shift.breakOut) + "]"
                             : "-"}
                         </td>
                         <td>
-                          {shift.breakIn ? to12HourFormat(shift.breakIn) : "-"}
+                          {shift.breakIn ? shift.breakIn + " [" + to12HourFormat(shift.breakIn) + "]" : "-"}
                         </td>
-                        <td>{to12HourFormat(shift.timeOut)}</td>
+                        <td>{shift.timeOut + " [" + to12HourFormat(shift.timeOut) + "]"}</td>
                         <td className={styles.actionsCell}>
                           <button
                             className={`${styles.iconButton} ${styles.editIcon}`}
