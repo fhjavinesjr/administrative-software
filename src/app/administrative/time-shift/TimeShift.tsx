@@ -464,7 +464,7 @@ export default function TimeShift() {
               />
 
               <div className={styles.checkboxField}>
-                <label>Is Flexible?</label>
+                <label>Flexible Time</label>
                 <input
                   type="checkbox"
                   checked={form.tsFlexible}
