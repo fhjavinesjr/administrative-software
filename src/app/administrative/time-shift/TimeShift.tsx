@@ -8,6 +8,7 @@ const API_BASE_URL_ADMINISTRATIVE =
   process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
 import to12HourFormat from "@/lib/utils/convert24To12HrFormat";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 export default function TimeShift() {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -412,15 +413,64 @@ export default function TimeShift() {
       });
 
       if (!res.ok) {
-        throw new Error(`Failed to save timeshift: ${res.status}`);
+        let errorMsg = "Failed to save time shift.";
+        try {
+          const errorData = await res.json();
+          // Check for duplicate code error (customize this if your backend uses a different message)
+          if (
+            (errorData && errorData.message && errorData.message.toLowerCase().includes("duplicate")) ||
+            (typeof errorData === "string" && errorData.toLowerCase().includes("duplicate"))
+          ) {
+            errorMsg = "The code you entered already exists. Please use a unique code.";
+          } else if (errorData && errorData.message) {
+            errorMsg = errorData.message;
+          } else if (typeof errorData === "string") {
+            errorMsg = errorData;
+          }
+        } catch {
+          // fallback: use status code
+          errorMsg = `Failed to save time shift: ${res.status}`;
+        }
+        // Show error as a bottom-right toast
+        Swal.fire({
+          toast: true,
+          position: "bottom-end",
+          icon: "error",
+          title: errorMsg,
+          showConfirmButton: false,
+          timer: 4000,
+          timerProgressBar: true,
+        });
+        setMessage(null); // clear inline message
+        return;
       }
-    
+
       await res.json();
-      setMessage("Time shift saved successfully.");
+      // Show success as a bottom-right toast
+      Swal.fire({
+        toast: true,
+        position: "bottom-end",
+        icon: "success",
+        title: "Time shift saved successfully.",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+      setMessage(null); // clear inline message
       await fetchShifts();
       handleClear();
     } catch (err) {
       console.error("Save failed:", err);
+      Swal.fire({
+        toast: true,
+        position: "bottom-end",
+        icon: "error",
+        title: "An unexpected error occurred while saving the time shift.",
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+      });
+      setMessage(null);
     }
   };
 
