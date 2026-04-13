@@ -147,6 +147,12 @@ const tkItems = [
   },
   {
     id: 2,
+    icon: "/daytable.png",
+    label: "Holiday Calendar",
+    goto: "/administrative/holiday",
+  },
+  {
+    id: 3,
     icon: "/premiumpay-multiplier.png",
     label: "Premium Pay/Multiplier",
     goto: "/administrative/premiumpaymultiplier",
