@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import { AUTH_CONFIG } from "@/lib/utils/authConfig";
 import { setCookie } from "@/lib/utils/cookies";
 import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { Employee } from "@/lib/types/Employee";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_HRM;
 
@@ -58,6 +60,14 @@ export default function AdminLoginPage() {
 
       localStorage.setItem(AUTH_CONFIG.COOKIE.IS_LOGGED_IN, "true");
       localStorage.setItem(AUTH_CONFIG.COOKIE.LAST_ACTIVITY, now.toString());
+
+      // Fetch and store employee master list
+      const empRes = await fetchWithAuth(`${API_BASE_URL}/api/employees/basicInfo`);
+      if (empRes.ok) {
+        const employees: Employee[] = await empRes.json();
+        const filtered = employees.filter((emp) => emp.employeeNo !== "admin");
+        localStorageUtil.setEmployees(filtered);
+      }
 
       // Success alert and redirect
       Swal.fire({

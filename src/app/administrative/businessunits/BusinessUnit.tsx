@@ -34,6 +34,7 @@ export default function BusinessUnit() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [filterAreaId, setFilterAreaId] = useState<number | "">("");
 
   const handleClear = () => {
     setBuName("");
@@ -180,6 +181,21 @@ export default function BusinessUnit() {
 
           {businessUnits.length > 0 && (
             <div className={styles.BusinessUnitsTable}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #e0e0e0", display: "flex", alignItems: "center", gap: "12px" }}>
+                <label style={{ fontWeight: "bold", whiteSpace: "nowrap" }}>Filter by Area:</label>
+                <select
+                  value={filterAreaId}
+                  onChange={(e) => setFilterAreaId(e.target.value === "" ? "" : Number(e.target.value))}
+                  style={{ borderRadius: "4px", border: "1px solid #ccc", padding: "6px 10px", minWidth: "220px" }}
+                >
+                  <option value="">All Areas</option>
+                  {areas.map((area) => (
+                    <option key={area.areasId} value={area.areasId}>
+                      {area.areasName}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -190,11 +206,14 @@ export default function BusinessUnit() {
                   </tr>
                 </thead>
                 <tbody>
-                  {businessUnits.map((bu) => (
+                  {businessUnits
+                    .filter((bu) => filterAreaId === "" || bu.areasId === filterAreaId)
+                    .map((bu) => (
                     <tr key={bu.businessUnitsId}>
                       <td>{bu.businessUnitsCode}</td>
                       <td>{bu.businessUnitsName}</td>
                       <td>{getAreaName(bu.areasId)}</td>
+
                       <td>
                         <button className={`${styles.iconButton} ${styles.editIcon}`} onClick={() => handleEdit(bu)}>
                           <FaRegEdit />

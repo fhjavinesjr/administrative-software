@@ -442,25 +442,42 @@ export default function SystemSetup() {
                         </div>
                         <label>Upload Logo</label>
                         <div className={styles.buttonGroup}>
-                             { ["Left Header", "Main Menu", "Right Header"].map((label, index) => (
-                                <div key={index}>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        id={`fileUpload-${index}`}
-                                        style={{ display: "none" }} // hide the actual input
-                                        onChange={(e) => onFileChange(index, e)}
-                                    />
-                                    <button
-                                        type="button"
-                                        className={styles.iconButton}
-                                        onClick={() => document.getElementById(`fileUpload-${index}`)?.click()}
-                                    >
-                                        <FaCloudUploadAlt className={styles.icon} />
-                                        {label}
-                                    </button>
-                                </div>
-                            )) }
+                            {["Left Header", "Main Menu", "Right Header"].map((label, index) => {
+                                // Determine if the logo is already uploaded
+                                let isUploaded = false;
+                                const uploadedText = "Uploaded";
+                                if (index === 0) isUploaded = !!leftLogoBase64;
+                                if (index === 1) isUploaded = !!mainLogoBase64;
+                                if (index === 2) isUploaded = !!rightLogoBase64;
+                                return (
+                                    <div key={index} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            id={`fileUpload-${index}`}
+                                            style={{ display: "none" }}
+                                            onChange={(e) => onFileChange(index, e)}
+                                        />
+                                        <button
+                                            type="button"
+                                            className={styles.iconButton}
+                                            onClick={() => document.getElementById(`fileUpload-${index}`)?.click()}
+                                        >
+                                            <FaCloudUploadAlt className={styles.icon} />
+                                            {label}
+                                        </button>
+                                        {isUploaded && (
+                                            <span style={{ color: "green", display: "flex", alignItems: "center", gap: 4 }}>
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <circle cx="8" cy="8" r="8" fill="#22c55e"/>
+                                                    <path d="M4 8.5L7 11.5L12 6.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                </svg>
+                                                {uploadedText}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                          <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>

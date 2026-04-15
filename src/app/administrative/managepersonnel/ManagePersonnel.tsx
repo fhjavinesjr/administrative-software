@@ -1,38 +1,61 @@
 "use client"
 
+
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/ManagePersonnel.module.scss";
 import { FaTrashAlt, FaUsers, FaPlus, FaSearch } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+import { Employee } from "@/lib/types/Employee";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
+type ManagePersonnelEntry = {
+    id?: number;
+    employeeId?: number;
+    employeeNo?: string;
+    employeeName: string;
+    businessUnitId?: number;
+    areaId?: number;
+    head: number;
+    coApprover: number;
+    otherStatus: string;
+    status?: string;
+    base?: string;
+};
+
+type RowSelection = {
+    selected: boolean;
+    head: boolean;
+    coApprover: boolean;
+};
+
+type Area = {
+    areasId: number;
+    areasName: string;
+    areasDescription: string;
+};
+
+type BusinessUnit = {
+    businessUnitsId: number;
+    businessUnitsName: string;
+    businessUnitsCode: string;
+    areasId: number;
+};
+
+const pageSizeOptions = [25, 50, 100, 300, 500, 750, 1000];
 
 export default function ManagePersonnel() {
-    type ManagePersonnelEntry = {
-        employeeNo: string;
-        employeeName: string;
-        head: number;
-        coApprover: number;
-        otherStatus: string;
-        status?: string;
-        base?: string;
-    };
-
-    type RowSelection = {
-        selected: boolean;
-        head: boolean;
-        coApprover: boolean;
-    };
-
-    type Employee = {
-        employeeNo: string;
-        employeeName: string;
-    };
-
-    const [tempUnits, setTempUnits] = useState<Employee[]>([]);
+    const [areas, setAreas] = useState<Area[]>([]);
+    const [units, setUnits] = useState<BusinessUnit[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    // Removed tempUnits state, no longer needed
     const [rowState, setRowState] = useState<Record<string, RowSelection>>({});
     const [entry, setEntry] = useState<ManagePersonnelEntry[]>([]);
     const [selectedArea, setSelectedArea] = useState<string>("");
-    const [selectedRow , setSelectedRow] = useState<number | undefined>();
+    const [itemsPerPage, setItemsPerPage] = useState(25);
     const [selectedUnit, setSelectedUnit] = useState<string>("");
     const [otherStatus, setOtherStatus] = useState<{ [key: string]: string }>({});
     const [base, setBase] = useState<{ [key: string]: string }>({});
@@ -41,83 +64,151 @@ export default function ManagePersonnel() {
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
 
-    const areas = [
-        { code: 'HR', description: 'Human Resources' },
-        { code: 'Admin', description: 'Administrative' },
-        { code: 'Accounting', description: 'Accounting' },
-    ];
+    // Fetch Areas
+    useEffect(() => {
+        fetchWithAuth(`${API_BASE_URL}/api/areas/get-all`)
+            .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+            .then(data => setAreas(data))
+            .catch(() => setAreas([]));
+    }, []);
 
-    const data_row = [5,7,9,10];
+    // Fetch Business Units
+    useEffect(() => {
+        fetchWithAuth(`${API_BASE_URL}/api/businessUnits/get-all`)
+            .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+            .then(data => setUnits(data))
+            .catch(() => setUnits([]));
+    }, []);
 
-    const units = [
-        { code: 'HR', description: 'Talent Acquisition' },
-        { code: 'HR', description: 'Training & Development' },
-        { code: 'HR', description: 'Compensation & Benefits' },
-        { code: 'Admin', description: 'Facilities & Maintenance' },
-        { code: 'Admin', description: 'Procurement & Inventory' },
-        { code: 'Admin', description: 'Records & Documentation' },
-        { code: 'Accounting', description: 'Accounts Payable' },
-        { code: 'Accounting', description: 'Payroll & Employee Accounting' },
-        { code: 'Accounting', description: 'Budgeting & Cost Control' },
-    ];
+    // Load all employees from localStorage (master list, not filtered by business unit)
+    useEffect(() => {
+        setEmployees(localStorageUtil.getEmployees());
+    }, []);
 
-    const employees = [
-        { employeeNo: '001', employeeName: 'James' },
-        { employeeNo: '002', employeeName: 'Mike' },
-        { employeeNo: '003', employeeName: 'Jane' },
-        { employeeNo: '004', employeeName: 'David' },
-        { employeeNo: '005', employeeName: 'Casper' },
-        { employeeNo: '006', employeeName: 'Kevin' },
-        { employeeNo: '007', employeeName: 'Duncan' },
-        { employeeNo: '008', employeeName: 'Anderson' },
-        { employeeNo: '009', employeeName: 'Jina' },
-        { employeeNo: '0010', employeeName: 'Arc' },
-        { employeeNo: '0011', employeeName: 'Benjamine' },
-        { employeeNo: '0012', employeeName: 'Joseph' },
-        { employeeNo: '0013', employeeName: 'Maco' },
-        { employeeNo: '0014', employeeName: 'Biston' },
-        { employeeNo: '0015', employeeName: 'Asher' },
-        { employeeNo: '0016', employeeName: 'Dana' },
-        { employeeNo: '0017', employeeName: 'Joyce' },
-        { employeeNo: '0018', employeeName: 'Grace' },
-    ];
+    // Fetch Manage Personnel entries and enrich with employee info from localStorage
+    useEffect(() => {
+        const allEmployees = localStorageUtil.getEmployees();
+        fetchWithAuth(`${API_BASE_URL}/api/manage-personnel/get-all`)
+            .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+            .then((data: ManagePersonnelEntry[]) => {
+                const enriched = data.map(entry => {
+                    const emp = allEmployees.find(e => e.employeeId === entry.employeeId);
+                    return {
+                        ...entry,
+                        employeeNo: emp?.employeeNo ?? "",
+                        employeeName: emp?.fullName ?? "",
+                    };
+                });
+                setEntry(enriched);
+            })
+            .catch(() => setEntry([]));
+    }, [selectedUnit]);
 
-    const filteredUnits = units.filter((unit) => unit.code === selectedArea);
+    const filteredUnits = units.filter((unit) => {
+        const area = areas.find(a => a.areasId === unit.areasId);
+        return area && area.areasName === selectedArea;
+    });
 
-    const handleAdd = () => {
+    const handleAdd = async () => {
         if(hasSelectedEmployee) {
-            const selectedEmployees = employees
-                .filter((emp) => rowState[emp.employeeNo]?.selected)
+            const selectedUnitObj = filteredUnits.find(u => u.businessUnitsName === selectedUnit);
+
+            const selected = employees.filter((emp) => rowState[emp.employeeNo]?.selected);
+
+            // Validate: Main Base of Approval Level must be selected for all selected employees
+            const missingBase = selected.filter(emp => !base[emp.employeeNo]);
+            if (missingBase.length > 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Missing Main Base Approval Level",
+                    html: `Please select <b>Yes</b> or <b>No</b> for Main Base of Approval Level for:<br/><b>${missingBase.map(e => e.fullName).join(", ")}</b>`,
+                });
+                return;
+            }
+
+            // Check for duplicates already in the designated list
+            const duplicates = selected.filter(emp =>
+                entry.some(e => e.employeeId === emp.employeeId)
+            );
+
+            if (duplicates.length === selected.length) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Already Designated",
+                    text: `${duplicates.map(e => e.fullName).join(", ")} ${duplicates.length > 1 ? "are" : "is"} already in the designated list.`,
+                });
+                return;
+            }
+
+            if (duplicates.length > 0) {
+                const confirm = await Swal.fire({
+                    icon: "warning",
+                    title: "Some Already Designated",
+                    html: `The following ${duplicates.length > 1 ? "employees are" : "employee is"} already designated and will be skipped:<br/><b>${duplicates.map(e => e.fullName).join(", ")}</b>`,
+                    showCancelButton: true,
+                    confirmButtonText: "Continue with the rest",
+                    cancelButtonText: "Cancel",
+                });
+                if (!confirm.isConfirmed) return;
+            }
+
+            const newEmployees = selected
+                .filter(emp => !entry.some(e => e.employeeId === emp.employeeId))
                 .map((emp) => ({
+                employeeId: emp.employeeId,
                 employeeNo: emp.employeeNo,
-                employeeName: emp.employeeName,
+                employeeName: emp.fullName,
+                businessUnitId: selectedUnitObj?.businessUnitsId,
+                areaId: selectedUnitObj?.areasId,
                 head: rowState[emp.employeeNo]?.head ? 1 : 0,
                 coApprover: rowState[emp.employeeNo]?.coApprover ? 1 : 0,
                 otherStatus: otherStatus[emp.employeeNo] || "",
                 base: base[emp.employeeNo] || "",
             }));
 
-            setEntry((prev) => [...prev, ...selectedEmployees]);
-            setRowState({});
-            setOtherStatus({});
-            setBase({});
-     
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
+            try {
+                const res = await fetchWithAuth(`${API_BASE_URL}/api/manage-personnel/save`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(newEmployees),
+                });
 
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Added!"
-            });
+                if (!res.ok) throw new Error(await res.text());
+
+                const saved: ManagePersonnelEntry[] = await res.json();
+                const enriched = newEmployees.map((emp, i) => ({
+                    ...emp,
+                    id: saved[i]?.id,
+                }));
+
+                setEntry((prev) => [...prev, ...enriched]);
+                setRowState({});
+                setOtherStatus({});
+                setBase({});
+
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "bottom-end",
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    }
+                });
+
+                Toast.fire({
+                    icon: "success",
+                    title: "Successfully Added!"
+                });
+            } catch {
+                Swal.fire({
+                    icon: "error",
+                    title: "Failed to save",
+                    text: "An error occurred while saving. Please try again.",
+                });
+            }
         } else {
             Swal.fire({
                 icon: "error",
@@ -127,38 +218,67 @@ export default function ManagePersonnel() {
         }
     };
 
-    const handleDelete = (type: string) => {
+    const handleDelete = (id: number) => {
         Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
+            text: `Are you sure you want to delete this record?`,
             icon: "info",
             showCancelButton: true,
             confirmButtonText: "Delete",
             allowOutsideClick: true,
             backdrop: true,
-        }).then(result => {
+        }).then(async result => {
             if(result.isConfirmed) {
-                const res = entry.filter(s => s.employeeNo != type);
-                setEntry(res);
+                try {
+                    const res = await fetchWithAuth(
+                        `${API_BASE_URL}/api/manage-personnel/delete/${id}`,
+                        { method: "DELETE" }
+                    );
+
+                    if (!res.ok) throw new Error(await res.text());
+
+                    setEntry(prev => prev.filter(s => s.id !== id));
+
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: "bottom-end",
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                        didOpen: (toast) => {
+                            toast.onmouseenter = Swal.stopTimer;
+                            toast.onmouseleave = Swal.resumeTimer;
+                        }
+                    });
+
+                    Toast.fire({
+                        icon: "success",
+                        title: "Successfully Deleted!"
+                    });
+                } catch {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Failed to delete",
+                        text: "An error occurred while deleting. Please try again.",
+                    });
+                }
             }
         })
     };
 
-    const filteredEmployees = tempUnits.filter((emp) =>
-        emp.employeeName.toLowerCase().includes(search.toLowerCase())
-    );
+    // Always use the master employee list for Designate Personnel
+    const filteredEmployees = employees.filter((emp) => {
+        const q = search.toLowerCase();
+        return emp.fullName.toLowerCase().includes(q) || emp.employeeNo.toLowerCase().includes(q);
+    });
 
-    const pageSize = selectedRow ?? 5;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+    const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
 
-    const totalPages = Math.ceil(filteredEmployees.length / pageSize);
-
-    const paginatedEmployees = filteredEmployees.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
-    
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, selectedRow]);
+    }, [search, itemsPerPage]);
 
     const hasSelectedEmployee = filteredEmployees.some(
         (emp) => rowState[emp.employeeNo]?.selected
@@ -184,9 +304,9 @@ export default function ManagePersonnel() {
                             </option>
 
                             {areas.map((a) => (
-                            <option key={a.code} value={a.code}>
-                                {a.description}
-                            </option>
+                                <option key={a.areasId} value={a.areasName}>
+                                    {a.areasName}
+                                </option>
                             ))}
                         </select>
                         {selectedArea.trim() != "" && (
@@ -196,9 +316,9 @@ export default function ManagePersonnel() {
                                     <option value="" disabled>
                                         Select Unit
                                     </option>
-                                    {filteredUnits.map((unit, index) => (
-                                        <option key={index} value={unit.description}>
-                                            {unit.description}
+                                    {filteredUnits.map((unit) => (
+                                        <option key={unit.businessUnitsId} value={unit.businessUnitsName}>
+                                            {unit.businessUnitsName}
                                         </option>
                                     ))}
                                 </select>
@@ -247,7 +367,7 @@ export default function ManagePersonnel() {
                                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
                                                                          onClick={(e) => {
                                                                             e.preventDefault();
-                                                                            handleDelete(ent.employeeNo)}
+                                                                            handleDelete(ent.id!)}
                                                                         }
                                                                         title="Delete">
                                                                         <FaTrashAlt size={17}/>
@@ -271,11 +391,7 @@ export default function ManagePersonnel() {
                             <div>
                                 <div className={`${styles.designatedbtn} ${styles.designatebtn}`} onClick={() => {
                                     setFieldTwo(prev => !prev);
-                                    const temp = employees.map((emp) => ({
-                                        ...emp,
-                                    }));
-                                        setTempUnits(temp);
-                                    }}>
+                                }}>
                                     <span className={styles.icon}><FaUsers size={15}/></span>
                                     <span className="text">Designate Personnel</span>
                                 </div>
@@ -290,42 +406,44 @@ export default function ManagePersonnel() {
                                                     type="text"
                                                     value={search}
                                                     onChange={(e) => setSearch(e.target.value)}/>
-                                                    <span className={styles.iconSearch}><FaSearch /></span>
+                                                <span className={styles.iconSearch}><FaSearch /></span>
                                             </div>
-                                            <div>
+                                            <div className={styles.paginationControls}>
+                                                <label>Rows per page: </label>
                                                 <select
                                                     className={styles.row_select}
-                                                    id="businessUnit"
-                                                    value={selectedRow}
-                                                   onChange={(e) =>
-                                                        setSelectedRow(e.target.value ? Number(e.target.value) : undefined)
-                                                    }
-                                                    required>
-                                                    {/* <option value="">
-                                                    Rows
-                                                    </option> */}
-
-                                                    {data_row.map((a, aidx) => (
-                                                    <option key={`${a}-${aidx}`} value={a}>
-                                                        {a}
-                                                    </option>
+                                                    value={itemsPerPage}
+                                                    onChange={(e) => {
+                                                        setItemsPerPage(Number(e.target.value));
+                                                        setCurrentPage(1);
+                                                    }}>
+                                                    {pageSizeOptions.map((size) => (
+                                                        <option key={size} value={size}>{size}</option>
                                                     ))}
                                                 </select>
-                                                <button 
+                                                <span className={styles.recordInfo}>
+                                                    Showing {filteredEmployees.length === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, filteredEmployees.length)} of {filteredEmployees.length}
+                                                </span>
+                                                <button
                                                     className={styles.pageBtn}
                                                     disabled={currentPage === 1}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        setCurrentPage((p) => Math.max(p - 1, 1))
-                                                    }}>Prev.
+                                                    onClick={(e) => { e.preventDefault(); setCurrentPage(1); }}>First
                                                 </button>
-                                                <button 
+                                                <button
+                                                    className={styles.pageBtn}
+                                                    disabled={currentPage === 1}
+                                                    onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.max(p - 1, 1)); }}>Previous
+                                                </button>
+                                                <span className={styles.pageIndicator}>Page {currentPage} of {totalPages || 1}</span>
+                                                <button
                                                     className={styles.pageBtn}
                                                     disabled={currentPage === totalPages || totalPages === 0}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        setCurrentPage((p) => Math.min(p + 1, totalPages))
-                                                    }}>Next
+                                                    onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.min(p + 1, totalPages)); }}>Next
+                                                </button>
+                                                <button
+                                                    className={styles.pageBtn}
+                                                    disabled={currentPage === totalPages || totalPages === 0}
+                                                    onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages); }}>Last
                                                 </button>
                                             </div>
                                         </div>
@@ -344,7 +462,7 @@ export default function ManagePersonnel() {
                                                         <th>Main Base Approval level</th>
                                                     </tr>
                                                 </thead>
-                                                {tempUnits.length > 0 && (
+                                                {paginatedEmployees.length > 0 && (
                                                     <tbody> 
                                                      {paginatedEmployees.map((emp, indx) => (
                                                         <tr key={emp.employeeNo ?? `row-${indx}`}>
@@ -364,7 +482,7 @@ export default function ManagePersonnel() {
                                                                 />
                                                             </td>
                                                             <td>{emp.employeeNo}</td>
-                                                            <td>{emp.employeeName}</td>
+                                                            <td>{emp.fullName}</td>
                                                             <td>
                                                                 <input
                                                                     type="checkbox"

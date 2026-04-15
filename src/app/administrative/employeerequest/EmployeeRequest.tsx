@@ -1,60 +1,83 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/EmployeeRequest.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+
+const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
+type EmployeeRequestEntry = {
+    employeeRequestId?: number;
+    code: string;
+    name: string;
+    max: number;
+};
 
 export default function EmployeeRequest() {
-    type EmployeeRequestEntry = {
-        code: string;
-        description: string;
-        max: number;
-    };
-    
     const [code, setCode] = useState("");
-    const [description, setDescription] = useState("");
+    const [name, setName] = useState("");
     const [max, setMax] = useState<number>(0);
     const [isEditing, setIsEditing] = useState(false);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
+    const [editItem, setEditItem] = useState<EmployeeRequestEntry | null>(null);
     const [entry, setEntry] = useState<EmployeeRequestEntry[]>([]);
+
+    const toast = (icon: "success" | "error", title: string) =>
+        Swal.mixin({
+            toast: true,
+            position: "bottom-end",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+        }).fire({ icon, title });
+
+    const loadEmployeeRequests = useCallback(async () => {
+        try {
+            const response = await fetchWithAuth(
+                `${API_BASE_URL_ADMINISTRATIVE}/api/employeeRequest/get-all`
+            );
+
+            if (!response.ok) throw new Error();
+
+            const data: EmployeeRequestEntry[] = await response.json();
+            setEntry(data);
+        } catch {
+            toast("error", "Failed to load employee requests");
+        }
+    }, []);
+
+    useEffect(() => {
+        loadEmployeeRequests();
+    }, [loadEmployeeRequests]);
 
     const handleClear = () => {
         setCode("");
-        setDescription("");
+        setName("");
         setMax(0);
         setIsEditing(false);
+        setEditItem(null);
     };
 
-    const onSubmit = (e: React.FormEvent) => {
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newEntry: EmployeeRequestEntry = { code, description, max };
+        const payload = { code, name, max };
 
-        if(!isEditing) {
-            setEntry([...entry, newEntry]);
+        try {
+            if (!isEditing) {
+                const response = await fetchWithAuth(
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/employeeRequest/create`,
+                    { method: "POST", body: JSON.stringify(payload) }
+                );
 
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
+                if (!response.ok) throw new Error();
 
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Added!"
-            });
-
-            handleClear();
-        } else {
-            if(editIndex !== null) {
+                toast("success", "Successfully Added!");
+                handleClear();
+                loadEmployeeRequests();
+            } else {
                 Swal.fire({
                     text: `Are you sure you want to update this record?`,
                     icon: "info",
@@ -62,65 +85,57 @@ export default function EmployeeRequest() {
                     confirmButtonText: "Update",
                     allowOutsideClick: true,
                     backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateLeave = [...entry];
-                        updateLeave[editIndex] = newEntry;
-                        setEntry(updateLeave);
-                        setIsEditing(false);
-                        setEditIndex(null);
+                }).then(async (result) => {
+                    if (result.isConfirmed && editItem?.employeeRequestId) {
+                        const response = await fetchWithAuth(
+                            `${API_BASE_URL_ADMINISTRATIVE}/api/employeeRequest/update/${editItem.employeeRequestId}`,
+                            { method: "PUT", body: JSON.stringify(payload) }
+                        );
 
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
+                        if (!response.ok) throw new Error();
 
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-
+                        toast("success", "Successfully Updated!");
                         handleClear();
+                        loadEmployeeRequests();
                     }
-                })
+                });
             }
+        } catch {
+            toast("error", "Operation failed");
         }
     };
 
-    const handleDelete = (type: string) => {
-        if(code) {
-            setCode("");
-            setDescription("");
-            setMax(0);
-            setIsEditing(false);
-        }
-
-            Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
+    const handleDelete = (item: EmployeeRequestEntry) => {
+        Swal.fire({
+            text: `Are you sure you want to delete the "${item.name}" record?`,
             icon: "info",
             showCancelButton: true,
             confirmButtonText: "Delete",
             allowOutsideClick: true,
             backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                const res = entry.filter(s => s.code != type);
-                setEntry(res);
+        }).then(async (result) => {
+            if (result.isConfirmed && item.employeeRequestId) {
+                try {
+                    const response = await fetchWithAuth(
+                        `${API_BASE_URL_ADMINISTRATIVE}/api/employeeRequest/delete/${item.employeeRequestId}`,
+                        { method: "DELETE" }
+                    );
+
+                    if (!response.ok) throw new Error();
+
+                    toast("success", "Successfully Deleted!");
+                    loadEmployeeRequests();
+                } catch {
+                    toast("error", "Delete failed");
+                }
             }
-        })
+        });
     };
 
-    const handleEdit = (obj: EmployeeRequestEntry, index: number) => {
-        setEditIndex(index);
+    const handleEdit = (obj: EmployeeRequestEntry) => {
+        setEditItem(obj);
         setCode(obj.code);
-        setDescription(obj.description);
+        setName(obj.name);
         setMax(obj.max);
         setIsEditing(true);
     };
@@ -140,11 +155,11 @@ export default function EmployeeRequest() {
                             onChange={e => setCode(e.target.value)}
                             required={true}
                         />
-                        <label>Description</label>
+                        <label>Name</label>
                         <input
                             type="text"
-                            value={description}
-                            onChange={e => setDescription(e.target.value)}
+                            value={name}
+                            onChange={e => setName(e.target.value)}
                             required={true}
                         />
                         <label>Max. Count of Approval</label>
@@ -155,7 +170,6 @@ export default function EmployeeRequest() {
                                 const value = Number(e.target.value);
                                 if (!Number.isNaN(value)) setMax(value);
                             }}
-
                             required={true}
                         />
                         <div className={styles.buttonGroup}>
@@ -166,7 +180,7 @@ export default function EmployeeRequest() {
                                 type="button"
                                 className={styles.clearButton}
                                 onClick={handleClear}
-                                >
+                            >
                                 Clear
                             </button>
                         </div>
@@ -183,25 +197,25 @@ export default function EmployeeRequest() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {entry.map((ent, indx) => (
-                                        <tr key={ent.code ?? `row-${indx}`}>
+                                    {entry.map((ent) => (
+                                        <tr key={ent.employeeRequestId}>
                                             <td>{ent.code}</td>
-                                             <td>{ent.description}</td>
-                                             <td>{ent.max}</td>
-                                             <td>
+                                            <td>{ent.name}</td>
+                                            <td>{ent.max}</td>
+                                            <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
-                                                   onClick={() => handleEdit(ent, indx)}
+                                                    onClick={() => handleEdit(ent)}
                                                     title="Edit">
                                                     <FaRegEdit />
                                                 </button>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(ent.code)}
+                                                    onClick={() => handleDelete(ent)}
                                                     title="Delete">
                                                     <FaTrashAlt />
                                                 </button>
-                                             </td>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
