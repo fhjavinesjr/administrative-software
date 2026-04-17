@@ -109,10 +109,11 @@ export default function ManagePersonnel() {
         return area && area.areasName === selectedArea;
     });
 
+    const selectedUnitObj = filteredUnits.find(u => u.businessUnitsName === selectedUnit);
+    const entryForSelectedUnit = entry.filter(e => e.businessUnitId === selectedUnitObj?.businessUnitsId);
+
     const handleAdd = async () => {
         if(hasSelectedEmployee) {
-            const selectedUnitObj = filteredUnits.find(u => u.businessUnitsName === selectedUnit);
-
             const selected = employees.filter((emp) => rowState[emp.employeeNo]?.selected);
 
             // Validate: Main Base of Approval Level must be selected for all selected employees
@@ -126,9 +127,9 @@ export default function ManagePersonnel() {
                 return;
             }
 
-            // Check for duplicates already in the designated list
+            // Check for duplicates already in the designated list for this unit
             const duplicates = selected.filter(emp =>
-                entry.some(e => e.employeeId === emp.employeeId)
+                entryForSelectedUnit.some(e => e.employeeId === emp.employeeId)
             );
 
             if (duplicates.length === selected.length) {
@@ -153,7 +154,7 @@ export default function ManagePersonnel() {
             }
 
             const newEmployees = selected
-                .filter(emp => !entry.some(e => e.employeeId === emp.employeeId))
+                .filter(emp => !entryForSelectedUnit.some(e => e.employeeId === emp.employeeId))
                 .map((emp) => ({
                 employeeId: emp.employeeId,
                 employeeNo: emp.employeeNo,
@@ -331,12 +332,12 @@ export default function ManagePersonnel() {
                                     setFieldOne(prev => !prev);
                                  }}>
                                     <span className={styles.icon}><FaUsers size={15}/></span>
-                                    <span className="text">View {entry.length > 0 && ` (${entry.length})`} Designated Personnel</span>
+                                    <span className="text">View {entryForSelectedUnit.length > 0 && ` (${entryForSelectedUnit.length})`} Designated Personnel</span>
                                 </div>
                                 <div className={`${styles.containerUnit} ${
                                     fieldOne ? styles.open : styles.closed
                                 }`}>
-                                    {entry.length > 0 ? (
+                                    {entryForSelectedUnit.length > 0 ? (
                                         <div className={styles.designatedTable}>
                                             <div className={`${styles.BusinessUnitsTable} ${
                                                 fieldOne ? styles.open : styles.closed
@@ -354,7 +355,7 @@ export default function ManagePersonnel() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {entry.map((ent, indx) => (
+                                                        {entryForSelectedUnit.map((ent, indx) => (
                                                             <tr key={ent.employeeNo ?? `row-${indx}`}>
                                                                 <td>{ent.employeeNo}</td>
                                                                 <td>{ent.employeeName}</td>
@@ -447,9 +448,7 @@ export default function ManagePersonnel() {
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className={`${styles.BusinessUnitsTable} ${
-                                                fieldTwo ? styles.open : styles.closed
-                                            }`}>
+                                        <div className={styles.BusinessUnitsTable}>
                                             <table className={styles.table}>
                                                 <thead>
                                                     <tr>
@@ -552,18 +551,19 @@ export default function ManagePersonnel() {
                                                 
                                             </table>
                                         </div>
-                                        <div className={styles.buttonGroup}>
-                                            <button
-                                                type="button"
-                                            
-                                                className={styles.saveButton}
-                                                onClick={handleAdd}>
-                                                <FaPlus size={15}/>
-                                                <span className={styles.addBtn}>Add</span>
-                                            </button>
-                                        </div>
                                     </div>
                                 {/* )} */}
+                                {fieldTwo && (
+                                    <div className={styles.buttonGroup}>
+                                        <button
+                                            type="button"
+                                            className={styles.saveButton}
+                                            onClick={handleAdd}>
+                                            <FaPlus size={15}/>
+                                            <span className={styles.addBtn}>Add</span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </form>
