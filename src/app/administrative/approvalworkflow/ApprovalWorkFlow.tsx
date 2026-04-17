@@ -70,7 +70,6 @@ export default function ApprovalWorkFlow() {
     const [selectedRequestId, setSelectedRequestId] = useState<number | "">("");
     const [search, setSearch] = useState("");
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-    const [selectedPersonnel, setSelectedPersonnel] = useState<ManagePersonnelEntry | null>(null);
     const [fieldOne, setFieldOne] = useState(false);
 
     // Load master employee list from localStorage
@@ -202,7 +201,6 @@ export default function ApprovalWorkFlow() {
             ]);
             setSearch("");
             setSelectedEmployee(null);
-            setSelectedPersonnel(null);
 
             const Toast = Swal.mixin({
                 toast: true, position: "bottom-end",
@@ -272,7 +270,6 @@ export default function ApprovalWorkFlow() {
                                 setWorkflowEntries([]);
                                 setDesignatedPersonnel([]);
                                 setSearch("");
-                                setSelectedPersonnel(null);
                                 setFieldOne(false);
                             }}
                             required>
@@ -292,7 +289,6 @@ export default function ApprovalWorkFlow() {
                                         setSelectedRequestId("");
                                         setWorkflowEntries([]);
                                         setSearch("");
-                                        setSelectedPersonnel(null);
                                         setFieldOne(false);
                                     }}
                                     required>
@@ -314,7 +310,6 @@ export default function ApprovalWorkFlow() {
                                     onChange={(e) => {
                                         setSelectedRequestId(e.target.value ? Number(e.target.value) : "");
                                         setSearch("");
-                                        setSelectedPersonnel(null);
                                     }}
                                     required>
                                     <option value="" disabled>Select</option>
@@ -385,12 +380,6 @@ export default function ApprovalWorkFlow() {
                                                             e.target.value.toLowerCase()
                                                     );
                                                     setSelectedEmployee(match ?? null);
-                                                    if (match) {
-                                                        const personnel = designatedPersonnel.find(p => p.employeeId === match.employeeId);
-                                                        setSelectedPersonnel(personnel ?? null);
-                                                    } else {
-                                                        setSelectedPersonnel(null);
-                                                    }
                                                 }}
                                             />
                                             <datalist id="master-employees">
@@ -420,7 +409,7 @@ export default function ApprovalWorkFlow() {
                                                     <th>Employee Name</th>
                                                     <th>Status</th>
                                                     <th>Under</th>
-                                                    <th>Name of Filing</th>
+                                                    <th>Employee Request</th>
                                                     <th>Action</th>
                                                 </tr>
                                             </thead>
@@ -428,7 +417,7 @@ export default function ApprovalWorkFlow() {
                                                 <tbody>
                                                     {workflowEntries.map((ent, i) => {
                                                         const personnel = designatedPersonnel.find(p => p.employeeId === ent.employeeId);
-                                                        const status = ent.status ?? (personnel ? resolveStatus(personnel) : "");
+                                                        const status = ent.status ?? (personnel ? resolveStatus(personnel) : "Rank and File");
                                                         return (
                                                             <tr key={ent.approvalWorkflowId ?? i}>
                                                                 <td>{i + 1}</td>
