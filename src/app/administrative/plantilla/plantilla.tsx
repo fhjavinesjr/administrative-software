@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Plantilla.module.scss";
-import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import { FaRegEdit, FaTrashAlt, FaSearch } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
 
 const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
+const pageSizeOptions = [25, 50, 100, 300, 500, 750, 1000];
 
 export default function Plantilla() {
     type PlantillaAPI = {
@@ -44,6 +46,10 @@ export default function Plantilla() {
 
     const [selectedPlantillaId, setSelectedPlantillaId] = useState<number | null>(null);
     const [selectedJobPositionId, setSelectedJobPositionId] = useState<number | null>(null);
+
+    const [search, setSearch] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     useEffect(() => {
         const loadPlantilla = async () => {
@@ -298,6 +304,20 @@ export default function Plantilla() {
         setIsEditing(false);
     };
 
+    const filteredPlantilla = plantilla.filter((pl) => {
+        const q = search.toLowerCase();
+        return pl.itemNo.toLowerCase().includes(q) || pl.position.toLowerCase().includes(q);
+    });
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const totalPages = Math.ceil(filteredPlantilla.length / itemsPerPage);
+    const paginatedPlantilla = filteredPlantilla.slice(startIndex, endIndex);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, itemsPerPage]);
+
     return (
         <div className={modalStyles.Modal}>
             <div className={modalStyles.modalContent}>
@@ -371,6 +391,54 @@ export default function Plantilla() {
 
                     {plantilla.length > 0 && (
                         <div className={styles.PlantillaTable}>
+                            <div className={styles.search}>
+                                <div className={styles.inputWrapper}>
+                                    <input
+                                        placeholder="Search Plantilla"
+                                        type="text"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)} />
+                                    <span className={styles.iconSearch}><FaSearch /></span>
+                                </div>
+                                <div className={styles.paginationControls}>
+                                    <label>Rows per page: </label>
+                                    <select
+                                        className={styles.row_select}
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}>
+                                        {pageSizeOptions.map((size) => (
+                                            <option key={size} value={size}>{size}</option>
+                                        ))}
+                                    </select>
+                                    <span className={styles.recordInfo}>
+                                        Showing {filteredPlantilla.length === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, filteredPlantilla.length)} of {filteredPlantilla.length}
+                                    </span>
+                                    <button
+                                        className={styles.pageBtn}
+                                        disabled={currentPage === 1}
+                                        onClick={(e) => { e.preventDefault(); setCurrentPage(1); }}>First
+                                    </button>
+                                    <button
+                                        className={styles.pageBtn}
+                                        disabled={currentPage === 1}
+                                        onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.max(p - 1, 1)); }}>Previous
+                                    </button>
+                                    <span className={styles.pageIndicator}>Page {currentPage} of {totalPages || 1}</span>
+                                    <button
+                                        className={styles.pageBtn}
+                                        disabled={currentPage === totalPages || totalPages === 0}
+                                        onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.min(p + 1, totalPages)); }}>Next
+                                    </button>
+                                    <button
+                                        className={styles.pageBtn}
+                                        disabled={currentPage === totalPages || totalPages === 0}
+                                        onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages); }}>Last
+                                    </button>
+                                </div>
+                            </div>
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
@@ -382,7 +450,7 @@ export default function Plantilla() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {plantilla.map((pl, indx) => (
+                                    {paginatedPlantilla.map((pl, indx) => (
                                         <tr key={pl.plantillID ?? `row-${indx}`}>
                                         <td>{pl.itemNo}</td>
                                         <td>{pl.position}</td>

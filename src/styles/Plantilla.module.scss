@@ -217,4 +217,83 @@
   background: #c9302c;
 }
 
+.search {
+  margin: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.row_select {
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.recordInfo {
+  font-size: 13px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.pageBtn {
+  padding: 7px 11px;
+  background-color: #5a67ba;
+  border: 1px solid #5a67ba;
+  margin-left: 2px;
+  cursor: pointer;
+  border-radius: 3px;
+  color: white;
+  font-size: 13px;
+}
+
+.pageBtn:hover {
+  background-color: #4f5cad;
+}
+
+.pageBtn:disabled {
+  background-color: #adb5bd;
+  border-color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.pageIndicator {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.inputWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.inputWrapper input {
+  padding-right: 30px;
+  height: 35px;
+  width: 200px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.inputWrapper .iconSearch {
+  position: absolute;
+  right: 8px;
+  top: 45%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 16px;
+  color: #726d6d;
+}
+
 
