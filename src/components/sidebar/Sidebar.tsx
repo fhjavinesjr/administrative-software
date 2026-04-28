@@ -165,6 +165,12 @@ const payrollItems = [
     icon: "/salaryschedule.png",
     label: "Salary Schedule",
     goto: "/administrative/salaryschedule",
+  },
+  {
+    id: 8,
+    icon: "/salary.png",
+    label: "Salary Period Setting",
+    goto: "/administrative/salary",
   },{
     id: 2,
     icon: "/earningtable.png",
