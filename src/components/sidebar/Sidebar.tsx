@@ -43,67 +43,60 @@ const systemSetupItems = [
 const hrItems: MenuItemType[] = [
   {
     id: 1,
+    icon: "/daytable.png",
+    label: "Holiday Calendar",
+    goto: "/administrative/holiday",
+  },
+  {
+    id: 2,
     icon: "/jobposition.png",
     label: "Job Position",
     goto: "/administrative/job-position",
   },
   {
-    id: 2,
+    id: 3,
     icon: "/plantilla.png",
     label: "Plantilla",
     goto: "/administrative/plantilla",
   },
   {
-    id: 3,
+    id: 4,
     icon: "/appointment.png",
     label: "Nature Of Appointment",
     goto: "/administrative/natureofappointment",
   },
   {
-    id: 4,
+    id: 5,
     icon: "/separation.png",
     label: "Nature Of Separation",
     goto: "/administrative/natureofseparation",
   },
   {
-    id: 5,
+    id: 6,
     icon: "/engagement.png",
     label: "Official Engagement",
     goto: "/administrative/officialengagement",
   },
   {
-    id: 6,
+    id: 7,
     icon: "/leave.png",
     label: "Leave",
     goto: "/administrative/leavetypes",
   },
   {
-    id: 7,
+    id: 8,
     icon: "/genders.png",
     label: "Gender",
     goto: "/administrative/gender",
   },
   {
-    id: 8,
+    id: 9,
     icon: "/status.png",
     label: "Civil Status",
     goto: "/administrative/civilstatus",
   },
-   {
-    id: 9,
-    icon: "/Earnings.png",
-    label: "Earning Types",
-    goto: "/administrative/Earning-Types",
-  },
-
-   {
-    id: 10,
-    icon: "/Deductions.png",
-    label: "Deduction Types",
-    goto: "/administrative/Deduction-Types",
-  },
   {
-    id: 11,
+    id: 10,
     icon: "/work.png",
     label: "Workforce Structure Management",
     goto: "",
@@ -173,6 +166,12 @@ const payrollItems = [
     icon: "/salaryschedule.png",
     label: "Salary Schedule",
     goto: "/administrative/salaryschedule",
+  },
+  {
+    id: 8,
+    icon: "/salary.png",
+    label: "Salary Period Setting",
+    goto: "/administrative/salary",
   },{
     id: 2,
     icon: "/earningtable.png",
@@ -208,6 +207,18 @@ const payrollItems = [
     icon: "/tax.png",
     label: "With-Holding Tax Table",
     goto: "/administrative/tax",
+  },
+  {
+    id: 8,
+    icon: "/Earnings.png",
+    label: "Earning Types",
+    goto: "/administrative/Earning-Types",
+  },
+   {
+    id: 9,
+    icon: "/Deductions.png",
+    label: "Deduction Types",
+    goto: "/administrative/Deduction-Types",
   },
 ];
 

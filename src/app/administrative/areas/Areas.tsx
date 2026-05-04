@@ -1,210 +1,285 @@
-"use client"
+"use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Areas.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
+type AreasEntry = {
+  areasId?: number;
+  areasName: string;
+  areasDescription: string;
+};
 
 export default function Areas() {
-    type AreasEntry = {
-        code: string;
-        description: string;
-    };
-    
-    const [code, setCode] = useState("");
-    const [description, setDescription] = useState("");
-    const [isEditing, setIsEditing] = useState(false);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
-    const [entry, setEntry] = useState<AreasEntry[]>([]);
 
-    const handleClear = () => {
-        setCode("");
-        setDescription("");
-        setIsEditing(false);
-    };
+  const [areasName, setAreasName] = useState("");
+  const [areasDescription, setAreasDescription] = useState("");
 
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+  const [areas, setAreas] = useState<AreasEntry[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
 
-        const newEntry: AreasEntry = { code, description };
+  const handleClear = () => {
+    setAreasName("");
+    setAreasDescription("");
+    setIsEditing(false);
+    setEditId(null);
+  };
 
-        if(!isEditing) {
-            const codeExists = entry.some(
-                e => e.code.toLowerCase() === code.toLowerCase()
-            );
+  /*
+  -------------------------
+  GET ALL AREAS
+  -------------------------
+  */
 
-            if (codeExists) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Duplicate Code",
-                    text: "This code already exists.",
-                });
-                return;
-            }
-            setEntry([...entry, newEntry]);
+  const loadAreas = async () => {
+    try {
 
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/get-all`, {
+        method: "GET"
+      });
 
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Added!"
-            });
+      if (!res.ok) throw new Error("Failed loading areas");
 
-            handleClear();
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
-                    icon: "info",
-                    showCancelButton: true,
-                    confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateLeave = [...entry];
-                        updateLeave[editIndex] = newEntry;
-                        setEntry(updateLeave);
-                        setIsEditing(false);
-                        setEditIndex(null);
+      const data = await res.json();
+      setAreas(data);
 
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
+  useEffect(() => {
+    loadAreas();
+  }, []);
 
-                        handleClear();
-                    }
-                })
-            }
-        }
+  /*
+  -------------------------
+  CREATE / UPDATE
+  -------------------------
+  */
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const payload = {
+      areasName,
+      areasDescription
     };
 
-    const handleDelete = (type: string) => {
-        if(code) {
-            setCode("");
-            setDescription("");
-            setIsEditing(false);
-        }
+    try {
 
-            Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
-            icon: "info",
-            showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                const res = entry.filter(s => s.code != type);
-                setEntry(res);
-            }
-        })
-    };
+      if (!isEditing) {
 
-    const handleEdit = (obj: AreasEntry, index: number) => {
-        setEditIndex(index);
-        setCode(obj.code);
-        setDescription(obj.description);
-        setIsEditing(true);
-    };
+        const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/create`, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
 
-    return(
-        <div className={modalStyles.Modal}>
-             <div className={modalStyles.modalContent}>
-                <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Areas</h2>
-                </div>
-                <div className={modalStyles.modalBody}>
-                    <form className={styles.AreasForm} onSubmit={onSubmit}>
-                        <label>Code</label>
-                        <input
-                            type="text"
-                            value={code}
-                            onChange={e => setCode(e.target.value)}
-                            required={true}
-                        />
-                        <label>Description</label>
-                        <input
-                            type="text"
-                            value={description}
-                            onChange={e => setDescription(e.target.value)}
-                            required={true}
-                        />
-                        <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
-                                {isEditing ? "Update" : "Save"}
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.clearButton}
-                                onClick={handleClear}
-                                >
-                                Clear
-                            </button>
-                        </div>
-                    </form>
+        if (!res.ok) throw new Error("Create failed");
 
-                    {entry.length > 0 && (
-                        <div className={styles.AreasTable}>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Code</th>
-                                        <th>Description</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {entry.map((ent, indx) => (
-                                        <tr key={ent.code ?? `row-${indx}`}>
-                                            <td>{ent.code}</td>
-                                             <td>{ent.description}</td>
-                                             <td>
-                                                <button
-                                                    className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(ent, indx)}
-                                                    title="Edit">
-                                                    <FaRegEdit />
-                                                </button>
-                                                <button
-                                                    className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(ent.code)}
-                                                    title="Delete">
-                                                    <FaTrashAlt />
-                                                </button>
-                                             </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-             </div>
+        await loadAreas();
+
+        Swal.fire({
+          toast: true,
+          position: "bottom-end",
+          icon: "success",
+          title: "Area created",
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+      } else {
+
+        const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/update/${editId}`, {
+          method: "PUT",
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("Update failed");
+
+        await loadAreas();
+
+        Swal.fire({
+          toast: true,
+          position: "bottom-end",
+          icon: "success",
+          title: "Area updated",
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+
+      handleClear();
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /*
+  -------------------------
+  DELETE
+  -------------------------
+  */
+
+  const handleDelete = async (id: number) => {
+
+    const result = await Swal.fire({
+      text: "Are you sure you want to delete this record?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete"
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/delete/${id}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) throw new Error("Delete failed");
+
+      await loadAreas();
+
+      Swal.fire({
+        toast: true,
+        position: "bottom-end",
+        icon: "success",
+        title: "Deleted successfully",
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /*
+  -------------------------
+  EDIT
+  -------------------------
+  */
+
+  const handleEdit = (area: AreasEntry) => {
+    setIsEditing(true);
+    setEditId(area.areasId!);
+    setAreasName(area.areasName);
+    setAreasDescription(area.areasDescription);
+  };
+
+  return (
+    <div className={modalStyles.Modal}>
+      <div className={modalStyles.modalContent}>
+
+        <div className={modalStyles.modalHeader}>
+          <h2 className={modalStyles.mainTitle}>Areas</h2>
         </div>
-    );
+
+        <div className={modalStyles.modalBody}>
+
+          <form className={styles.AreasForm} onSubmit={onSubmit}>
+
+            <label>Area Name</label>
+            <input
+              type="text"
+              value={areasName}
+              onChange={(e) => setAreasName(e.target.value)}
+              required
+            />
+
+            <label>Description</label>
+            <input
+              type="text"
+              value={areasDescription}
+              onChange={(e) => setAreasDescription(e.target.value)}
+              required
+            />
+
+            <div className={styles.buttonGroup}>
+
+              <button
+                type="submit"
+                className={isEditing ? styles.updateButton : styles.saveButton}
+              >
+                {isEditing ? "Update" : "Save"}
+              </button>
+
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={handleClear}
+              >
+                Clear
+              </button>
+
+            </div>
+          </form>
+
+          {areas.length > 0 && (
+
+            <div className={styles.AreasTable}>
+
+              <table className={styles.table}>
+
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {areas.map((area) => (
+
+                    <tr key={area.areasId}>
+
+                      <td>{area.areasName}</td>
+                      <td>{area.areasDescription}</td>
+
+                      <td>
+
+                        <button
+                          className={`${styles.iconButton} ${styles.editIcon}`}
+                          onClick={() => handleEdit(area)}
+                        >
+                          <FaRegEdit />
+                        </button>
+
+                        <button
+                          className={`${styles.iconButton} ${styles.deleteIcon}`}
+                          onClick={() => handleDelete(area.areasId!)}
+                        >
+                          <FaTrashAlt />
+                        </button>
+
+                      </td>
+
+                    </tr>
+
+                  ))}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          )}
+
+        </div>
+
+      </div>
+    </div>
+  );
 }

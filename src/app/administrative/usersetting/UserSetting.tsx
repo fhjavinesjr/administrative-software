@@ -2,124 +2,104 @@
 
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import { AiFillEye , AiFillEyeInvisible  } from "react-icons/ai";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import styles from "@/styles/Usersetting.module.scss";
 import Swal from "sweetalert2";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+import { Employee } from "@/lib/types/Employee";
+
+const API_BASE_URL_HRM = process.env.NEXT_PUBLIC_API_BASE_URL_HRM;
 
 export default function UserSetting() {
-    type Users = {
-        id: number;
-        employeeNo: string;
-        fullName: string;
-        password: string;
-    };
-
-    const [userRole] = useState("1");
+    const [employees, setEmployees] = useState<Employee[]>([]);
     const [inputValue, setInputValue] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [hidePassword, setHidePassword] = useState(false);
-    const [isSearch, setIsSearch] = useState(true);
-    const [displayIcon, setDisplayIcon] = useState(false);
-    const [selectedEmployee, setSelectedEmployee] = useState<Users | null>(null);
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [showPasswordFields, setShowPasswordFields] = useState(false);
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const employees = [
-        { id: 1, employeeNo: "2500001", fullName: 'Marco Polo', password: '' },
-        { id: 2, employeeNo: "2500002", fullName: 'John Doe', password: '' },
-        { id: 3, employeeNo: "2500003", fullName: 'Jane Doe', password: '' },
-        { id: 4, employeeNo: "2500004", fullName: 'Marga Lister', password: '' },
-        { id: 5, employeeNo: "2500005", fullName: 'Saint Charlos', password: '' },
-        { id: 6, employeeNo: "2500006", fullName: 'Marcus Mars', password: '' },
-        { id: 7, employeeNo: "2500007", fullName: 'Linda dane', password: '' },
-    ];
+    useEffect(() => {
+        setEmployees(localStorageUtil.getEmployees());
+    }, []);
 
     const handleClear = () => {
         setInputValue("");
-        setPassword("");
-        setShowPassword(false);
-        setIsSearch(true);
-        setDisplayIcon(false);
-    }
-
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        if(selectedEmployee) {
-            if(isSearch) {
-                // const { password } = selectedEmployee;
-                // setPassword(password);
-                setShowPassword(true);
-            }
-
-            if(!isSearch) {
-                // const updated_emps = employees.map(e => e.id == selectedEmployee.id ? { ...e, password } : e);
-                if(password.length >= 8) {
-                    Swal.fire({
-                        text: "Are you sure you want to save this password?",
-                        icon: "info",
-                        showCancelButton: true,
-                        confirmButtonText: "Save",
-                        allowOutsideClick: true,
-                        backdrop: true,
-                    }).then((result) => {
-                        if(result.isConfirmed) {
-                            setInputValue("");
-                            setPassword("");
-                            setShowPassword(false);
-                            setIsSearch(true);
-                            setDisplayIcon(false);
-
-                            const Toast = Swal.mixin({
-                                toast: true,
-                                position: "bottom-end",
-                                showConfirmButton: false,
-                                timer: 2500,
-                                timerProgressBar: true,
-                                didOpen: (toast) => {
-                                    toast.onmouseenter = Swal.stopTimer;
-                                    toast.onmouseleave = Swal.resumeTimer;
-                                }
-                            });
-
-                            Toast.fire({
-                                icon: "success",
-                                title: "Successfully saved!"
-                            });
-                        }
-                    });
-                } else {
-                    Swal.fire({
-                        text: "Password must atleast 8 character or above!",
-                        icon: "warning",
-                        confirmButtonText: "OK"
-                    });
-                }
-                
-            }
-        }
+        setSelectedEmployee(null);
+        setShowPasswordFields(false);
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
     };
 
-    useEffect(() => {
-        setDisplayIcon(password.length > 0);
-        setIsSearch(password.length == 0);
-        // if(password) {
-        //     if(password != '') {
-        //         setIsSearch(false);
-        //         setDispalyIcon(true);
-        //     } else {
-        //         setIsSearch(true);
-        //     }
-        // } 
-    }, [password, selectedEmployee]);
+    const handleSetPassword = (e: React.FormEvent) => {
+        e.preventDefault();
 
-    useEffect(() => {
-        if(inputValue) {
-            if(selectedEmployee == null) {
-                setIsSearch(true);
-                setDisplayIcon(false);
-            }
+        if (!selectedEmployee) {
+            Swal.fire({ icon: "warning", text: "Please select an employee first.", confirmButtonText: "OK" });
+            return;
         }
-    }, [inputValue, selectedEmployee])
+
+        if (!showPasswordFields) {
+            setShowPasswordFields(true);
+            return;
+        }
+
+        // Save flow
+        if (newPassword.length < 8) {
+            Swal.fire({ icon: "warning", text: "Password must be at least 8 characters.", confirmButtonText: "OK" });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            Swal.fire({ icon: "warning", text: "Passwords do not match.", confirmButtonText: "OK" });
+            return;
+        }
+
+        Swal.fire({
+            text: `Change password for ${selectedEmployee.fullName}?`,
+            icon: "info",
+            showCancelButton: true,
+            confirmButtonText: "Save",
+            allowOutsideClick: true,
+        }).then(async (result) => {
+            if (!result.isConfirmed) return;
+
+            try {
+                const res = await fetchWithAuth(
+                    `${API_BASE_URL_HRM}/api/employee/admin/reset-password/${selectedEmployee.employeeId}`,
+                    {
+                        method: "PUT",
+                        body: JSON.stringify({ newPassword }),
+                    }
+                );
+
+                if (!res.ok) throw new Error(await res.text());
+
+                handleClear();
+
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "bottom-end",
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    },
+                });
+                Toast.fire({ icon: "success", title: "Password changed successfully!" });
+            } catch {
+                Swal.fire({ icon: "error", title: "Failed", text: "Could not change password. Please try again." });
+            }
+        });
+    };
+
+    const isReadyToSave = showPasswordFields && newPassword.length > 0 && confirmPassword.length > 0;
 
     return (
         <div className={modalStyles.Modal}>
@@ -128,61 +108,78 @@ export default function UserSetting() {
                     <h2 className={modalStyles.mainTitle}>User Setting</h2>
                 </div>
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.UserForm} onSubmit={onSubmit}>
+                    <form className={styles.UserForm} onSubmit={handleSetPassword}>
                         <div className={styles.formGroup}>
                             <label htmlFor="employee">Employee Name</label>
                             <input
                                 id="employee"
                                 type="text"
-                                list={userRole === "1" ? "employee-list" : undefined}
-                                placeholder="Employee No / Lastname"
-                                required={true}
-                                value={
-                                    userRole === "1"
-                                    ? inputValue // ✅ Admin can type freely
-                                    : selectedEmployee
-                                    ? `[${selectedEmployee.employeeNo}] ${selectedEmployee.fullName}`
-                                    : ""
-                                }
-                                readOnly={userRole !== "1"} // ✅ Non-admin can't edit
+                                list="employee-list"
+                                placeholder="Employee No / Name"
+                                required
+                                value={inputValue}
                                 onChange={(e) => {
-                                    if (userRole === "1") {
-                                    setInputValue(e.target.value); // ✅ Track admin typing
-                
-                                    const selected = employees.find(
+                                    setInputValue(e.target.value);
+                                    const match = employees.find(
                                         (emp) =>
-                                        `[${emp.employeeNo}] ${emp.fullName}`.toLowerCase() ===
-                                        e.target.value.toLowerCase()
+                                            `[${emp.employeeNo}] ${emp.fullName}`.toLowerCase() ===
+                                            e.target.value.toLowerCase()
                                     );
-                                    setSelectedEmployee(selected || null);
+                                    setSelectedEmployee(match ?? null);
+                                    if (!match) {
+                                        setShowPasswordFields(false);
+                                        setNewPassword("");
+                                        setConfirmPassword("");
                                     }
-                            }}/>
-                            {userRole === "1" && (
+                                }}
+                            />
                             <datalist id="employee-list">
                                 {employees.map((emp) => (
-                                <option
-                                    key={emp.employeeNo}
-                                    value={`[${emp.employeeNo}] ${emp.fullName}`}
-                                />
+                                    <option
+                                        key={emp.employeeNo}
+                                        value={`[${emp.employeeNo}] ${emp.fullName}`}
+                                    />
                                 ))}
                             </datalist>
-                            )}
-                            {showPassword && (
+
+                            {showPasswordFields && (
                                 <>
-                                    <label>Password</label>
+                                    <label>New Password</label>
                                     <div className={styles.passwordContainer}>
                                         <input
-                                            type={hidePassword ? "text" : "password"}
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            placeholder="Enter password"
+                                            type={showNewPassword ? "text" : "password"}
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="Enter new password (min. 8 characters)"
                                         />
-                                        { displayIcon && (
+                                        {newPassword.length > 0 && (
                                             <div
                                                 className={styles.showIcon}
-                                                onClick={() => setHidePassword(!hidePassword)}
+                                                onClick={() => setShowNewPassword((prev) => !prev)}
                                             >
-                                                {hidePassword ? (
+                                                {showNewPassword ? (
+                                                    <AiFillEyeInvisible size={23} />
+                                                ) : (
+                                                    <AiFillEye size={23} />
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <label>Confirm Password</label>
+                                    <div className={styles.passwordContainer}>
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            placeholder="Re-enter new password"
+                                        />
+                                        {confirmPassword.length > 0 && (
+                                            <div
+                                                className={styles.showIcon}
+                                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                            >
+                                                {showConfirmPassword ? (
                                                     <AiFillEyeInvisible size={23} />
                                                 ) : (
                                                     <AiFillEye size={23} />
@@ -192,17 +189,20 @@ export default function UserSetting() {
                                     </div>
                                 </>
                             )}
-                            
                         </div>
+
                         <div className={styles.buttonGroup}>
-                            <button type="submit" className={isSearch ? styles.searchButton : styles.saveButton} >
-                                {isSearch ? "Set Password" : "Save"}
+                            <button
+                                type="submit"
+                                className={isReadyToSave ? styles.saveButton : styles.searchButton}
+                            >
+                                {isReadyToSave ? "Save" : "Set Password"}
                             </button>
                             <button
                                 type="button"
                                 className={styles.clearButton}
                                 onClick={handleClear}
-                                >
+                            >
                                 Clear
                             </button>
                         </div>
@@ -210,5 +210,5 @@ export default function UserSetting() {
                 </div>
             </div>
         </div>
-    )
-};
+    );
+}

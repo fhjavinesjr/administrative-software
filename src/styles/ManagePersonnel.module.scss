@@ -116,12 +116,9 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
 
-  overflow: hidden;
-  transition: 
-    max-height 0.35s ease,
-    opacity 0.25s ease,
-    transform 0.25s ease;
-  transform-origin: top;
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-bottom: 12px;
 
   .table {
  
@@ -147,6 +144,9 @@
     thead {
       background-color: #f1f1f1;
       font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     tbody tr:nth-child(even) {
@@ -342,7 +342,7 @@
 
 
 .open {
-  max-height: 1000px;
+  max-height: 9999px;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
