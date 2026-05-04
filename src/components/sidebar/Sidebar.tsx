@@ -133,6 +133,7 @@ const hrItems: MenuItemType[] = [
       },
     ],
   },
+ 
 ];
 
 const userManagementItem = [
@@ -206,6 +207,18 @@ const payrollItems = [
     icon: "/tax.png",
     label: "With-Holding Tax Table",
     goto: "/administrative/tax",
+  },
+  {
+    id: 8,
+    icon: "/Earnings.png",
+    label: "Earning Types",
+    goto: "/administrative/Earning-Types",
+  },
+   {
+    id: 9,
+    icon: "/Deductions.png",
+    label: "Deduction Types",
+    goto: "/administrative/Deduction-Types",
   },
 ];
 
