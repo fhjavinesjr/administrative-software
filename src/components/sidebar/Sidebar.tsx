@@ -89,8 +89,21 @@ const hrItems: MenuItemType[] = [
     label: "Civil Status",
     goto: "/administrative/civilstatus",
   },
-  {
+   {
     id: 9,
+    icon: "/Earnings.png",
+    label: "Earning Types",
+    goto: "/administrative/Earning-Types",
+  },
+
+   {
+    id: 10,
+    icon: "/Deductions.png",
+    label: "Deduction Types",
+    goto: "/administrative/Deduction-Types",
+  },
+  {
+    id: 11,
     icon: "/work.png",
     label: "Workforce Structure Management",
     goto: "",
@@ -127,6 +140,7 @@ const hrItems: MenuItemType[] = [
       },
     ],
   },
+ 
 ];
 
 const userManagementItem = [
