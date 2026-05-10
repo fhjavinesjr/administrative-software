@@ -51,6 +51,15 @@ export default function PageAuthentication({ children }: PageAuthenticationProps
         return;
       }
 
+      // Role guard — non-admin users are not allowed in this portal
+      if (cookieLoggedIn && !AUTH_CONFIG.PUBLIC_PAGES.includes(pathname)) {
+        const role = localStorage.getItem("userRole");
+        if (role !== "1") {
+          logout();
+          return;
+        }
+      }
+
       // Inactivity timeout
       if (cookieLoggedIn && now - lastActivity > AUTH_CONFIG.INACTIVITY_LIMIT * 1000) {
         logout();

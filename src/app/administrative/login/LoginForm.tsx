@@ -67,6 +67,30 @@ export default function AdminLoginPage() {
         const employees: Employee[] = await empRes.json();
         const filtered = employees.filter((emp) => emp.employeeNo !== "admin");
         localStorageUtil.setEmployees(filtered);
+
+        // Identify current employee and enforce admin-only access
+        const currentEmp = employees.find((emp) => emp.employeeNo === employeeNo);
+        if (currentEmp) {
+          if (currentEmp.role !== "1") {
+            // Clear session — non-admin users are not allowed here
+            Object.values(AUTH_CONFIG.COOKIE).forEach((key) => {
+              document.cookie = `${key}=; Max-Age=0; path=/`;
+            });
+            localStorage.clear();
+            Swal.fire({
+              title: "Access Denied",
+              text: "This portal is for administrators only.",
+              icon: "error",
+              confirmButtonText: "OK",
+            });
+            return;
+          }
+          localStorageUtil.setEmployeeNo(currentEmp.employeeNo);
+          localStorageUtil.setEmployeeFullname(currentEmp.fullName);
+          localStorageUtil.setEmployeeRole(currentEmp.role);
+          localStorageUtil.setEmployeeId(Number(currentEmp.employeeId));
+          localStorageUtil.setBiometricNo(currentEmp.biometricNo);
+        }
       }
 
       // Success alert and redirect
@@ -79,7 +103,7 @@ export default function AdminLoginPage() {
         backdrop: true,
       }).then((result) => {
         if (result.isConfirmed) {
-          router.replace("/administrative/dashboard");
+          router.replace("/administrative/welcomepage");
         }
       });
     } catch (error) {
@@ -104,7 +128,7 @@ export default function AdminLoginPage() {
       <div className={styles.loginImageInput}>
         <div className={styles.loginImage}>
           <Image
-            src="/sti-icon.png"
+            src="/IT_logo.png"
             width={500}
             height={500}
             alt="Administrative Portal"
@@ -112,6 +136,10 @@ export default function AdminLoginPage() {
         </div>
         <div className={styles.borderLeft}></div>
         <div className={styles.inputs}>
+          <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid #e8e8e8" }}>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#1a3c6e", margin: 0, marginBottom: 4 }}>Bayanihan GovSuite</h1>
+            <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>Empowering Public Sector Workforce Management</p>
+          </div>
           <div className={styles.header}>
             <h2>Administrative Portal</h2>
           </div>

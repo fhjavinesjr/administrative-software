@@ -22,14 +22,7 @@ type MenuItemType = {
   children?: MenuChild[];
 }
 
-const menuItems = [
-  {
-    id: 1,
-    icon: "/dashboard.png",
-    label: "Dashboard",
-    goto: "/administrative/dashboard",
-  },
-];
+const menuItems: MenuItemType[] = [];
 
 const systemSetupItems = [
   {
@@ -43,60 +36,66 @@ const systemSetupItems = [
 const hrItems: MenuItemType[] = [
   {
     id: 1,
+    icon: "/announcement.svg",
+    label: "Announcement",
+    goto: "/administrative/announcement",
+  },
+  {
+    id: 2,
     icon: "/daytable.png",
     label: "Holiday Calendar",
     goto: "/administrative/holiday",
   },
   {
-    id: 2,
+    id: 3,
     icon: "/jobposition.png",
     label: "Job Position",
     goto: "/administrative/job-position",
   },
   {
-    id: 3,
+    id: 4,
     icon: "/plantilla.png",
     label: "Plantilla",
     goto: "/administrative/plantilla",
   },
   {
-    id: 4,
+    id: 5,
     icon: "/appointment.png",
     label: "Nature Of Appointment",
     goto: "/administrative/natureofappointment",
   },
   {
-    id: 5,
+    id: 6,
     icon: "/separation.png",
     label: "Nature Of Separation",
     goto: "/administrative/natureofseparation",
   },
   {
-    id: 6,
+    id: 7,
     icon: "/engagement.png",
     label: "Official Engagement",
     goto: "/administrative/officialengagement",
   },
   {
-    id: 7,
+    id: 8,
     icon: "/leave.png",
     label: "Leave",
     goto: "/administrative/leavetypes",
   },
   {
-    id: 8,
+    id: 9,
     icon: "/genders.png",
     label: "Gender",
     goto: "/administrative/gender",
   },
   {
-    id: 9,
+    id: 10,
     icon: "/status.png",
     label: "Civil Status",
     goto: "/administrative/civilstatus",
   },
   {
-    id: 10,
+    id: 11,
     icon: "/work.png",
     label: "Workforce Structure Management",
     goto: "",
@@ -255,9 +254,9 @@ export default function Sidebar() {
 
   // 👇 Auto-open HR section if current route matches
   useEffect(() => {
-    // if (hrItems.some((item) => pathname.startsWith(item.goto))) {
-    //   setHrOpen(true);
-    // }
+    if (hrItems.some((item) => item.goto && pathname.startsWith(item.goto))) {
+      setHrOpen(true);
+    }
     if (tkItems.some((item) => pathname.startsWith(item.goto))) {
       setTkOpen(true);
       console.log('test');

@@ -1,11 +1,11 @@
 import React from 'react'
 import Main from '@/app/administrative/main/Main';
-import Dashboard from './Dashboard';
+import WelcomeLandingPage from './WelcomePage';
 
-export default function DashboardPage() {
+export default function WelcomePage() {
     return (
         <Main>
-            <Dashboard />
+            <WelcomeLandingPage />
         </Main>
     );
 }
