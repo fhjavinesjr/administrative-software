@@ -54,6 +54,7 @@ type WorkflowEntry = {
     approvalLevel: number;
     // enriched
     employeeName?: string;
+    employeeNo?: string;
     status?: string;
 };
 
@@ -71,10 +72,27 @@ export default function ApprovalWorkFlow() {
     const [search, setSearch] = useState("");
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [fieldOne, setFieldOne] = useState(false);
+    const [empSearch, setEmpSearch] = useState("");
+    const [allWorkflows, setAllWorkflows] = useState<WorkflowEntry[]>([]);
 
     // Load master employee list from localStorage
     useEffect(() => {
         setEmployees(localStorageUtil.getEmployees());
+    }, []);
+
+    // Fetch all workflows once for the employee lookup feature
+    useEffect(() => {
+        const allEmployees = localStorageUtil.getEmployees();
+        fetchWithAuth(`${API_BASE_URL}/api/approval-workflow/get-all`)
+            .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+            .then((data: WorkflowEntry[]) => {
+                const enriched = data.map(entry => {
+                    const emp = allEmployees.find(e => e.employeeId === entry.employeeId);
+                    return { ...entry, employeeName: emp?.fullName ?? "", employeeNo: emp?.employeeNo ?? "" };
+                });
+                setAllWorkflows(enriched);
+            })
+            .catch(() => setAllWorkflows([]));
     }, []);
 
     // Fetch Areas
@@ -150,6 +168,13 @@ export default function ApprovalWorkFlow() {
     }, [selectedUnitId, selectedRequestId]);
 
     const filteredUnits = units.filter(u => u.areasId === selectedAreaId);
+
+    const empResults = empSearch.trim().length > 0
+        ? allWorkflows.filter(w => {
+            const q = empSearch.toLowerCase();
+            return (w.employeeName ?? "").toLowerCase().includes(q) || (w.employeeNo ?? "").toLowerCase().includes(q);
+        })
+        : [];
 
     const selectedUnit = units.find(u => u.businessUnitsId === selectedUnitId);
     const selectedRequest = employeeRequests.find(r => r.employeeRequestId === selectedRequestId);
@@ -260,6 +285,59 @@ export default function ApprovalWorkFlow() {
                 </div>
                 <div className={modalStyles.modalBody}>
                     <form className={styles.ApprovalWorkflowForm}>
+
+                        {/* Employee Approval Workflow Lookup */}
+                        <div className={styles.empLookupSection}>
+                            <label>Employee Approval Workflow Lookup</label>
+                            <div className={styles.inputWrapper}>
+                                <input
+                                    type="text"
+                                    placeholder="Search employee by name or ID..."
+                                    value={empSearch}
+                                    onChange={(e) => setEmpSearch(e.target.value)}
+                                />
+                                <span className={styles.iconSearch}><FaSearch /></span>
+                            </div>
+                            {empSearch.trim() !== "" && (
+                                empResults.length > 0 ? (
+                                    <div className={styles.empLookupResults}>
+                                        <p className={styles.empLookupCount}>
+                                            <strong>{empResults[0].employeeName}</strong> is assigned to <strong>{empResults.length}</strong> approval workflow{empResults.length !== 1 ? "s" : ""}.
+                                        </p>
+                                        <div className={styles.ApprovalWorkflowTable}>
+                                            <table className={styles.table}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Approval Level</th>
+                                                        <th>Business Unit</th>
+                                                        <th>Area</th>
+                                                        <th>Request Type</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {empResults.map((r, i) => {
+                                                        const buName = units.find(u => u.businessUnitsId === r.businessUnitId)?.businessUnitsName ?? "—";
+                                                        const areaName = areas.find(a => a.areasId === r.areaId)?.areasName ?? "—";
+                                                        const reqName = employeeRequests.find(req => req.employeeRequestId === r.employeeRequestId)?.name ?? "—";
+                                                        return (
+                                                            <tr key={r.approvalWorkflowId ?? i}>
+                                                                <td>{r.approvalLevel}</td>
+                                                                <td>{buName}</td>
+                                                                <td>{areaName}</td>
+                                                                <td>{reqName}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className={styles.noPersonnel}>No approval workflows found for &ldquo;{empSearch}&rdquo;.</p>
+                                )
+                            )}
+                        </div>
+
                         <label>Areas</label>
                         <select
                             value={selectedAreaId}

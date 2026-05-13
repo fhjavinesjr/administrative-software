@@ -19,8 +19,8 @@ type ManagePersonnelEntry = {
     employeeName: string;
     businessUnitId?: number;
     areaId?: number;
-    head: number;
-    coApprover: number;
+    head: boolean | number;
+    coApprover: boolean | number;
     otherStatus: string;
     status?: string;
     base?: string;
@@ -63,6 +63,7 @@ export default function ManagePersonnel() {
     const [fieldTwo, setFieldTwo] = useState(false);
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [empSearch, setEmpSearch] = useState("");
 
     // Fetch Areas
     useEffect(() => {
@@ -127,7 +128,24 @@ export default function ManagePersonnel() {
                 return;
             }
 
-            // Check for duplicates already in the designated list for this unit
+            // Validate: An employee can only have Base=Yes in one Business Unit globally
+            const alreadyBaseYes = selected.filter(emp =>
+                base[emp.employeeNo] === "Yes" &&
+                entry.some(e => e.employeeId === emp.employeeId && e.base === "Yes")
+            );
+            if (alreadyBaseYes.length > 0) {
+                const conflicts = alreadyBaseYes.map(emp => {
+                    const existing = entry.find(e => e.employeeId === emp.employeeId && e.base === "Yes");
+                    const buName = units.find(u => u.businessUnitsId === existing?.businessUnitId)?.businessUnitsName ?? "another unit";
+                    return `<b>${emp.fullName}</b> already has Base=Yes in <b>${buName}</b>`;
+                });
+                Swal.fire({
+                    icon: "error",
+                    title: "Duplicate Base Assignment",
+                    html: `An employee can only have <b>Base=Yes</b> in one Business Unit:<br/><br/>${conflicts.join("<br/>")}`,
+                });
+                return;
+            }
             const duplicates = selected.filter(emp =>
                 entryForSelectedUnit.some(e => e.employeeId === emp.employeeId)
             );
@@ -285,6 +303,13 @@ export default function ManagePersonnel() {
         (emp) => rowState[emp.employeeNo]?.selected
     );
 
+    const empResults = empSearch.trim().length > 0
+        ? entry.filter(e => {
+            const q = empSearch.toLowerCase();
+            return e.employeeName.toLowerCase().includes(q) || (e.employeeNo ?? "").toLowerCase().includes(q);
+        })
+        : [];
+
     return (
         <div className={modalStyles.Modal}>
             <div className={modalStyles.modalContent}>
@@ -293,6 +318,66 @@ export default function ManagePersonnel() {
                 </div>
                 <div className={modalStyles.modalBody}>
                     <form className={styles.BusinessUnitsForm}>
+
+                        {/* Employee Business Unit Lookup */}
+                        <div className={styles.empLookupSection}>
+                            <label>Employee Business Unit Lookup</label>
+                            <div className={styles.inputWrapper}>
+                                <input
+                                    type="text"
+                                    placeholder="Search employee by name or ID..."
+                                    value={empSearch}
+                                    onChange={(e) => setEmpSearch(e.target.value)}
+                                />
+                                <span className={styles.iconSearch}><FaSearch /></span>
+                            </div>
+                            {empSearch.trim() !== "" && (
+                                empResults.length > 0 ? (
+                                    <div className={styles.empLookupResults}>
+                                        <p className={styles.empLookupCount}>
+                                            <strong>{empResults[0].employeeName}</strong> is designated in <strong>{empResults.length}</strong> business unit{empResults.length !== 1 ? "s" : ""}.
+                                        </p>
+                                        <div className={styles.BusinessUnitsTable}>
+                                            <table className={styles.table}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Employee No.</th>
+                                                        <th>Employee Name</th>
+                                                        <th>Business Unit</th>
+                                                        <th>Area</th>
+                                                        <th>Head</th>
+                                                        <th>Co-Approver</th>
+                                                        <th>Other Status</th>
+                                                        <th>Main Base of Approval Level</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {empResults.map((r, i) => {
+                                                        const buName = units.find(u => u.businessUnitsId === r.businessUnitId)?.businessUnitsName ?? "—";
+                                                        const areaName = areas.find(a => a.areasId === r.areaId)?.areasName ?? "—";
+                                                        return (
+                                                            <tr key={r.id ?? i}>
+                                                                <td>{r.employeeNo}</td>
+                                                                <td>{r.employeeName}</td>
+                                                                <td>{buName}</td>
+                                                                <td>{areaName}</td>
+                                                                <td>{!!r.head ? "Yes" : "No"}</td>
+                                                                <td>{!!r.coApprover ? "Yes" : "No"}</td>
+                                                                <td>{r.otherStatus}</td>
+                                                                <td>{r.base}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className={styles.noPersonnel}>No designations found for &ldquo;{empSearch}&rdquo;.</p>
+                                )
+                            )}
+                        </div>
+
                         <label>Areas</label>
                         <select
                             className={styles.main_select}
@@ -359,8 +444,8 @@ export default function ManagePersonnel() {
                                                             <tr key={ent.employeeNo ?? `row-${indx}`}>
                                                                 <td>{ent.employeeNo}</td>
                                                                 <td>{ent.employeeName}</td>
-                                                                <td>{ent.head === 1 ? 'Yes' : 'No'}</td>
-                                                                <td>{ent.coApprover === 1 ? 'Yes' : 'No'}</td>
+                                                                <td>{!!ent.head ? 'Yes' : 'No'}</td>
+                                                                <td>{!!ent.coApprover ? 'Yes' : 'No'}</td>
                                                                 <td>{ent.otherStatus}</td>
                                                                 <td>{ent.base}</td>
                                                                 <td>

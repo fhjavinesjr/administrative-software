@@ -350,6 +350,32 @@
     margin-top: 30px;
 }
 
+.empLookupSection {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9ff;
+  border-radius: 8px;
+  border: 1px solid #dde2f5;
 
+  label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+    color: #5a67ba;
+    font-size: 0.95rem;
+  }
 
+  .inputWrapper input {
+    width: 300px;
+  }
+}
 
+.empLookupResults {
+  margin-top: 14px;
+}
+
+.empLookupCount {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: #444;
+}
