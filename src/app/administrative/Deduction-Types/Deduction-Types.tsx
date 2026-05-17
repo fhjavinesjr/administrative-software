@@ -1,160 +1,165 @@
-"use client";
+﻿"use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Swal from "sweetalert2";
 import styles from "@/styles/DeductionType.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
+import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+
+type DeductionTypeEntry = {
+    deductionTypeId?: number;
+    accountingCode: string;
+    name: string;
+    mandatoryDeduction: boolean;
+    gsis: boolean;
+    philHealth: boolean;
+    pagIbig: boolean;
+    withholdingTax: boolean;
+    union: boolean;
+    others: boolean;
+};
+
+const deductionFields: { key: keyof ReturnType<typeof defaultFlags>; label: string }[] = [
+    { key: "mandatoryDeduction", label: "Mandatory Deduction" },
+    { key: "gsis",               label: "GSIS" },
+    { key: "philHealth",         label: "PhilHealth" },
+    { key: "pagIbig",            label: "PagIbig" },
+    { key: "withholdingTax",     label: "Withholding Tax" },
+    { key: "union",              label: "Union" },
+    { key: "others",             label: "Others" },
+];
+
+const defaultFlags = (): Omit<DeductionTypeEntry, "deductionTypeId" | "accountingCode" | "name"> => ({
+    mandatoryDeduction: false,
+    gsis: false,
+    philHealth: false,
+    pagIbig: false,
+    withholdingTax: false,
+    union: false,
+    others: false,
+});
 
 export default function DeductionTypes() {
-    type DeductionTypesEntry = {
-        code: string;
-        name: string;
-        accountingCode:string;
-        sequence: number;
-    };
-
-    const [code, setCode] = useState("");
     const [accountingCode, setAccountingCode] = useState("");
     const [name, setName] = useState("");
-    const [sequence, setSequence] = useState(0);
-
+    const [flags, setFlags] = useState(defaultFlags());
     const [isEditing, setIsEditing] = useState(false);
-    const [arr, setArr] = useState<DeductionTypesEntry[]>([]);
-    const [editIndex, setEditIndex] = useState<number | null>(null)
+    const [editItem, setEditItem] = useState<DeductionTypeEntry | null>(null);
+    const [arr, setArr] = useState<DeductionTypeEntry[]>([]);
+
+    const toast = (icon: "success" | "error", title: string) =>
+        Swal.mixin({
+            toast: true,
+            position: "bottom-end",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+        }).fire({ icon, title });
+
+    const loadData = useCallback(async () => {
+        try {
+            const res = await fetchWithAuth(`${API_BASE_URL}/api/deductionType/get-all`);
+            if (!res.ok) throw new Error();
+            const data: DeductionTypeEntry[] = await res.json();
+            setArr(data);
+        } catch {
+            toast("error", "Failed to load deduction types");
+        }
+    }, []);
+
+    useEffect(() => { loadData(); }, [loadData]);
+
+    const handleCheckboxChange = (key: keyof typeof flags) => {
+        setFlags(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleClear = () => {
+        setAccountingCode("");
+        setName("");
+        setFlags(defaultFlags());
+        setIsEditing(false);
+        setEditItem(null);
+    };
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const payload: DeductionTypeEntry = { accountingCode, name, ...flags };
 
-        const newEntry: DeductionTypesEntry = { accountingCode, code, name, sequence };
-
-        if(!isEditing) {
-            setArr([...arr, newEntry]);
-
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
-
-            Toast.fire({
-                icon: "success",
-                title: "Successfully Added!"
-            });
-
-            setCode("");
-            setName("");
-            setSequence(0);
-            setAccountingCode("");
-        } else {
-            if(editIndex !== null) {
-                Swal.fire({
-                    text: `Are you sure you want to update this record?`,
+        try {
+            if (!isEditing) {
+                const res = await fetchWithAuth(`${API_BASE_URL}/api/deductionType/create`, {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) throw new Error();
+                toast("success", "Successfully Added!");
+            } else if (editItem?.deductionTypeId) {
+                const confirmed = await Swal.fire({
+                    text: "Are you sure you want to update this record?",
                     icon: "info",
                     showCancelButton: true,
                     confirmButtonText: "Update",
-                    allowOutsideClick: true,
-                    backdrop: true,
-                }).then(result => {
-                    if(result.isConfirmed) {
-                        const updateLeave = [...arr];
-                        updateLeave[editIndex] = newEntry;
-                        setArr(updateLeave);
-                        setIsEditing(false);
-                        setEditIndex(null);
+                });
+                if (!confirmed.isConfirmed) return;
 
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "bottom-end",
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Successfully Updated!"
-                        });
-
-                        setCode("");
-                        setName("");
-                        setSequence(0);
-                        setAccountingCode("");
-                    }
-                })
+                const res = await fetchWithAuth(`${API_BASE_URL}/api/deductionType/update/${editItem.deductionTypeId}`, {
+                    method: "PUT",
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) throw new Error();
+                toast("success", "Successfully Updated!");
             }
+            handleClear();
+            loadData();
+        } catch {
+            toast("error", "Operation failed");
         }
-    }
-
-    const handleClear = () => {
-        setCode("");
-        setName("");
-        setSequence(0);
-        setAccountingCode("");
-        setIsEditing(false);
     };
 
-    const handleDelete = (type: string) => {
-        if(code) {
-            setCode("");
-            setName("");
-            setSequence(0);
-            setIsEditing(false);
-        }
-
-        Swal.fire({
-            text: `Are you sure you want to delete the "${type}" record?`,
-            icon: "info",
-            showCancelButton: true,
-            confirmButtonText: "Delete",
-            allowOutsideClick: true,
-            backdrop: true,
-        }).then(result => {
-            if(result.isConfirmed) {
-                const res = arr.filter(s => s.name != type);
-                setArr(res);
-            }
-        })
-    }
-
-    const handleEdit = (obj: DeductionTypesEntry, index: number) => {
-        setEditIndex(index);
-        setCode(obj.code);
-        setName(obj.name);
-        setAccountingCode(obj.accountingCode);
-        setSequence(obj.sequence);
+    const handleEdit = (item: DeductionTypeEntry) => {
+        setEditItem(item);
+        setAccountingCode(item.accountingCode);
+        setName(item.name);
+        setFlags({
+            mandatoryDeduction: item.mandatoryDeduction,
+            gsis: item.gsis,
+            philHealth: item.philHealth,
+            pagIbig: item.pagIbig,
+            withholdingTax: item.withholdingTax,
+            union: item.union,
+            others: item.others,
+        });
         setIsEditing(true);
     };
 
-    useEffect(() => {
-        if (sequence < 0) {
-            Swal.fire({
-                icon: "warning",
-                title: "Invalid Sequence",
-                text: "Sequence number must be greater than 0.",
-                confirmButtonText: "OK"
-            });
-
-            setSequence(0);
-        }
-    }, [sequence]);
+    const handleDelete = (item: DeductionTypeEntry) => {
+        Swal.fire({
+            text: `Are you sure you want to delete "${item.name}"?`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+        }).then(async (result) => {
+            if (result.isConfirmed && item.deductionTypeId) {
+                try {
+                    const res = await fetchWithAuth(`${API_BASE_URL}/api/deductionType/delete/${item.deductionTypeId}`, { method: "DELETE" });
+                    if (!res.ok) throw new Error();
+                    toast("success", "Successfully Deleted!");
+                    loadData();
+                } catch {
+                    toast("error", "Delete failed");
+                }
+            }
+        });
+    };
 
     return (
         <div className={modalStyles.Modal}>
             <div className={modalStyles.modalContent}>
                 <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>HR Deduction Types</h2>
+                    <h2 className={modalStyles.mainTitle}>Deduction Types</h2>
                 </div>
                 <div className={modalStyles.modalBody}>
                     <form className={styles.DeductionTypeForm} onSubmit={onSubmit}>
@@ -165,13 +170,6 @@ export default function DeductionTypes() {
                             onChange={(e) => setAccountingCode(e.target.value)}
                             required
                         />
-                        <label>Code</label>
-                        <input
-                            type="text"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            required
-                        />
                         <label>Name</label>
                         <input
                             type="text"
@@ -179,33 +177,23 @@ export default function DeductionTypes() {
                             onChange={(e) => setName(e.target.value)}
                             required
                         />
-                        <label>Sequence No.</label>
-                        <input
-                            type="number"
-                            value={sequence}
-                            onChange={(e) => setSequence(Number(e.target.value))}
-                            required
-                        />
                         <h4 className={styles.settings}>DEDUCTION SETTINGS</h4>
-                        <small className={styles.note}>NOTE: No tick box selected below mean DEDCUTION TYPE is a BASIC DEDUCTION</small>
                         <div className={styles.rowContainer}>
                             <div className={styles.colContainer}>
-                                <div className={styles.rowItem}>Mandatory Deduction:</div>
-                                <div className={styles.rowItem}>GSIS:</div>
-                                <div className={styles.rowItem}>PhilHealth:</div>
-                                <div className={styles.rowItem}>PagIbig:</div>
-                                <div className={styles.rowItem}>Withholding Tax:</div>
-                                <div className={styles.rowItem}>Union:</div>
-                                <div className={styles.rowItem}>Others:</div>
+                                {deductionFields.map(({ label }) => (
+                                    <div key={label} className={styles.rowItem}>{label}:</div>
+                                ))}
                             </div>
                             <div className={styles.colContainer2}>
-                                <div className={styles.rowItem}><input type="checkbox" /></div>
-                                <div className={styles.rowItem}><input type="checkbox" /></div>
-                                <div className={styles.rowItem}><input type="checkbox" /></div>
-                                <div className={styles.rowItem}><input type="checkbox" /></div>
-                                <div className={styles.rowItem}><input type="checkbox" /></div>
-                                <div className={styles.rowItem}><input type="checkbox" /></div>
-                                <div className={styles.rowItem}><input type="checkbox" /></div>
+                                {deductionFields.map(({ key }) => (
+                                    <div key={key} className={styles.rowItem}>
+                                        <input
+                                            type="checkbox"
+                                            checked={flags[key] as boolean}
+                                            onChange={() => handleCheckboxChange(key)}
+                                        />
+                                    </div>
+                                ))}
                             </div>
                         </div>
                         <div className={styles.buttonGroup}>
@@ -220,7 +208,7 @@ export default function DeductionTypes() {
                                 onClick={handleClear}>
                                 Clear
                             </button>
-                            </div>
+                        </div>
                     </form>
 
                     {arr.length > 0 && (
@@ -229,33 +217,29 @@ export default function DeductionTypes() {
                                 <thead>
                                     <tr>
                                         <th>Accounting Code</th>
-                                        <th>Code</th>
-                                        <th>Earning Type</th>
-                                        <th>Sequence</th>
+                                        <th>Name</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {arr.map((m, indx) => (
-                                        <tr key={m.code ?? `row-${indx}`}>
+                                    {arr.map((m) => (
+                                        <tr key={m.deductionTypeId}>
                                             <td>{m.accountingCode}</td>
-                                            <td>{m.code}</td>
                                             <td>{m.name}</td>
-                                            <td>{m.sequence}</td>
-                                             <td>
+                                            <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
-                                                    onClick={() => handleEdit(m, indx)}
+                                                    onClick={() => handleEdit(m)}
                                                     title="Edit">
                                                     <FaRegEdit />
                                                 </button>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                    onClick={() => handleDelete(m.name)}
+                                                    onClick={() => handleDelete(m)}
                                                     title="Delete">
                                                     <FaTrashAlt />
                                                 </button>
-                                             </td>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -265,5 +249,5 @@ export default function DeductionTypes() {
                 </div>
             </div>
         </div>
-    )
+    );
 }
