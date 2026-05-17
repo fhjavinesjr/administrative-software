@@ -223,13 +223,13 @@ const payrollItems = [
 
 const otherItems = [
   {
-    id: 2,
+    id: 1,
     icon: "/help.png",
     label: "Help",
     goto: "/administrative",
   },
   {
-    id: 3,
+    id: 2,
     icon: "/logout.png",
     label: "Logout",
     action: "logout",
