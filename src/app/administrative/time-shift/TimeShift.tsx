@@ -1,11 +1,12 @@
 "use client";
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect, useRef } from "react";
 import styles from "@/styles/TimeShift.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 const API_BASE_URL_ADMINISTRATIVE =
-  process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+  runtimeConfig.getApiUrl("administrative");
 import to12HourFormat from "@/lib/utils/convert24To12HrFormat";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";

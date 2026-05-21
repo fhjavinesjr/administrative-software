@@ -1,5 +1,6 @@
 "use client"
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Salary.module.scss";
@@ -7,7 +8,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE ?? "";
+const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 const API_URL = `${API_BASE_URL}/api/salary-period-setting`;
 
 interface SalaryPeriodSettingDTO {

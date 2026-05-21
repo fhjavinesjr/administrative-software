@@ -1,5 +1,6 @@
 "use client";
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/JobPosition.module.scss";
@@ -8,7 +9,7 @@ import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import type { SalaryScheduleItem } from "@/lib/types/SalaryScheduleItem";
 import Swal from "sweetalert2";
 
-const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 export default function JobPosition() {
   type JobPositionItem = {

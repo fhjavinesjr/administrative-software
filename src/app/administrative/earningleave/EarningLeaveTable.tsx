@@ -1,5 +1,6 @@
 "use client";
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import styles from "@/styles/EarningLeaveTable.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -9,7 +10,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 
 const API_BASE_URL_ADMINISTRATIVE =
-  process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+  runtimeConfig.getApiUrl("administrative");
 
 type EarningLeaveItem = {
   earningLeaveId?: number;

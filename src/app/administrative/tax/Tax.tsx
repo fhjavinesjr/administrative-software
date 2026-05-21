@@ -1,5 +1,6 @@
 "use client"
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Tax.module.scss";
@@ -31,7 +32,7 @@ export default function Tax() {
     const loadTaxData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/get-all`);
+            const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/get-all`);
             if (!res.ok) throw new Error(await res.text());
             const data: WTAXContributionItem[] = await res.json();
 
@@ -66,7 +67,7 @@ export default function Tax() {
 
         try {
             if (!isEditing) {
-                const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/create`, {
+                const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/create`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
@@ -74,7 +75,7 @@ export default function Tax() {
                 if (!res.ok) throw new Error(await res.text());
                 Swal.fire({ icon: "success", title: "Saved!", timer: 1500, showConfirmButton: false });
             } else {
-                const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/update/${editId}`, {
+                const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/update/${editId}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
@@ -123,7 +124,7 @@ export default function Tax() {
         });
         if (!result.isConfirmed) return;
         try {
-            const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE}/api/wTAXContribution/delete/${id}`, { method: "DELETE" });
+            const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/delete/${id}`, { method: "DELETE" });
             if (!res.ok) throw new Error(await res.text());
             Swal.fire({ icon: "success", title: "Deleted!", timer: 1500, showConfirmButton: false });
             await loadTaxData();

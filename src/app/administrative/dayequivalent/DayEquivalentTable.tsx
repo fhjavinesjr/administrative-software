@@ -1,5 +1,6 @@
 "use client"
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import DayEquivalentTableStyle from "@/styles/DayEquivalentTable.module.scss";
@@ -8,7 +9,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 
-const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 type HourItem = {
     dayEquivalentHoursId?: number;

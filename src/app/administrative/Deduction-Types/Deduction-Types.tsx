@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect, useCallback } from "react";
 import Swal from "sweetalert2";
 import styles from "@/styles/DeductionType.module.scss";
@@ -7,13 +8,15 @@ import modalStyles from "@/styles/Modal.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 
 type DeductionTypeEntry = {
     deductionTypeId?: number;
     accountingCode: string;
     name: string;
     mandatoryDeduction: boolean;
+    agencyMandatory: boolean;
+    voluntaryContribution: boolean;
     gsis: boolean;
     philHealth: boolean;
     pagIbig: boolean;
@@ -23,17 +26,21 @@ type DeductionTypeEntry = {
 };
 
 const deductionFields: { key: keyof ReturnType<typeof defaultFlags>; label: string }[] = [
-    { key: "mandatoryDeduction", label: "Mandatory Deduction" },
-    { key: "gsis",               label: "GSIS" },
-    { key: "philHealth",         label: "PhilHealth" },
-    { key: "pagIbig",            label: "PagIbig" },
-    { key: "withholdingTax",     label: "Withholding Tax" },
-    { key: "union",              label: "Union" },
-    { key: "others",             label: "Others" },
+    { key: "mandatoryDeduction",   label: "Statutory Mandatory" },
+    { key: "agencyMandatory",      label: "Agency Mandatory" },
+    { key: "voluntaryContribution",label: "Voluntary Contribution" },
+    { key: "gsis",                 label: "GSIS" },
+    { key: "philHealth",           label: "PhilHealth" },
+    { key: "pagIbig",              label: "PagIbig" },
+    { key: "withholdingTax",       label: "Withholding Tax" },
+    { key: "union",                label: "Union" },
+    { key: "others",               label: "Others" },
 ];
 
 const defaultFlags = (): Omit<DeductionTypeEntry, "deductionTypeId" | "accountingCode" | "name"> => ({
     mandatoryDeduction: false,
+    agencyMandatory: false,
+    voluntaryContribution: false,
     gsis: false,
     philHealth: false,
     pagIbig: false,
@@ -42,6 +49,8 @@ const defaultFlags = (): Omit<DeductionTypeEntry, "deductionTypeId" | "accountin
     others: false,
 });
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
 export default function DeductionTypes() {
     const [accountingCode, setAccountingCode] = useState("");
     const [name, setName] = useState("");
@@ -49,6 +58,11 @@ export default function DeductionTypes() {
     const [isEditing, setIsEditing] = useState(false);
     const [editItem, setEditItem] = useState<DeductionTypeEntry | null>(null);
     const [arr, setArr] = useState<DeductionTypeEntry[]>([]);
+
+    // ── Pagination / search ───────────────────────────────────────────────
+    const [search, setSearch] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const toast = (icon: "success" | "error", title: string) =>
         Swal.mixin({
@@ -64,13 +78,24 @@ export default function DeductionTypes() {
             const res = await fetchWithAuth(`${API_BASE_URL}/api/deductionType/get-all`);
             if (!res.ok) throw new Error();
             const data: DeductionTypeEntry[] = await res.json();
-            setArr(data);
+            setArr([...data].sort((a, b) => a.name.localeCompare(b.name)));
         } catch {
             toast("error", "Failed to load deduction types");
         }
     }, []);
 
     useEffect(() => { loadData(); }, [loadData]);
+
+    // Reset to page 1 whenever search term or page size changes
+    useEffect(() => { setCurrentPage(1); }, [search, itemsPerPage]);
+
+    const filteredArr = arr.filter((item) => {
+        const q = search.toLowerCase();
+        return item.accountingCode.toLowerCase().includes(q) || item.name.toLowerCase().includes(q);
+    });
+    const totalPages = Math.ceil(filteredArr.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedArr = filteredArr.slice(startIndex, startIndex + itemsPerPage);
 
     const handleCheckboxChange = (key: keyof typeof flags) => {
         setFlags(prev => ({ ...prev, [key]: !prev[key] }));
@@ -124,13 +149,15 @@ export default function DeductionTypes() {
         setAccountingCode(item.accountingCode);
         setName(item.name);
         setFlags({
-            mandatoryDeduction: item.mandatoryDeduction,
-            gsis: item.gsis,
-            philHealth: item.philHealth,
-            pagIbig: item.pagIbig,
-            withholdingTax: item.withholdingTax,
-            union: item.union,
-            others: item.others,
+            mandatoryDeduction: item.mandatoryDeduction ?? false,
+            agencyMandatory: item.agencyMandatory ?? false,
+            voluntaryContribution: item.voluntaryContribution ?? false,
+            gsis: item.gsis ?? false,
+            philHealth: item.philHealth ?? false,
+            pagIbig: item.pagIbig ?? false,
+            withholdingTax: item.withholdingTax ?? false,
+            union: item.union ?? false,
+            others: item.others ?? false,
         });
         setIsEditing(true);
     };
@@ -213,6 +240,36 @@ export default function DeductionTypes() {
 
                     {arr.length > 0 && (
                         <div className={styles.DeductionTypeTable}>
+                            {/* Search + Pagination controls */}
+                            <div className={styles.searchBar}>
+                                <input
+                                    type="text"
+                                    placeholder="Search by code or name…"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                                <div className={styles.paginationControls}>
+                                    <label>Rows:</label>
+                                    <select
+                                        className={styles.rowSelect}
+                                        value={itemsPerPage}
+                                        onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                    >
+                                        {PAGE_SIZE_OPTIONS.map((s) => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                    <span className={styles.recordInfo}>
+                                        {filteredArr.length === 0 ? "0" : startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredArr.length)} of {filteredArr.length}
+                                    </span>
+                                    <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>First</button>
+                                    <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>Prev</button>
+                                    <span className={styles.pageIndicator}>Page {currentPage} of {totalPages || 1}</span>
+                                    <button className={styles.pageBtn} disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>Next</button>
+                                    <button className={styles.pageBtn} disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)}>Last</button>
+                                </div>
+                            </div>
+
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
@@ -222,8 +279,10 @@ export default function DeductionTypes() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {arr.map((m) => (
-                                        <tr key={m.deductionTypeId}>
+                                    {paginatedArr.length === 0 ? (
+                                        <tr><td colSpan={3} style={{ textAlign: "center", color: "#6b7280", padding: "1rem" }}>No records found.</td></tr>
+                                    ) : paginatedArr.map((m, idx) => (
+                                        <tr key={m.deductionTypeId ?? `row-${idx}`}>
                                             <td>{m.accountingCode}</td>
                                             <td>{m.name}</td>
                                             <td>

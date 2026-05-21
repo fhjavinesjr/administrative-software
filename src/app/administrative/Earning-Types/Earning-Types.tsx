@@ -1,5 +1,6 @@
 "use client";
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect, useCallback } from "react";
 import Swal from "sweetalert2";
 import styles from "@/styles/EarningType.module.scss";
@@ -7,7 +8,7 @@ import modalStyles from "@/styles/Modal.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 
 type EarningTypeEntry = {
     earningTypeId?: number;
@@ -60,6 +61,8 @@ const defaultFlags = (): Omit<EarningTypeEntry, "earningTypeId" | "accountingCod
     subsistence: false, specialPayroll: false,
 });
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
 export default function EarningTypes() {
     const [accountingCode, setAccountingCode] = useState("");
     const [name, setName] = useState("");
@@ -67,6 +70,11 @@ export default function EarningTypes() {
     const [isEditing, setIsEditing] = useState(false);
     const [editItem, setEditItem] = useState<EarningTypeEntry | null>(null);
     const [arr, setArr] = useState<EarningTypeEntry[]>([]);
+
+    // ── Pagination / search ───────────────────────────────────────────────
+    const [search, setSearch] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const toast = (icon: "success" | "error", title: string) =>
         Swal.mixin({
@@ -82,13 +90,24 @@ export default function EarningTypes() {
             const res = await fetchWithAuth(`${API_BASE_URL}/api/earningType/get-all`);
             if (!res.ok) throw new Error();
             const data: EarningTypeEntry[] = await res.json();
-            setArr(data);
+            setArr([...data].sort((a, b) => a.name.localeCompare(b.name)));
         } catch {
             toast("error", "Failed to load earning types");
         }
     }, []);
 
     useEffect(() => { loadData(); }, [loadData]);
+
+    // Reset to page 1 whenever search term or page size changes
+    useEffect(() => { setCurrentPage(1); }, [search, itemsPerPage]);
+
+    const filteredArr = arr.filter((item) => {
+        const q = search.toLowerCase();
+        return item.accountingCode.toLowerCase().includes(q) || item.name.toLowerCase().includes(q);
+    });
+    const totalPages = Math.ceil(filteredArr.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedArr = filteredArr.slice(startIndex, startIndex + itemsPerPage);
 
     const handleCheckboxChange = (key: keyof typeof flags) => {
         setFlags(prev => ({ ...prev, [key]: !prev[key] }));
@@ -227,6 +246,36 @@ export default function EarningTypes() {
 
                     {arr.length > 0 && (
                         <div className={styles.EarningTypeTable}>
+                            {/* Search + Pagination controls */}
+                            <div className={styles.searchBar}>
+                                <input
+                                    type="text"
+                                    placeholder="Search by code or name…"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                                <div className={styles.paginationControls}>
+                                    <label>Rows:</label>
+                                    <select
+                                        className={styles.rowSelect}
+                                        value={itemsPerPage}
+                                        onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                    >
+                                        {PAGE_SIZE_OPTIONS.map((s) => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                    <span className={styles.recordInfo}>
+                                        {filteredArr.length === 0 ? "0" : startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredArr.length)} of {filteredArr.length}
+                                    </span>
+                                    <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>First</button>
+                                    <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>Prev</button>
+                                    <span className={styles.pageIndicator}>Page {currentPage} of {totalPages || 1}</span>
+                                    <button className={styles.pageBtn} disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>Next</button>
+                                    <button className={styles.pageBtn} disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)}>Last</button>
+                                </div>
+                            </div>
+
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
@@ -236,7 +285,9 @@ export default function EarningTypes() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {arr.map((m) => (
+                                    {paginatedArr.length === 0 ? (
+                                        <tr><td colSpan={3} style={{ textAlign: "center", color: "#6b7280", padding: "1rem" }}>No records found.</td></tr>
+                                    ) : paginatedArr.map((m) => (
                                         <tr key={m.earningTypeId}>
                                             <td>{m.accountingCode}</td>
                                             <td>{m.name}</td>

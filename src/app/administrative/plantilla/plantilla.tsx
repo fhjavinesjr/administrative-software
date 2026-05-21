@@ -1,5 +1,6 @@
 "use client"
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/Plantilla.module.scss";
@@ -7,7 +8,7 @@ import { FaRegEdit, FaTrashAlt, FaSearch } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
 
-const API_BASE_URL_ADMINISTRATIVE = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 const pageSizeOptions = [25, 50, 100, 300, 500, 750, 1000];
 

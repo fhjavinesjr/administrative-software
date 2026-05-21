@@ -31,6 +31,12 @@ const systemSetupItems = [
     label: "Settings",
     goto: "/administrative/systemsetup",
   },
+  {
+    id: 2,
+    icon: "/gear.png",
+    label: "Technical Settings",
+    goto: "/administrative/system-config",
+  },
 ];
 
 const hrItems: MenuItemType[] = [
@@ -167,54 +173,54 @@ const payrollItems = [
     goto: "/administrative/salaryschedule",
   },
   {
-    id: 8,
+    id: 2,
     icon: "/salary.png",
     label: "Salary Period Setting",
     goto: "/administrative/salary",
   },{
-    id: 2,
+    id: 3,
     icon: "/earningtable.png",
     label: "Earning Leave Table",
     goto: "/administrative/earningleave",
   },
   {
-    id: 3,
+    id: 4,
     icon: "/daytable.png",
     label: "Day Equivalent Table",
     goto: "/administrative/dayequivalent",
   },
   {
-    id: 4,
+    id: 5,
     icon: "/hazard.png",
     label: "Hazard Pay Table",
     goto: "/administrative/hazard",
   },
   {
-    id: 5,
+    id: 6,
     icon: "/table.png",
     label: "GSIS Contribution Table",
     goto: "/administrative/gsis",
   },
   {
-    id: 6,
+    id: 7,
     icon: "/health.png",
     label: "PhilHealth Contribution Table",
     goto: "/administrative/philHealth",
   },
     {
-    id: 7,
+    id: 8,
     icon: "/tax.png",
     label: "With-Holding Tax Table",
     goto: "/administrative/tax",
   },
   {
-    id: 8,
+    id: 9,
     icon: "/Earnings.png",
     label: "Earning Types",
     goto: "/administrative/Earning-Types",
   },
    {
-    id: 9,
+    id: 10,
     icon: "/Deductions.png",
     label: "Deduction Types",
     goto: "/administrative/Deduction-Types",

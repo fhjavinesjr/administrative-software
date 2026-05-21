@@ -1,6 +1,7 @@
 "use client"
 
 
+import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/ManagePersonnel.module.scss";
@@ -10,7 +11,7 @@ import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 import { Employee } from "@/lib/types/Employee";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_ADMINISTRATIVE;
+const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 
 type ManagePersonnelEntry = {
     id?: number;
