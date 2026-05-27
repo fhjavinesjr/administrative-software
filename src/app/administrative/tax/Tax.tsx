@@ -12,12 +12,16 @@ export default function Tax() {
     type WTAXContributionItem = {
         wTaxContributionId: number;
         salaryType: string;
+        incomeFrom: string;
+        incomeTo: string;
         fixedAmount: string;
         percentageOverBase: string;
         taxAmount: string;
     };
 
     const [salaryType, setSalaryType] = useState("Monthly");
+    const [incomeFrom, setIncomeFrom] = useState("");
+    const [incomeTo, setIncomeTo] = useState("");
     const [fixed, setFixed] = useState("");
     const [percentage, setPercentage] = useState("");
     const [amount, setAmount] = useState("");
@@ -53,16 +57,18 @@ export default function Tax() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!fixed || !percentage || !amount) {
-            Swal.fire("Validation Error", "All fields are required.", "warning");
+        if (!fixed || !percentage || !incomeFrom) {
+            Swal.fire("Validation Error", "Fixed Amount, Percentage, and Income From are required.", "warning");
             return;
         }
 
         const payload = {
             salaryType,
+            incomeFrom,
+            incomeTo: incomeTo || null, // null = "and above" bracket
             fixedAmount: fixed,
             percentageOverBase: percentage,
-            taxAmount: amount,
+            taxAmount: amount || incomeTo, // Keep backward compatibility
         };
 
         try {
@@ -96,6 +102,8 @@ export default function Tax() {
 
     const handleClear = () => {
         setSalaryType("Monthly");
+        setIncomeFrom("");
+        setIncomeTo("");
         setFixed("");
         setPercentage("");
         setAmount("");
@@ -106,9 +114,11 @@ export default function Tax() {
     const handleEdit = (obj: WTAXContributionItem) => {
         setEditId(obj.wTaxContributionId);
         setSalaryType(obj.salaryType);
+        setIncomeFrom(obj.incomeFrom || "");
+        setIncomeTo(obj.incomeTo || "");
         setFixed(obj.fixedAmount);
         setPercentage(obj.percentageOverBase);
-        setAmount(obj.taxAmount);
+        setAmount(obj.taxAmount || obj.incomeTo || ""); // Backward compatibility
         setIsEditing(true);
     };
 
@@ -151,10 +161,28 @@ export default function Tax() {
                                 <option value="Weekly">Weekly</option>
                                 <option value="Daily">Daily</option>
                         </select>
-                        <label>Fixed Amount</label>
+                        <label>Income From (Minimum Taxable) *</label>
                         <input
                             className={styles.date}
                             type="text"
+                            placeholder="e.g., 0 or 10417"
+                            value={incomeFrom}
+                            onChange={e => setIncomeFrom(e.target.value)}
+                            required={true}
+                        />
+                        <label>Income To (Maximum - Leave blank for &quot;and above&quot;)</label>
+                        <input
+                            className={styles.date}
+                            type="text"
+                            placeholder="e.g., 10417 (leave blank for last bracket)"
+                            value={incomeTo}
+                            onChange={e => setIncomeTo(e.target.value)}
+                        />
+                        <label>Fixed Amount (Base Tax)</label>
+                        <input
+                            className={styles.date}
+                            type="text"
+                            placeholder="e.g., 0 or 1250"
                             value={fixed}
                             onChange={e => setFixed(e.target.value)}
                             required={true}
@@ -163,17 +191,18 @@ export default function Tax() {
                          <input
                             className={styles.date}
                             type="text"
+                            placeholder="e.g., 20 or 25"
                             value={percentage}
                             onChange={e => setPercentage(e.target.value)}
                             required={true}
                         />
-                        <label>Amount</label>
+                        <label>Amount (Legacy - optional)</label>
                          <input
                             className={styles.date}
                             type="text"
+                            placeholder="Optional - for backward compatibility"
                             value={amount}
                             onChange={e => setAmount(e.target.value)}
-                            required={true}
                         />
                         <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton} disabled={loading}>
@@ -207,9 +236,11 @@ export default function Tax() {
                                             <td>{monthly[0]?.salaryType}</td>
                                             {monthly.map((m, mindx) => (
                                             <td key={mindx}>
+                                                <p style={{ fontSize: '11px', color: '#666' }}>
+                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                </p>
                                                 <span>{m.fixedAmount}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
-                                                <p>{m.taxAmount}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
                                                          onClick={() => handleEdit(m)}
@@ -249,6 +280,9 @@ export default function Tax() {
                                             <td>{semiMonthly[0]?.salaryType}</td>
                                             {semiMonthly.map((m, mindx) => (
                                             <td key={mindx}>
+                                                <p style={{ fontSize: '11px', color: '#666' }}>
+                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                </p>
                                                 <span>{m.fixedAmount}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
                                                 <p>{m.taxAmount}</p>
@@ -291,9 +325,11 @@ export default function Tax() {
                                             <td>{weekly[0]?.salaryType}</td>
                                             {weekly.map((m, mindx) => (
                                             <td key={mindx}>
+                                                <p style={{ fontSize: '11px', color: '#666' }}>
+                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                </p>
                                                 <span>{m.fixedAmount}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
-                                                <p>{m.taxAmount}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
                                                          onClick={() => handleEdit(m)}
@@ -333,9 +369,11 @@ export default function Tax() {
                                             <td>{daily[0]?.salaryType}</td>
                                             {daily.map((m, mindx) => (
                                             <td key={mindx}>
+                                                <p style={{ fontSize: '11px', color: '#666' }}>
+                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                </p>
                                                 <span>{m.fixedAmount}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
-                                                <p>{m.taxAmount}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
                                                          onClick={() => handleEdit(m)}

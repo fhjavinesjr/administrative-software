@@ -30,6 +30,7 @@ export default function Hazard() {
   const [effectivityDate, setEffectivityDate] = useState<string>("");
   const [history, setHistory] = useState<HazardPayHistory[]>([]);
   const [deletedRows, setDeletedRows] = useState<HazardPayItem[]>([]);
+  const [autoComputeHazardPay, setAutoComputeHazardPay] = useState(false);
   const skipFetchRef = useRef(false);
 
   useEffect(() => {
@@ -61,6 +62,46 @@ export default function Hazard() {
       console.error(err);
     }
   }, []);
+
+  const fetchAutoComputeSetting = useCallback(async () => {
+    try {
+      const res = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/payrollSettings/get-all`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.length > 0) {
+        setAutoComputeHazardPay(data[0].autoComputeHazardPay ?? false);
+      }
+    } catch (err) {
+      console.error("Failed to load auto-compute setting:", err);
+    }
+  }, []);
+
+  const handleAutoComputeToggle = async (checked: boolean) => {
+    try {
+      setAutoComputeHazardPay(checked);
+      const res = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/payrollSettings/update-hazard-auto-compute`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ autoComputeHazardPay: checked }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to update setting");
+      Swal.fire({
+        icon: "success",
+        title: checked ? "Auto-compute enabled" : "Auto-compute disabled",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error(err);
+      setAutoComputeHazardPay(!checked); // revert on error
+      Swal.fire("Error", "Failed to update auto-compute setting", "error");
+    }
+  };
 
   const fetchHazardPay = useCallback(async (dateToFetch?: string) => {
     const dateValue = dateToFetch || effectivityDate;
@@ -105,7 +146,8 @@ export default function Hazard() {
     }
     fetchHazardPay();
     fetchHistory();
-  }, [fetchHazardPay, fetchHistory]);
+    fetchAutoComputeSetting();
+  }, [fetchHazardPay, fetchHistory, fetchAutoComputeSetting]);
 
   const addRow = () => {
     setRows(prev => [...prev, { salaryGrade: "", basicPayPercentage: "" }]);
@@ -289,6 +331,43 @@ export default function Hazard() {
         </div>
         <div className={modalStyles.modalBody}>
           <div className={styles.Hazard}>
+            {/* Auto-Compute Setting */}
+            <div style={{ 
+              padding: "15px", 
+              background: "#e3f2fd", 
+              borderLeft: "4px solid #2196f3",
+              marginBottom: "20px",
+              borderRadius: "4px"
+            }}>
+              <label style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "10px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500"
+              }}>
+                <input
+                  type="checkbox"
+                  checked={autoComputeHazardPay}
+                  onChange={(e) => handleAutoComputeToggle(e.target.checked)}
+                  style={{ 
+                    width: "18px", 
+                    height: "18px",
+                    cursor: "pointer"
+                  }}
+                />
+                <span>☑ Auto-Compute Hazard Pay in Payroll</span>
+              </label>
+              <p style={{ 
+                margin: "8px 0 0 28px", 
+                fontSize: "12px", 
+                color: "#666" 
+              }}>
+                When enabled, hazard pay will be automatically calculated during payroll processing using the percentage rates defined below.
+              </p>
+            </div>
+
             <div className={styles.HazardTable}>
               <div className={styles.toolbar}>
                 <button

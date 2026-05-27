@@ -22,13 +22,15 @@ interface SalaryPeriodSettingDTO {
     cutoffEndMonthOffset: number;
     salaryReleaseStartDay: number | null;
     salaryReleaseEndDay: number | null;
+    salaryReleaseMonthOffset: number | null;
     isActive: boolean;
 }
 
 const MONTH_OFFSET_LABELS: Record<number, string> = {
-    0: "Current Month",
-    [-1]: "Previous Month",
     [-2]: "2 Months Ago",
+    [-1]: "Previous Month",
+    0: "Current Month",
+    1: "Next Month",
 };
 
 function cutoffLabel(day: number, offset: number): string {
@@ -45,6 +47,7 @@ const EMPTY_FORM = {
     cutoffEndMonthOffset: 0,
     salaryReleaseStartDay: null as number | null,
     salaryReleaseEndDay: null as number | null,
+    salaryReleaseMonthOffset: 0,
 };
 
 const TOAST = Swal.mixin({
@@ -74,6 +77,7 @@ export default function Salary() {
     const [cutoffEndMonthOffset, setCutoffEndMonthOffset] = useState(EMPTY_FORM.cutoffEndMonthOffset);
     const [salaryReleaseStartDay, setSalaryReleaseStartDay] = useState<number | null>(null);
     const [salaryReleaseEndDay, setSalaryReleaseEndDay] = useState<number | null>(null);
+    const [salaryReleaseMonthOffset, setSalaryReleaseMonthOffset] = useState<number>(0);
 
     // ── Load all settings on mount ──────────────────────────────────────────────
     useEffect(() => {
@@ -108,6 +112,7 @@ export default function Salary() {
         setCutoffEndMonthOffset(EMPTY_FORM.cutoffEndMonthOffset);
         setSalaryReleaseStartDay(null);
         setSalaryReleaseEndDay(null);
+        setSalaryReleaseMonthOffset(0);
         setIsEditing(false);
         setEditId(null);
     };
@@ -122,6 +127,7 @@ export default function Salary() {
         cutoffEndMonthOffset,
         salaryReleaseStartDay: activeTab === "PAYROLL" ? salaryReleaseStartDay : null,
         salaryReleaseEndDay: activeTab === "PAYROLL" ? salaryReleaseEndDay : null,
+        salaryReleaseMonthOffset: activeTab === "PAYROLL" ? salaryReleaseMonthOffset : 0,
         isActive: true,
     });
 
@@ -211,6 +217,7 @@ export default function Salary() {
         setCutoffEndMonthOffset(entry.cutoffEndMonthOffset);
         setSalaryReleaseStartDay(entry.salaryReleaseStartDay);
         setSalaryReleaseEndDay(entry.salaryReleaseEndDay);
+        setSalaryReleaseMonthOffset(entry.salaryReleaseMonthOffset ?? 0);
         setIsEditing(true);
     };
 
@@ -316,22 +323,33 @@ export default function Salary() {
 
                         {activeTab === "PAYROLL" && (
                             <>
-                                <label className={styles.empLabel}>Salary Release Start Day</label>
-                                <select
-                                    className={styles.cutOffFrom}
-                                    value={salaryReleaseStartDay ?? ""}
-                                    onChange={(e) => setSalaryReleaseStartDay(e.target.value ? Number(e.target.value) : null)}>
-                                    <option value="">-- None --</option>
-                                    {days1to31.map((d) => <option key={d} value={d}>{d}</option>)}
-                                </select>
+                                <label className={styles.empLabel}>Salary Release Day(s)</label>
+                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                    <select
+                                        className={styles.cutOffFrom}
+                                        value={salaryReleaseStartDay ?? ""}
+                                        onChange={(e) => setSalaryReleaseStartDay(e.target.value ? Number(e.target.value) : null)}>
+                                        <option value="">-- Start --</option>
+                                        {days1to31.map((d) => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                    <span style={{ fontSize: "0.85rem", color: "#555" }}>to</span>
+                                    <select
+                                        className={styles.cutOffFrom}
+                                        value={salaryReleaseEndDay ?? ""}
+                                        onChange={(e) => setSalaryReleaseEndDay(e.target.value ? Number(e.target.value) : null)}>
+                                        <option value="">-- End --</option>
+                                        {days1to31.map((d) => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </div>
 
-                                <label className={styles.empLabel}>Salary Release End Day</label>
+                                <label className={styles.empLabel}>Release Month</label>
                                 <select
-                                    className={styles.cutOffFrom}
-                                    value={salaryReleaseEndDay ?? ""}
-                                    onChange={(e) => setSalaryReleaseEndDay(e.target.value ? Number(e.target.value) : null)}>
-                                    <option value="">-- None --</option>
-                                    {days1to31.map((d) => <option key={d} value={d}>{d}</option>)}
+                                    className={styles.cutOffFromMonth}
+                                    value={salaryReleaseMonthOffset}
+                                    onChange={(e) => setSalaryReleaseMonthOffset(Number(e.target.value))}>
+                                    <option value={-1}>Previous Month</option>
+                                    <option value={0}>Current Month</option>
+                                    <option value={1}>Next Month</option>
                                 </select>
                             </>
                         )}
@@ -362,8 +380,8 @@ export default function Salary() {
                                                 <th>Context</th>
                                                 <th>Cut-Off Start</th>
                                                 <th>Cut-Off End</th>
-                                                {activeTab === "PAYROLL" && <th>Release Start</th>}
-                                                {activeTab === "PAYROLL" && <th>Release End</th>}
+                                                {activeTab === "PAYROLL" && <th>Release Day(s)</th>}
+                                                {activeTab === "PAYROLL" && <th>Release Month</th>}
                                                 <th>Active</th>
                                                 <th>Actions</th>
                                             </tr>
@@ -376,8 +394,18 @@ export default function Salary() {
                                                     <td>{entry.periodContext}</td>
                                                     <td>{cutoffLabel(entry.cutoffStartDay, entry.cutoffStartMonthOffset)}</td>
                                                     <td>{cutoffLabel(entry.cutoffEndDay, entry.cutoffEndMonthOffset)}</td>
-                                                    {activeTab === "PAYROLL" && <td>{entry.salaryReleaseStartDay ?? "—"}</td>}
-                                                    {activeTab === "PAYROLL" && <td>{entry.salaryReleaseEndDay ?? "—"}</td>}
+                                                    {activeTab === "PAYROLL" && (
+                                                        <td>
+                                                            {entry.salaryReleaseStartDay != null
+                                                                ? entry.salaryReleaseStartDay === entry.salaryReleaseEndDay || entry.salaryReleaseEndDay == null
+                                                                    ? `Day ${entry.salaryReleaseStartDay}`
+                                                                    : `Day ${entry.salaryReleaseStartDay}–${entry.salaryReleaseEndDay}`
+                                                                : "—"}
+                                                        </td>
+                                                    )}
+                                                    {activeTab === "PAYROLL" && (
+                                                        <td>{MONTH_OFFSET_LABELS[entry.salaryReleaseMonthOffset ?? 0] ?? `Offset ${entry.salaryReleaseMonthOffset}`}</td>
+                                                    )}
                                                     <td>{entry.isActive ? "Yes" : "No"}</td>
                                                     <td>
                                                         <button

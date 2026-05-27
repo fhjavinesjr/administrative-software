@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
-import styles from "@/styles/PagIbig.module.scss";
+import styles from "@/styles/PayrollSettings.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
@@ -11,19 +11,19 @@ import Swal from "sweetalert2";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
-export default function Pagibig() {
-    type PagibigItem = {
-        pagIbigContributionId: number;
+export default function PayrollSettings() {
+    type PayrollSettingsItem = {
+        payrollSettingsId: number;
         effectivityDate: string;
-        employeeShare: number;
-        employerShare: number;
+        cutoffDays: number;
+        peraProrationDivisor: number;
     };
 
-    const [data, setData] = useState<PagibigItem[]>([]);
+    const [data, setData] = useState<PayrollSettingsItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [effectivityDate, setEffectivityDate] = useState("");
-    const [employeeShare, setEmployeeShare] = useState("");
-    const [employerShare, setEmployerShare] = useState("");
+    const [cutoffDays, setCutoffDays] = useState("");
+    const [peraProrationDivisor, setPeraProrationDivisor] = useState("");
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
 
@@ -35,13 +35,13 @@ export default function Pagibig() {
         setLoading(true);
         try {
             const res = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/pagibigContribution/get-all`
+                `${API_BASE_URL_ADMINISTRATIVE}/api/payrollSettings/get-all`
             );
             if (!res.ok) throw new Error(await res.text());
             setData(await res.json());
         } catch (err) {
-            console.error("Failed to load Pag-IBIG data:", err);
-            Swal.fire("Error", "Failed to load Pag-IBIG contribution data.", "error");
+            console.error("Failed to load Payroll Settings:", err);
+            Swal.fire("Error", "Failed to load payroll settings data.", "error");
         } finally {
             setLoading(false);
         }
@@ -49,25 +49,25 @@ export default function Pagibig() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!effectivityDate || !employeeShare || !employerShare) {
+        if (!effectivityDate || !cutoffDays || !peraProrationDivisor) {
             Swal.fire("Validation Error", "All fields are required.", "warning");
             return;
         }
 
         const payload = {
             effectivityDate: toCustomFormat(effectivityDate, false),
-            employeeShare: parseFloat(employeeShare),
-            employerShare: parseFloat(employerShare),
+            cutoffDays: parseInt(cutoffDays, 10),
+            peraProrationDivisor: parseInt(peraProrationDivisor, 10),
         };
 
         try {
             if (!isEditing) {
                 const res = await fetchWithAuth(
-                    `${API_BASE_URL_ADMINISTRATIVE}/api/pagibigContribution/create`,
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/payrollSettings/create`,
                     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
                 );
                 if (!res.ok) throw new Error(await res.text());
-                Swal.fire({ icon: "success", title: "Saved!", text: "Pag-IBIG contribution created.", timer: 1500, showConfirmButton: false });
+                Swal.fire({ icon: "success", title: "Saved!", text: "Payroll settings created.", timer: 1500, showConfirmButton: false });
             } else {
                 const confirm = await Swal.fire({
                     icon: "question",
@@ -78,11 +78,11 @@ export default function Pagibig() {
                 });
                 if (!confirm.isConfirmed) return;
                 const res = await fetchWithAuth(
-                    `${API_BASE_URL_ADMINISTRATIVE}/api/pagibigContribution/update/${editId}`,
+                    `${API_BASE_URL_ADMINISTRATIVE}/api/payrollSettings/update/${editId}`,
                     { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
                 );
                 if (!res.ok) throw new Error(await res.text());
-                Swal.fire({ icon: "success", title: "Updated!", text: "Pag-IBIG contribution updated.", timer: 1500, showConfirmButton: false });
+                Swal.fire({ icon: "success", title: "Updated!", text: "Payroll settings updated.", timer: 1500, showConfirmButton: false });
                 setIsEditing(false);
                 setEditId(null);
             }
@@ -94,11 +94,11 @@ export default function Pagibig() {
         }
     };
 
-    const handleEdit = (item: PagibigItem) => {
-        setEditId(item.pagIbigContributionId);
+    const handleEdit = (item: PayrollSettingsItem) => {
+        setEditId(item.payrollSettingsId);
         setEffectivityDate(toDateInputValue(item.effectivityDate));
-        setEmployeeShare(String(item.employeeShare));
-        setEmployerShare(String(item.employerShare));
+        setCutoffDays(String(item.cutoffDays));
+        setPeraProrationDivisor(String(item.peraProrationDivisor));
         setIsEditing(true);
     };
 
@@ -114,7 +114,7 @@ export default function Pagibig() {
         if (!result.isConfirmed) return;
         try {
             const res = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/pagibigContribution/delete/${id}`,
+                `${API_BASE_URL_ADMINISTRATIVE}/api/payrollSettings/delete/${id}`,
                 { method: "DELETE" }
             );
             if (!res.ok) throw new Error(await res.text());
@@ -128,8 +128,8 @@ export default function Pagibig() {
 
     const handleClear = () => {
         setEffectivityDate("");
-        setEmployeeShare("");
-        setEmployerShare("");
+        setCutoffDays("");
+        setPeraProrationDivisor("");
         setIsEditing(false);
         setEditId(null);
     };
@@ -138,10 +138,10 @@ export default function Pagibig() {
         <div className={modalStyles.Modal}>
             <div className={modalStyles.modalContent}>
                 <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Pag-IBIG (HDMF) Mandatory Contribution</h2>
+                    <h2 className={modalStyles.mainTitle}>Payroll Settings</h2>
                 </div>
                 <div className={modalStyles.modalBody}>
-                    <form className={styles.PagibigForm} onSubmit={onSubmit}>
+                    <form className={styles.PayrollSettingsForm} onSubmit={onSubmit}>
                         <label>Effectivity Date</label>
                         <input
                             type="date"
@@ -150,27 +150,33 @@ export default function Pagibig() {
                             required
                         />
 
-                        <label className={styles.empLabel}>Employee Share ({'₱'})</label>
+                        <label>Cutoff Days</label>
                         <input
                             type="number"
-                            step="0.01"
-                            min="0"
-                            value={employeeShare}
-                            onChange={e => setEmployeeShare(e.target.value)}
-                            placeholder="e.g. 100"
+                            min="1"
+                            max="31"
+                            value={cutoffDays}
+                            onChange={e => setCutoffDays(e.target.value)}
+                            placeholder="e.g. 22"
                             required
                         />
+                        <span className={styles.fieldNote}>
+                            Number of working days used as the salary period divisor (default: 22).
+                        </span>
 
-                        <label className={styles.empLabel}>Employer Share ({'₱'})</label>
+                        <label>PERA Proration Divisor</label>
                         <input
                             type="number"
-                            step="0.01"
-                            min="0"
-                            value={employerShare}
-                            onChange={e => setEmployerShare(e.target.value)}
-                            placeholder="e.g. 100"
+                            min="1"
+                            max="31"
+                            value={peraProrationDivisor}
+                            onChange={e => setPeraProrationDivisor(e.target.value)}
+                            placeholder="e.g. 22"
                             required
                         />
+                        <span className={styles.fieldNote}>
+                            Divisor used for PERA absent-day proration (default: 22).
+                        </span>
 
                         <div className={styles.buttonGroup}>
                             <button
@@ -192,47 +198,45 @@ export default function Pagibig() {
                     </form>
 
                     {data.length > 0 && (
-                        <div>
-                            <h4 className={styles.tableHeader}>PAG-IBIG MANDATORY CONTRIBUTION SCHEDULE</h4>
-                            <div className={styles.PagibigTable}>
-                                <table className={styles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th>Effectivity Date</th>
-                                            <th>Employee Share ({'₱'})</th>
-                                            <th>Employer Share ({'₱'})</th>
-                                            <th>Actions</th>
+                        <div className={styles.PayrollSettingsTable}>
+                            <p className={styles.tableHeader}>PAYROLL SETTINGS HISTORY</p>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>Effectivity Date</th>
+                                        <th>Cutoff Days</th>
+                                        <th>PERA Proration Divisor</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.map(item => (
+                                        <tr key={item.payrollSettingsId}>
+                                            <td>{item.effectivityDate}</td>
+                                            <td>{item.cutoffDays}</td>
+                                            <td>{item.peraProrationDivisor}</td>
+                                            <td>
+                                                <button
+                                                    className={`${styles.iconButton} ${styles.editIcon}`}
+                                                    onClick={() => handleEdit(item)}
+                                                    title="Edit"
+                                                    disabled={loading}
+                                                >
+                                                    <FaRegEdit />
+                                                </button>
+                                                <button
+                                                    className={`${styles.iconButton} ${styles.deleteIcon}`}
+                                                    onClick={() => handleDelete(item.payrollSettingsId)}
+                                                    title="Delete"
+                                                    disabled={loading}
+                                                >
+                                                    <FaTrashAlt />
+                                                </button>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.map(item => (
-                                            <tr key={item.pagIbigContributionId}>
-                                                <td>{item.effectivityDate}</td>
-                                                <td>{item.employeeShare.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
-                                                <td>{item.employerShare.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
-                                                <td>
-                                                    <button
-                                                        className={`${styles.iconButton} ${styles.editIcon}`}
-                                                        onClick={() => handleEdit(item)}
-                                                        title="Edit"
-                                                        disabled={loading}
-                                                    >
-                                                        <FaRegEdit />
-                                                    </button>
-                                                    <button
-                                                        className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(item.pagIbigContributionId)}
-                                                        title="Delete"
-                                                        disabled={loading}
-                                                    >
-                                                        <FaTrashAlt />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </div>

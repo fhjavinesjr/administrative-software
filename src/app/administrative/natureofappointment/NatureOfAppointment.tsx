@@ -15,11 +15,13 @@ export default function NatureOfAppointment() {
         natureOfAppointmentId: number;
         code: string;
         nature: string;
+        isContractual: boolean;
     };
 
     const [slct_app, setApp] = useState<NatureAPI[]>([]);
     const [code, setCode] = useState("");
     const [nature, setNature] = useState("");  // <-- updated
+    const [isContractual, setIsContractual] = useState(false);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
@@ -46,7 +48,7 @@ export default function NatureOfAppointment() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const payload = { code, nature };
+        const payload = { code, nature, isContractual };
 
         try {
             if (!isEditing) {
@@ -98,6 +100,7 @@ export default function NatureOfAppointment() {
             // Reset form
             setCode("");
             setNature("");
+            setIsContractual(false);
 
         } catch (err) {
             console.error("Save failed:", err);
@@ -110,6 +113,7 @@ export default function NatureOfAppointment() {
         setEditId(obj.natureOfAppointmentId);
         setCode(obj.code);
         setNature(obj.nature); // <-- updated
+        setIsContractual(obj.isContractual);
         setIsEditing(true);
     };
 
@@ -153,6 +157,7 @@ export default function NatureOfAppointment() {
     const handleClear = () => {
         setCode("");
         setNature("");
+        setIsContractual(false);
         setIsEditing(false);
         setEditId(null);
     };
@@ -184,6 +189,16 @@ export default function NatureOfAppointment() {
                             required
                         />
 
+                        <div className={styles.checkboxGroup}>
+                            <input
+                                type="checkbox"
+                                id="isContractual"
+                                checked={isContractual}
+                                onChange={e => setIsContractual(e.target.checked)}
+                            />
+                            <label htmlFor="isContractual">Contractual / Non-Career</label>
+                        </div>
+
                         <div className={styles.buttonGroup}>
                             <button
                                 type="submit"
@@ -209,6 +224,7 @@ export default function NatureOfAppointment() {
                                     <tr>
                                         <th>Code</th>
                                         <th>Nature</th>
+                                        <th>Contractual</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -217,6 +233,7 @@ export default function NatureOfAppointment() {
                                         <tr key={item.natureOfAppointmentId}>
                                             <td>{item.code}</td>
                                             <td>{item.nature}</td>
+                                            <td>{item.isContractual ? "Yes" : "No"}</td>
                                             <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}

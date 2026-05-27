@@ -225,6 +225,18 @@ const payrollItems = [
     label: "Deduction Types",
     goto: "/administrative/Deduction-Types",
   },
+  {
+    id: 11,
+    icon: "/pagibig.png",
+    label: "Pag-IBIG Contribution Table",
+    goto: "/administrative/pagibig",
+  },
+  {
+    id: 12,
+    icon: "/gear.png",
+    label: "Payroll Settings",
+    goto: "/administrative/payrollsettings",
+  },
 ];
 
 const otherItems = [
