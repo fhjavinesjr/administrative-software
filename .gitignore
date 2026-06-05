@@ -32,6 +32,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local env overrides — never commit these
+.env*.local
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
