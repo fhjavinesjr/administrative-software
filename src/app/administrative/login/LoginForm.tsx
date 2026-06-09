@@ -15,6 +15,9 @@ import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { Employee } from "@/lib/types/Employee";
 
+const API_BASE_URL = runtimeConfig.getApiUrl("hrm");
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
+
 export default function AdminLoginPage() {
   const router = useRouter();
 
@@ -23,11 +26,6 @@ export default function AdminLoginPage() {
 
     const form = event.target as HTMLFormElement;
     const formData = new FormData(form);
-
-    // Resolved here so Vercel NEXT_PUBLIC_ env vars, local .env, or
-    // localStorage systemConfig are all respected at call time.
-    const API_BASE_URL = runtimeConfig.getApiUrl("hrm");
-    const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
     try {
       const employeeNo = formData.get("employeeNo") as string;
@@ -148,17 +146,17 @@ export default function AdminLoginPage() {
             src="/IT_logo.png"
             width={500}
             height={500}
-            alt="Administrative Portal"
+            alt="Administrative"
           />
         </div>
         <div className={styles.borderLeft}></div>
         <div className={styles.inputs}>
           <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid #e8e8e8" }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#1a3c6e", margin: 0, marginBottom: 4 }}>Bayanihan GovSuite</h1>
-            <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>Empowering Public Sector Workforce Management</p>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#1a3c6e", margin: 0, marginBottom: 4 }}>ISOFT HRIS</h1>
+            <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>Empowering Public Service Through Digital Workforce Solutions</p>
           </div>
           <div className={styles.header}>
-            <h2>Administrative Portal</h2>
+            <h2>Administrative</h2>
           </div>
           <InputFieldSetup
             name="employeeNo"

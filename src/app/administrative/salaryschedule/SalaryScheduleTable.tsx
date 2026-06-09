@@ -197,11 +197,17 @@ export default function SalaryScheduleTable({
                   <td key={step} className={styles.salaryCell}>
                     {isEditing == null || isEditing ? (
                       <input
-                        type="number"
-                        value={salaryData[gradeIndex][stepIndex].monthly}
-                        onChange={(e) =>
-                          handleInputChange(gradeIndex, stepIndex, e.target.value)
+                        type="text"
+                        value={
+                          salaryData[gradeIndex][stepIndex].monthly
+                            ? Number(salaryData[gradeIndex][stepIndex].monthly).toLocaleString()
+                            : ""
                         }
+                        onChange={(e) => {
+                          // Strip commas and any non-digit characters before storing
+                          const raw = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                          handleInputChange(gradeIndex, stepIndex, raw);
+                        }}
                         className={styles.salaryInput}
                         placeholder="₱"
                       />

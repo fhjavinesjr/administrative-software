@@ -24,6 +24,7 @@ type Holiday = {
   withPay: boolean;
   isWorkingHoliday: boolean;
   isActive: boolean;
+  recurringAlways: boolean;
 };
 
 const HOLIDAY_TYPES = [
@@ -71,6 +72,7 @@ export default function HolidayModule() {
     withPay: true,
     isWorkingHoliday: false,
     isActive: true,
+    recurringAlways: false,
   });
 
   const toast = (icon: "success" | "error", title: string) =>
@@ -116,6 +118,7 @@ export default function HolidayModule() {
       withPay: true,
       isWorkingHoliday: false,
       isActive: true,
+      recurringAlways: false,
     });
     setIsEditing(false);
     setEditItem(null);
@@ -127,7 +130,10 @@ export default function HolidayModule() {
     setForm({
       ...item,
       holidayDate: toInputDate(item.holidayDate),
-      observedDate: toInputDate(item.observedDate),
+      observedDate: toInputDate(item.observedDate ?? ""),
+      localityCode: item.localityCode ?? "",
+      sourceReference: item.sourceReference ?? "",
+      recurringAlways: item.recurringAlways ?? false,
     });
   };
 
@@ -276,7 +282,7 @@ export default function HolidayModule() {
             <label>Locality Code (optional)</label>
             <input
               type="text"
-              value={form.localityCode}
+              value={form.localityCode ?? ""}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, localityCode: e.target.value }))
               }
@@ -285,7 +291,7 @@ export default function HolidayModule() {
             <label>Source Reference (CSC/Proclamation)</label>
             <input
               type="text"
-              value={form.sourceReference}
+              value={form.sourceReference ?? ""}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, sourceReference: e.target.value }))
               }
@@ -310,6 +316,15 @@ export default function HolidayModule() {
                   }
                 />
                 Working Holiday
+              </label>
+
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.recurringAlways}
+                  onChange={(e) => setForm((prev) => ({ ...prev, recurringAlways: e.target.checked }))}
+                />
+                Recurring Annually
               </label>
 
               <label>
@@ -352,6 +367,7 @@ export default function HolidayModule() {
                     <th>Scope</th>
                     <th>With Pay</th>
                     <th>Working</th>
+                    <th>Recurring</th>
                     <th>Active</th>
                     <th>Actions</th>
                   </tr>
@@ -367,6 +383,7 @@ export default function HolidayModule() {
                       <td>{item.holidayScope}</td>
                       <td>{item.withPay ? "Yes" : "No"}</td>
                       <td>{item.isWorkingHoliday ? "Yes" : "No"}</td>
+                      <td>{item.recurringAlways ? "✔ Yes" : "No"}</td>
                       <td>{item.isActive ? "Yes" : "No"}</td>
                       <td>
                         <button

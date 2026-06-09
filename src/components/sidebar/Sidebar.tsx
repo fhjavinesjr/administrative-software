@@ -148,6 +148,12 @@ const userManagementItem = [
     label: "User Setting",
     goto: "/administrative/usersetting",
   },
+  {
+    id: 2,
+    icon: "/gear.png",
+    label: "Permission",
+    goto: "/administrative/permission",
+  },
 ];
 
 const tkItems = [
@@ -157,12 +163,12 @@ const tkItems = [
     label: "Time Shift",
     goto: "/administrative/time-shift",
   },
-  {
-    id: 2,
-    icon: "/premiumpay-multiplier.png",
-    label: "Premium Pay/Multiplier",
-    goto: "/administrative/premiumpaymultiplier",
-  },
+  // {
+  //   id: 2,
+  //   icon: "/premiumpay-multiplier.png",
+  //   label: "Premium Pay/Multiplier",
+  //   goto: "/administrative/premiumpaymultiplier",
+  // },
 ];
 
 const payrollItems = [

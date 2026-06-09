@@ -33,6 +33,26 @@ export default function Tax() {
     const [editId, setEditId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
 
+    // Formats a raw number string for display (e.g. "8541.80" → "8,541.80", "66667" → "66,667")
+    const formatDisplay = (val: string): string => {
+        if (!val) return "";
+        const num = parseFloat(val);
+        if (isNaN(num)) return val;
+        const hasDec = val.includes(".");
+        return num.toLocaleString(undefined, {
+            minimumFractionDigits: hasDec ? 2 : 0,
+            maximumFractionDigits: 2,
+        });
+    };
+
+    // Strips commas and keeps only digits (+ optional decimal point for decimal fields)
+    const parseRawNum = (val: string, allowDecimal = false): string => {
+        const stripped = val.replace(/,/g, "");
+        return allowDecimal
+            ? stripped.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
+            : stripped.replace(/[^0-9]/g, "");
+    };
+
     const loadTaxData = useCallback(async () => {
         setLoading(true);
         try {
@@ -166,8 +186,8 @@ export default function Tax() {
                             className={styles.date}
                             type="text"
                             placeholder="e.g., 0 or 10417"
-                            value={incomeFrom}
-                            onChange={e => setIncomeFrom(e.target.value)}
+                            value={formatDisplay(incomeFrom)}
+                            onChange={e => setIncomeFrom(parseRawNum(e.target.value))}
                             required={true}
                         />
                         <label>Income To (Maximum - Leave blank for &quot;and above&quot;)</label>
@@ -175,16 +195,16 @@ export default function Tax() {
                             className={styles.date}
                             type="text"
                             placeholder="e.g., 10417 (leave blank for last bracket)"
-                            value={incomeTo}
-                            onChange={e => setIncomeTo(e.target.value)}
+                            value={formatDisplay(incomeTo)}
+                            onChange={e => setIncomeTo(parseRawNum(e.target.value))}
                         />
                         <label>Fixed Amount (Base Tax)</label>
                         <input
                             className={styles.date}
                             type="text"
                             placeholder="e.g., 0 or 1250"
-                            value={fixed}
-                            onChange={e => setFixed(e.target.value)}
+                            value={formatDisplay(fixed)}
+                            onChange={e => setFixed(parseRawNum(e.target.value, true))}
                             required={true}
                         />
                         <label>Percentage Over Base</label>
@@ -201,8 +221,8 @@ export default function Tax() {
                             className={styles.date}
                             type="text"
                             placeholder="Optional - for backward compatibility"
-                            value={amount}
-                            onChange={e => setAmount(e.target.value)}
+                            value={formatDisplay(amount)}
+                            onChange={e => setAmount(parseRawNum(e.target.value))}
                         />
                         <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton} disabled={loading}>
@@ -237,9 +257,9 @@ export default function Tax() {
                                             {monthly.map((m, mindx) => (
                                             <td key={mindx}>
                                                 <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
                                                 </p>
-                                                <span>{m.fixedAmount}</span>
+                                                <span>{formatDisplay(m.fixedAmount)}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
@@ -281,11 +301,11 @@ export default function Tax() {
                                             {semiMonthly.map((m, mindx) => (
                                             <td key={mindx}>
                                                 <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
                                                 </p>
-                                                <span>{m.fixedAmount}</span>
+                                                <span>{formatDisplay(m.fixedAmount)}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
-                                                <p>{m.taxAmount}</p>
+                                                <p>{formatDisplay(m.taxAmount)}</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
                                                          onClick={() => handleEdit(m)}
@@ -326,9 +346,9 @@ export default function Tax() {
                                             {weekly.map((m, mindx) => (
                                             <td key={mindx}>
                                                 <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
                                                 </p>
-                                                <span>{m.fixedAmount}</span>
+                                                <span>{formatDisplay(m.fixedAmount)}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
@@ -370,9 +390,9 @@ export default function Tax() {
                                             {daily.map((m, mindx) => (
                                             <td key={mindx}>
                                                 <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {m.incomeFrom || '0'} - {m.incomeTo || '∞'}
+                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
                                                 </p>
-                                                <span>{m.fixedAmount}</span>
+                                                <span>{formatDisplay(m.fixedAmount)}</span>
                                                 <p>+ {m.percentageOverBase} Over</p>
                                                 <button
                                                         className={`${styles.iconButton} ${styles.editIcon}`}

@@ -163,7 +163,7 @@ export default function EmployeeRequest() {
                             onChange={e => setName(e.target.value)}
                             required={true}
                         />
-                        <label>Max. Count of Approval</label>
+                        {/* <label>Max. Count of Approval</label>
                         <input
                             type="text"
                             value={max}
@@ -172,7 +172,7 @@ export default function EmployeeRequest() {
                                 if (!Number.isNaN(value)) setMax(value);
                             }}
                             required={true}
-                        />
+                        /> */}
                         <div className={styles.buttonGroup}>
                             <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
                                 {isEditing ? "Update" : "Save"}
@@ -193,7 +193,7 @@ export default function EmployeeRequest() {
                                     <tr>
                                         <th>Code</th>
                                         <th>Description</th>
-                                        <th>Maximum Count of Approval</th>
+                                        {/* <th>Maximum Count of Approval</th> */}
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -202,7 +202,7 @@ export default function EmployeeRequest() {
                                         <tr key={ent.employeeRequestId}>
                                             <td>{ent.code}</td>
                                             <td>{ent.name}</td>
-                                            <td>{ent.max}</td>
+                                            {/* <td>{ent.max}</td> */}
                                             <td>
                                                 <button
                                                     className={`${styles.iconButton} ${styles.editIcon}`}
