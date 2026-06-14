@@ -8,6 +8,7 @@ import { FaCloudUploadAlt, FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -56,6 +57,10 @@ export default function SystemSetup() {
     const [leftLogoBase64, setLeftLogoBase64] = useState<string | null>(null);
     const [mainLogoBase64, setMainLogoBase64] = useState<string | null>(null);
     const [rightLogoBase64, setRightLogoBase64] = useState<string | null>(null);
+
+    const empCanAdd    = localStorageUtil.canAdd("admin.settings");
+    const empCanEdit   = localStorageUtil.canEdit("admin.settings");
+    const empCanDelete = localStorageUtil.canDelete("admin.settings");
 
     type SettingsPayload = {
         systemStartDate: string | null;
@@ -480,8 +485,8 @@ export default function SystemSetup() {
                                 );
                             })}
                         </div>
-                         <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
+                        <div className={styles.buttonGroup}>
+                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton} disabled={((!empCanAdd && !isEditing) || (isEditing && !empCanEdit))}>
                                 {isEditing ? "Update" : "Save"}
                             </button>
                             <button
@@ -536,14 +541,16 @@ export default function SystemSetup() {
                                                         type="button"
                                                         className={`${styles.iconButton} ${styles.editIcon}`}
                                                         onClick={() => handleEdit(ent)}
-                                                        title="Edit">
+                                                        title="Edit"
+                                                        disabled={!empCanEdit}>      
                                                         <FaRegEdit />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         className={`${styles.iconButton} ${styles.deleteIcon}`}
                                                         onClick={() => handleDelete(indx)}
-                                                        title="Delete">
+                                                        title="Delete"
+                                                        disabled={!empCanDelete}>
                                                         <FaTrashAlt />
                                                     </button>
                                                 </td>

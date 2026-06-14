@@ -73,25 +73,49 @@ export default function AdminLoginPage() {
         // Identify current employee and enforce admin-only access
         const currentEmp = employees.find((emp) => emp.employeeNo === employeeNo);
         if (currentEmp) {
-          if (currentEmp.role !== "1") {
-            // Clear session — non-admin users are not allowed here
-            Object.values(AUTH_CONFIG.COOKIE).forEach((key) => {
-              document.cookie = `${key}=; Max-Age=0; path=/`;
-            });
-            localStorage.clear();
-            Swal.fire({
-              title: "Access Denied",
-              text: "This portal is for administrators only.",
-              icon: "error",
-              confirmButtonText: "OK",
-            });
-            return;
-          }
-          localStorageUtil.setEmployeeNo(currentEmp.employeeNo);
-          localStorageUtil.setEmployeeFullname(currentEmp.fullName);
+          localStorageUtil.setBiometricNo(currentEmp.biometricNo); // Store biometricNo
+          localStorageUtil.setEmployeeNo(currentEmp.employeeNo); // Store employeeNo
+          localStorageUtil.setEmployeeFullname(currentEmp.fullName); // Store fullname
           localStorageUtil.setEmployeeRole(currentEmp.role);
           localStorageUtil.setEmployeeId(Number(currentEmp.employeeId));
-          localStorageUtil.setBiometricNo(currentEmp.biometricNo);
+
+          // Super admin (employeeNo === "admin") always has full access — not subject to permission rulesets
+          if (currentEmp.employeeNo === "admin") {
+            localStorageUtil.setIsAdministrator(true);
+            localStorageUtil.setPermissionData(null); // null = superadmin, full access
+          } else {
+            // Resolve permission ruleset — store isAdministrator flag AND full permissionData
+            try {
+              const permRes = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/permission/get-all`);
+              if (permRes.ok) {
+                const rulesets: Array<{ permissionId: number; permissionName: string; isAdministrator: boolean; permissionData: string }> = await permRes.json();
+                const matched = rulesets.find(r => String(r.permissionId) === currentEmp.role);
+                if (matched) {
+                  localStorageUtil.setIsAdministrator(matched.isAdministrator);
+                  localStorageUtil.setPermissionName(matched.permissionName ?? "");
+                  try {
+                    const parsed = JSON.parse(matched.permissionData ?? "{}");
+                    localStorageUtil.setPermissionData(parsed);
+                  } catch {
+                    localStorageUtil.setPermissionData({});
+                  }
+                } else {
+                  localStorageUtil.setIsAdministrator(false);
+                  localStorageUtil.setPermissionData({});
+                }
+              } else {
+                localStorageUtil.setIsAdministrator(false);
+                localStorageUtil.setPermissionData({});
+              }
+            } catch (e) {
+              console.warn("Could not load permission rulesets:", e);
+              localStorageUtil.setIsAdministrator(false);
+              localStorageUtil.setPermissionData({});
+            }
+          }
+        } else {
+          // Keep entered identifier for UI display while downstream data resolves.
+          localStorageUtil.setEmployeeNo(employeeNo.trim());
         }
       }
 

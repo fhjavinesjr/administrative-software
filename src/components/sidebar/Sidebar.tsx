@@ -6,6 +6,7 @@ import styles from "@/styles/DashboardSidebar.module.scss";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { authLogout } from "@/lib/utils/authLogout";
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 
 type MenuChild = {
   id: number;
@@ -20,6 +21,7 @@ type MenuItemType = {
   label: string;
   goto: string;
   children?: MenuChild[];
+  permKey?: string; // Optional permission key for access control
 }
 
 const menuItems: MenuItemType[] = [];
@@ -30,6 +32,7 @@ const systemSetupItems = [
     icon: "/gear.png",
     label: "Settings",
     goto: "/administrative/systemsetup",
+    permKey: "admin.settings",
   },
   {
     id: 2,
@@ -292,6 +295,8 @@ export default function Sidebar() {
     pathname.startsWith(child.goto)
   );
 
+  const visibleSytemSetupMenuItems = systemSetupItems.filter(item => localStorageUtil.canAccess(item.permKey ?? ""));
+
   return (
     <nav
       className={styles.Sidebar}
@@ -320,11 +325,11 @@ export default function Sidebar() {
           ))}
         </div>
         
-         {/* SYSTEM SETUP */}
+        {/* SYSTEM SETUP */}
         <div className={styles.menuSection}>
           <h2 className={styles.menuHeader}>SYSTEM SETUP</h2>
           <div role="menu">
-            {systemSetupItems.map((item) => (
+            {visibleSytemSetupMenuItems.map((item) => (
               <MenuItem
                 key={item.id}
                 icon={item.icon}
