@@ -288,7 +288,7 @@ export default function Permission() {
                         <div>
                             <strong>Reserved Ruleset Name — &quot;USER&quot;</strong><br />
                             The permission ruleset named exactly <strong>USER</strong> is <strong>mandatory and must always exist</strong>.
-                            It identifies ordinary employees in the system — when a staff member logs in with the <strong>USER</strong> ruleset,
+                            It identifies common employees in the system — when a staff member logs in with the <strong>USER</strong> ruleset,
                             the Employee Name field is automatically filled with their own name and locked to prevent editing.
                             Do <strong>not</strong> rename or delete this ruleset.
                         </div>
@@ -315,7 +315,7 @@ export default function Permission() {
                                     borderRadius: "4px",
                                     padding: "2px 8px",
                                 }}>
-                                    ⚠️ This is the reserved <strong>USER</strong> ruleset — required by the system to identify ordinary employees.
+                                    ⚠️ This is the reserved <strong>USER</strong> ruleset — required by the system to identify common employees.
                                 </span>
                             )}
                         </div>
