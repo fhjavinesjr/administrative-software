@@ -20,7 +20,14 @@ export default function PageAuthentication({ children }: PageAuthenticationProps
 
     let isRedirecting = false;
 
-    const logout = () => {
+    const logout = (reason: string, details?: Record<string, unknown>) => {
+      // One-line diagnostics to explain auto-logout triggers.
+      console.warn("[AdminAuth] logout", {
+        reason,
+        path: pathname,
+        ...details,
+      });
+
       // Delete all auth cookies
       Object.values(AUTH_CONFIG.COOKIE).forEach(deleteCookie);
 
@@ -47,22 +54,22 @@ export default function PageAuthentication({ children }: PageAuthenticationProps
 
       // Not logged in → redirect
       if (!cookieLoggedIn && !AUTH_CONFIG.PUBLIC_PAGES.includes(pathname)) {
-        logout();
+        logout("not_logged_in", {
+          cookieLoggedIn,
+          lastActivity,
+          now,
+        });
         return;
-      }
-
-      // Role guard — non-admin users are not allowed in this portal
-      if (cookieLoggedIn && !AUTH_CONFIG.PUBLIC_PAGES.includes(pathname)) {
-        const role = localStorage.getItem("userRole");
-        if (role !== "1") {
-          logout();
-          return;
-        }
       }
 
       // Inactivity timeout
       if (cookieLoggedIn && now - lastActivity > AUTH_CONFIG.INACTIVITY_LIMIT * 1000) {
-        logout();
+        logout("inactivity_timeout", {
+          lastActivity,
+          now,
+          inactivityLimitSeconds: AUTH_CONFIG.INACTIVITY_LIMIT,
+          elapsedMs: now - lastActivity,
+        });
         return;
       }
 
@@ -89,7 +96,10 @@ export default function PageAuthentication({ children }: PageAuthenticationProps
     // Cross-tab logout sync
     const handleStorage = (event: StorageEvent) => {
       if (event.key === AUTH_CONFIG.COOKIE.IS_LOGGED_IN && event.newValue !== "true") {
-        logout();
+        logout("cross_tab_logout_signal", {
+          storageKey: event.key,
+          newValue: event.newValue,
+        });
       }
     };
     window.addEventListener("storage", handleStorage);

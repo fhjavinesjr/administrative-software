@@ -21,6 +21,9 @@ const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 export default function AdminLoginPage() {
   const router = useRouter();
 
+  const normalizeEmployeeNo = (value?: string | null) =>
+    String(value ?? "").trim().toLowerCase();
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -30,6 +33,7 @@ export default function AdminLoginPage() {
     try {
       const employeeNo = formData.get("employeeNo") as string;
       const employeePassword = formData.get("employeePassword") as string;
+      const normalizedEmployeeNo = normalizeEmployeeNo(employeeNo);
 
       // Call login API
       const response = await fetch(`${API_BASE_URL}/api/employee/login`, {
@@ -65,58 +69,63 @@ export default function AdminLoginPage() {
 
       // Fetch and store employee master list
       const empRes = await fetchWithAuth(`${API_BASE_URL}/api/employees/basicInfo`);
-      if (empRes.ok) {
-        const employees: Employee[] = await empRes.json();
-        const filtered = employees.filter((emp) => emp.employeeNo !== "admin");
-        localStorageUtil.setEmployees(filtered);
+      if (!empRes.ok) {
+        throw new Error("Failed to load employee profile after login");
+      }
 
-        // Identify current employee and enforce admin-only access
-        const currentEmp = employees.find((emp) => emp.employeeNo === employeeNo);
-        if (currentEmp) {
-          localStorageUtil.setBiometricNo(currentEmp.biometricNo); // Store biometricNo
-          localStorageUtil.setEmployeeNo(currentEmp.employeeNo); // Store employeeNo
-          localStorageUtil.setEmployeeFullname(currentEmp.fullName); // Store fullname
-          localStorageUtil.setEmployeeRole(currentEmp.role);
-          localStorageUtil.setEmployeeId(Number(currentEmp.employeeId));
+      const employees: Employee[] = await empRes.json();
+      const filtered = employees.filter((emp) => emp.employeeNo !== "admin");
+      localStorageUtil.setEmployees(filtered);
 
-          // Super admin (employeeNo === "admin") always has full access — not subject to permission rulesets
-          if (currentEmp.employeeNo === "admin") {
-            localStorageUtil.setIsAdministrator(true);
-            localStorageUtil.setPermissionData(null); // null = superadmin, full access
-          } else {
-            // Resolve permission ruleset — store isAdministrator flag AND full permissionData
-            try {
-              const permRes = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/permission/get-all`);
-              if (permRes.ok) {
-                const rulesets: Array<{ permissionId: number; permissionName: string; isAdministrator: boolean; permissionData: string }> = await permRes.json();
-                const matched = rulesets.find(r => String(r.permissionId) === currentEmp.role);
-                if (matched) {
-                  localStorageUtil.setIsAdministrator(matched.isAdministrator);
-                  localStorageUtil.setPermissionName(matched.permissionName ?? "");
-                  try {
-                    const parsed = JSON.parse(matched.permissionData ?? "{}");
-                    localStorageUtil.setPermissionData(parsed);
-                  } catch {
-                    localStorageUtil.setPermissionData({});
-                  }
-                } else {
-                  localStorageUtil.setIsAdministrator(false);
+      // Identify current employee
+      const currentEmp = employees.find(
+        (emp) => normalizeEmployeeNo(emp.employeeNo) === normalizedEmployeeNo
+      );
+
+      if (currentEmp) {
+        localStorageUtil.setBiometricNo(currentEmp.biometricNo); // Store biometricNo
+        localStorageUtil.setEmployeeNo(currentEmp.employeeNo); // Store employeeNo
+        localStorageUtil.setEmployeeFullname(currentEmp.fullName); // Store fullname
+        localStorageUtil.setEmployeeRole(currentEmp.role);
+        localStorageUtil.setEmployeeId(Number(currentEmp.employeeId));
+
+        // Super admin (employeeNo === "admin") always has full access — not subject to permission rulesets
+        if (currentEmp.employeeNo === "admin") {
+          localStorageUtil.setIsAdministrator(true);
+          localStorageUtil.setPermissionData(null); // null = superadmin, full access
+        } else {
+          // Resolve permission ruleset — store isAdministrator flag AND full permissionData
+          try {
+            const permRes = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/permission/get-all`);
+            if (permRes.ok) {
+              const rulesets: Array<{ permissionId: number; permissionName: string; isAdministrator: boolean; permissionData: string }> = await permRes.json();
+              const matched = rulesets.find(r => String(r.permissionId) === currentEmp.role);
+              if (matched) {
+                localStorageUtil.setIsAdministrator(matched.isAdministrator);
+                localStorageUtil.setPermissionName(matched.permissionName ?? "");
+                try {
+                  const parsed = JSON.parse(matched.permissionData ?? "{}");
+                  localStorageUtil.setPermissionData(parsed);
+                } catch {
                   localStorageUtil.setPermissionData({});
                 }
               } else {
                 localStorageUtil.setIsAdministrator(false);
                 localStorageUtil.setPermissionData({});
               }
-            } catch (e) {
-              console.warn("Could not load permission rulesets:", e);
+            } else {
               localStorageUtil.setIsAdministrator(false);
               localStorageUtil.setPermissionData({});
             }
+          } catch (e) {
+            console.warn("Could not load permission rulesets:", e);
+            localStorageUtil.setIsAdministrator(false);
+            localStorageUtil.setPermissionData({});
           }
-        } else {
-          // Keep entered identifier for UI display while downstream data resolves.
-          localStorageUtil.setEmployeeNo(employeeNo.trim());
         }
+      } else {
+        // Keep entered identifier for UI display while downstream data resolves.
+        localStorageUtil.setEmployeeNo(employeeNo.trim());
       }
 
       // Fetch and store system configuration from backend
