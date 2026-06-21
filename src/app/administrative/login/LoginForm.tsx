@@ -106,6 +106,21 @@ export default function AdminLoginPage() {
                 try {
                   const parsed = JSON.parse(matched.permissionData ?? "{}");
                   localStorageUtil.setPermissionData(parsed);
+
+                  if (matched.permissionName === "USER") {
+                    // Clear session — non-admin users are not allowed here
+                    Object.values(AUTH_CONFIG.COOKIE).forEach((key) => {
+                      document.cookie = `${key}=; Max-Age=0; path=/`;
+                    });
+                    localStorage.clear();
+                    Swal.fire({
+                      title: "Access Denied",
+                      text: "This portal is for administrators only.",
+                      icon: "error",
+                      confirmButtonText: "OK",
+                    });
+                    return;
+                  }
                 } catch {
                   localStorageUtil.setPermissionData({});
                 }
