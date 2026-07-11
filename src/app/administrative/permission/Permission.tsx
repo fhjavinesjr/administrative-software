@@ -97,6 +97,7 @@ const MODULE_LIST: ModuleEntry[] = [
     { key: "payroll.loan",             label: "Loan",                             type: "module",     indent: 0, hasAdd: true, hasEdit: true, hasDelete: true },
     { key: "payroll.computation",      label: "Payroll Computation",              type: "module",     indent: 0 },
     { key: "payroll.register",         label: "Payroll Register",                 type: "module",     indent: 0 },
+    { key: "payroll.payslip",          label: "Payslip",                          type: "module",     indent: 0, hasAdd: true, hasEdit: true, hasDelete: true },
 
     // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
     { key: "app.empPortal",            label: "Employee Portal",                  type: "app-header", indent: 0 },
