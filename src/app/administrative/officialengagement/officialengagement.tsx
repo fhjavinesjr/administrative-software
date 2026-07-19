@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -8,8 +10,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-const API_BASE_URL_ADMINISTRATIVE =
-  runtimeConfig.getApiUrl("administrative");
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 type OfficialItem = {
   officialEngagementId?: number;
@@ -18,6 +19,9 @@ type OfficialItem = {
 };
 
 export default function OfficialEngagement() {
+  const canAdd = localStorageUtil.canAdd("admin.officialEngagement");
+  const canEdit = localStorageUtil.canEdit("admin.officialEngagement");
+  const canDelete = localStorageUtil.canDelete("admin.officialEngagement");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [arr, setArr] = useState<OfficialItem[]>([]);
@@ -34,30 +38,45 @@ export default function OfficialEngagement() {
       timerProgressBar: true,
     }).fire({ icon, title });
 
-    /* ------------------ Load Data ------------------ */
-    const loadOfficialEngagements = useCallback(async () => {
-        try {
-            const response = await fetchWithAuth(
-            `${API_BASE_URL_ADMINISTRATIVE}/api/officialEngagement/get-all`
-            );
+  /* ------------------ Load Data ------------------ */
+  const loadOfficialEngagements = useCallback(async () => {
+    try {
+      const response = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/officialEngagement/get-all`,
+      );
 
-            if (!response.ok) {
-            throw new Error("Failed to fetch official engagements");
-            }
+      if (!response.ok) {
+        throw new Error("Failed to fetch official engagements");
+      }
 
-            const data: OfficialItem[] = await response.json();
-            setArr(data);
-        } catch {
-            toast("error", "Failed to load records");
-        }
-    }, []);
+      const data: OfficialItem[] = await response.json();
+      setArr(data);
+    } catch {
+      toast("error", "Failed to load records");
+    }
+  }, []);
 
-    useEffect(() => {
-        loadOfficialEngagements();
-    }, [loadOfficialEngagements]);
+  useEffect(() => {
+    loadOfficialEngagements();
+  }, [loadOfficialEngagements]);
 
   /* ------------------ Submit ------------------ */
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     const payload = { code, name };
@@ -69,7 +88,7 @@ export default function OfficialEngagement() {
           {
             method: "POST",
             body: JSON.stringify(payload),
-          }
+          },
         );
 
         toast("success", "Successfully Created!");
@@ -79,7 +98,7 @@ export default function OfficialEngagement() {
           {
             method: "PUT",
             body: JSON.stringify(payload),
-          }
+          },
         );
 
         toast("success", "Successfully Updated!");
@@ -102,6 +121,17 @@ export default function OfficialEngagement() {
 
   /* ------------------ Edit ------------------ */
   const handleEdit = (item: OfficialItem) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setEditItem(item);
     setCode(item.code);
     setName(item.name);
@@ -110,6 +140,17 @@ export default function OfficialEngagement() {
 
   /* ------------------ Delete ------------------ */
   const handleDelete = (item: OfficialItem) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     Swal.fire({
       text: `Are you sure you want to delete "${item.name}"?`,
       icon: "warning",
@@ -120,7 +161,7 @@ export default function OfficialEngagement() {
         try {
           await fetchWithAuth(
             `${API_BASE_URL_ADMINISTRATIVE}/api/officialEngagement/delete/${item.officialEngagementId}`,
-            { method: "DELETE" }
+            { method: "DELETE" },
           );
 
           toast("success", "Successfully Deleted!");
@@ -161,6 +202,7 @@ export default function OfficialEngagement() {
               <button
                 type="submit"
                 className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isEditing ? !canEdit : !canAdd}
               >
                 {isEditing ? "Update" : "Save"}
               </button>

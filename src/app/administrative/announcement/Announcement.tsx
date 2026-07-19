@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useCallback, useEffect } from "react";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
@@ -26,6 +28,9 @@ const defaultForm: Announcement = {
 };
 
 export default function Announcement() {
+  const canAdd = localStorageUtil.canAdd("admin.announcement");
+  const canEdit = localStorageUtil.canEdit("admin.announcement");
+  const canDelete = localStorageUtil.canDelete("admin.announcement");
   const [form, setForm] = useState<Announcement>(defaultForm);
   const [arr, setArr] = useState<Announcement[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -43,7 +48,7 @@ export default function Announcement() {
   const loadAnnouncements = useCallback(async () => {
     try {
       const response = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/announcement/get-all`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/announcement/get-all`,
       );
       if (!response.ok) throw new Error();
       const data: Announcement[] = await response.json();
@@ -64,12 +69,34 @@ export default function Announcement() {
   };
 
   const handleEdit = (item: Announcement) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setEditItem(item);
     setIsEditing(true);
     setForm({ ...item });
   };
 
   const handleDelete = (item: Announcement) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     Swal.fire({
       text: `Are you sure you want to delete "${item.title}"?`,
       icon: "warning",
@@ -80,7 +107,7 @@ export default function Announcement() {
         try {
           const response = await fetchWithAuth(
             `${API_BASE_URL_ADMINISTRATIVE}/api/announcement/delete/${item.announcementId}`,
-            { method: "DELETE" }
+            { method: "DELETE" },
           );
           if (!response.ok) throw new Error();
           toast("success", "Successfully deleted announcement");
@@ -93,6 +120,21 @@ export default function Announcement() {
   };
 
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
     try {
       if (!isEditing) {
@@ -101,7 +143,7 @@ export default function Announcement() {
           {
             method: "POST",
             body: JSON.stringify(form),
-          }
+          },
         );
         if (!response.ok) throw new Error();
         toast("success", "Successfully created announcement");
@@ -111,7 +153,7 @@ export default function Announcement() {
           {
             method: "PUT",
             body: JSON.stringify(form),
-          }
+          },
         );
         if (!response.ok) throw new Error();
         toast("success", "Successfully updated announcement");
@@ -139,7 +181,10 @@ export default function Announcement() {
                   type="date"
                   value={form.effectivityDate}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, effectivityDate: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      effectivityDate: e.target.value,
+                    }))
                   }
                   required
                 />
@@ -150,7 +195,10 @@ export default function Announcement() {
                   type="date"
                   value={form.effectiveUntil}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, effectiveUntil: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      effectiveUntil: e.target.value,
+                    }))
                   }
                   required
                 />
@@ -180,7 +228,10 @@ export default function Announcement() {
               <div>
                 <button
                   type="submit"
-                  className={isEditing ? styles.updateButton : styles.saveButton}
+                  className={
+                    isEditing ? styles.updateButton : styles.saveButton
+                  }
+                  disabled={isEditing ? !canEdit : !canAdd}
                 >
                   {isEditing ? "Update" : "Save"}
                 </button>
@@ -222,6 +273,7 @@ export default function Announcement() {
                           className={`${styles.iconButton} ${styles.editIcon}`}
                           onClick={() => handleEdit(item)}
                           title="Edit"
+                          disabled={!canEdit}
                         >
                           <FaRegEdit />
                         </button>
@@ -229,6 +281,7 @@ export default function Announcement() {
                           className={`${styles.iconButton} ${styles.deleteIcon}`}
                           onClick={() => handleDelete(item)}
                           title="Delete"
+                          disabled={!canDelete}
                         >
                           <FaTrashAlt />
                         </button>

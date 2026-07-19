@@ -14,6 +14,7 @@ type Props = {
   setEoNo: (v: string) => void;
   eoDate: string;
   setEoDate: (v: string) => void;
+  canModify: boolean;
 };
 
 export default function SalaryScheduleForm({
@@ -27,8 +28,8 @@ export default function SalaryScheduleForm({
   setEoNo,
   eoDate,
   setEoDate,
+  canModify,
 }: Props) {
-
   return (
     <div className={styles.SalaryScheduleForm}>
       {/* Effectivity Date */}
@@ -37,8 +38,11 @@ export default function SalaryScheduleForm({
         <input
           type="date"
           value={effectivityDate ? toDateInputValue(effectivityDate) : ""}
-          onChange={(e) => setEffectivityDate(toCustomFormat(e.target.value, false))}
+          onChange={(e) =>
+            setEffectivityDate(toCustomFormat(e.target.value, false))
+          }
           className={styles.dateInput}
+          disabled={!canModify}
         />
       </div>
 
@@ -52,6 +56,7 @@ export default function SalaryScheduleForm({
             value={nbcNo}
             onChange={(e) => setNbcNo(e.target.value)}
             className={styles.shortInput}
+            disabled={!canModify}
           />
           <span className={styles.dated}>Dated</span>
           <input
@@ -59,6 +64,7 @@ export default function SalaryScheduleForm({
             value={nbcDate ? toDateInputValue(nbcDate) : ""}
             onChange={(e) => setNbcDate(toCustomFormat(e.target.value, false))}
             className={styles.dateInput}
+            disabled={!canModify}
           />
         </div>
       </div>
@@ -73,6 +79,7 @@ export default function SalaryScheduleForm({
             value={eoNo}
             onChange={(e) => setEoNo(e.target.value)}
             className={styles.shortInput}
+            disabled={!canModify}
           />
           <span className={styles.dated}>Dated</span>
           <input
@@ -80,6 +87,7 @@ export default function SalaryScheduleForm({
             value={eoDate ? toDateInputValue(eoDate) : ""}
             onChange={(e) => setEoDate(toCustomFormat(e.target.value, false))}
             className={styles.dateInput}
+            disabled={!canModify}
           />
         </div>
       </div>

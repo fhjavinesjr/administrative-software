@@ -6,8 +6,12 @@ import SalaryScheduleTable from "./SalaryScheduleTable";
 import AuditTrailTable from "./SalaryScheduleTrailTable";
 import salaryScheduleStyle from "@/styles/SalarySchedule.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 
 export default function SalarySchedulePage() {
+  const canAdd = localStorageUtil.canAdd("admin.salarySchedule");
+  const canEdit = localStorageUtil.canEdit("admin.salarySchedule");
+  const canDelete = localStorageUtil.canDelete("admin.salarySchedule");
   const [activeTab, setActiveTab] = useState<"salary" | "audit">("audit");
 
   type SalaryScheduleItem = {
@@ -20,7 +24,7 @@ export default function SalarySchedulePage() {
     nbcDate?: string | null;
     eoNo?: string | null;
     eoDate?: string | null;
-};
+  };
 
   // LIFTED form state so Table can include them in payload
   const [effectivityDate, setEffectivityDate] = useState<string>("");
@@ -30,7 +34,9 @@ export default function SalarySchedulePage() {
   const [eoDate, setEoDate] = useState<string>("");
 
   // selected schedule items from audit (when user clicks Edit in Audit Trail)
-  const [selectedItems, setSelectedItems] = useState<SalaryScheduleItem[] | null>(null);
+  const [selectedItems, setSelectedItems] = useState<
+    SalaryScheduleItem[] | null
+  >(null);
 
   const handleClearAll = () => {
     setEffectivityDate("");
@@ -80,8 +86,10 @@ export default function SalarySchedulePage() {
               >
                 Audit Trail
               </button>
-              <button className={`${salaryScheduleStyle.tabButton} ${ activeTab === "salary" ? salaryScheduleStyle.active : ""}`}
-                onClick={() => setActiveTab("salary")}>
+              <button
+                className={`${salaryScheduleStyle.tabButton} ${activeTab === "salary" ? salaryScheduleStyle.active : ""}`}
+                onClick={() => setActiveTab("salary")}
+              >
                 Salary Schedule
               </button>
             </div>
@@ -100,6 +108,7 @@ export default function SalarySchedulePage() {
                   setEoNo={setEoNo}
                   eoDate={eoDate}
                   setEoDate={setEoDate}
+                  canModify={selectedItems ? canEdit : canAdd}
                 />
                 <SalaryScheduleTable
                   effectivityDate={effectivityDate}
@@ -109,6 +118,8 @@ export default function SalarySchedulePage() {
                   eoDate={eoDate}
                   selectedItems={selectedItems}
                   onClear={handleClearAll}
+                  canAdd={canAdd}
+                  canEdit={canEdit}
                 />
               </div>
             )}
@@ -116,7 +127,11 @@ export default function SalarySchedulePage() {
             {/* --- Audit Trail Tab --- */}
             {activeTab === "audit" && (
               <div className={salaryScheduleStyle.tabContent}>
-                <AuditTrailTable onSelect={handleSelectAudit} />
+                <AuditTrailTable
+                  onSelect={handleSelectAudit}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                />
               </div>
             )}
           </div>

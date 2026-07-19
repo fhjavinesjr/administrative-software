@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -8,8 +10,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-const API_BASE_URL_ADMINISTRATIVE =
-  runtimeConfig.getApiUrl("administrative");
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 type CivilStatusItem = {
   civilStatusId?: number;
@@ -18,6 +19,9 @@ type CivilStatusItem = {
 };
 
 export default function CivilStatus() {
+  const canAdd = localStorageUtil.canAdd("admin.civilStatus");
+  const canEdit = localStorageUtil.canEdit("admin.civilStatus");
+  const canDelete = localStorageUtil.canDelete("admin.civilStatus");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [datas, setDatas] = useState<CivilStatusItem[]>([]);
@@ -38,7 +42,7 @@ export default function CivilStatus() {
   const loadCivilStatus = useCallback(async () => {
     try {
       const res = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/civilStatus/get-all`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/civilStatus/get-all`,
       );
 
       if (!res.ok) throw new Error("Fetch failed");
@@ -64,6 +68,21 @@ export default function CivilStatus() {
 
   /* ------------------ Submit ------------------ */
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     const payload = { code, name };
@@ -75,7 +94,7 @@ export default function CivilStatus() {
           {
             method: "POST",
             body: JSON.stringify(payload),
-          }
+          },
         );
         toast("success", "Successfully Created!");
       } else if (editItem?.civilStatusId) {
@@ -84,7 +103,7 @@ export default function CivilStatus() {
           {
             method: "PUT",
             body: JSON.stringify(payload),
-          }
+          },
         );
         toast("success", "Successfully Updated!");
       }
@@ -98,6 +117,17 @@ export default function CivilStatus() {
 
   /* ------------------ Edit ------------------ */
   const handleEdit = (item: CivilStatusItem) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setEditItem(item);
     setCode(item.code);
     setName(item.name);
@@ -106,6 +136,17 @@ export default function CivilStatus() {
 
   /* ------------------ Delete ------------------ */
   const handleDelete = (item: CivilStatusItem) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     Swal.fire({
       text: `Are you sure you want to delete "${item.name}"?`,
       icon: "warning",
@@ -116,7 +157,7 @@ export default function CivilStatus() {
         try {
           await fetchWithAuth(
             `${API_BASE_URL_ADMINISTRATIVE}/api/civilStatus/delete/${item.civilStatusId}`,
-            { method: "DELETE" }
+            { method: "DELETE" },
           );
           toast("success", "Successfully Deleted!");
           loadCivilStatus();
@@ -156,6 +197,7 @@ export default function CivilStatus() {
               <button
                 type="submit"
                 className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isEditing ? !canEdit : !canAdd}
               >
                 {isEditing ? "Update" : "Save"}
               </button>

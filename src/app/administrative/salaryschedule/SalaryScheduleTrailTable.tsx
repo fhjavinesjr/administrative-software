@@ -29,11 +29,17 @@ type Props = {
     eoDate: string;
     items?: AuditRow["items"];
   }) => void;
+  canEdit: boolean;
+  canDelete: boolean;
 };
 
 type FetchedSalarySchedule = SalaryScheduleItem & { createdAt?: string | null };
 
-export default function SalaryScheduleTrailTable({ onSelect }: Props) {
+export default function SalaryScheduleTrailTable({
+  onSelect,
+  canEdit,
+  canDelete,
+}: Props) {
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -103,7 +109,10 @@ export default function SalaryScheduleTrailTable({ onSelect }: Props) {
         if (!a.effectivityDate && !b.effectivityDate) return 0;
         if (!a.effectivityDate) return 1;
         if (!b.effectivityDate) return -1;
-        return new Date(b.effectivityDate).getTime() - new Date(a.effectivityDate).getTime();
+        return (
+          new Date(b.effectivityDate).getTime() -
+          new Date(a.effectivityDate).getTime()
+        );
       });
 
       setRows(result);
@@ -123,6 +132,7 @@ export default function SalaryScheduleTrailTable({ onSelect }: Props) {
   }, []);
 
   const handleEdit = async (row: AuditRow) => {
+    if (!canEdit) return;
     try {
       // if group already has items, forward them
       if (row.items && row.items.length > 0) {
@@ -146,6 +156,7 @@ export default function SalaryScheduleTrailTable({ onSelect }: Props) {
   };
 
   const handleDelete = async (row: AuditRow) => {
+    if (!canDelete) return;
     // backend expects effectivityDate (LocalDateTime) as the path variable
     const effectivityDate = row.effectivityDate;
     if (!effectivityDate) {
@@ -215,20 +226,24 @@ export default function SalaryScheduleTrailTable({ onSelect }: Props) {
                     <td>{r.nbcNo ?? "-"}</td>
                     <td>{r.eoNo ?? "-"}</td>
                     <td>
-                      <button
-                        className={`${styles.iconButton} ${styles.editIcon}`}
-                        onClick={() => handleEdit(r)}
-                        title="Edit"
-                      >
-                        <FaRegEdit />
-                      </button>
-                      <button
-                        className={`${styles.iconButton} ${styles.deleteIcon}`}
-                        onClick={() => handleDelete(r)}
-                        title="Delete"
-                      >
-                        <FaTrashAlt />
-                      </button>
+                      {canEdit && (
+                        <button
+                          className={`${styles.iconButton} ${styles.editIcon}`}
+                          onClick={() => handleEdit(r)}
+                          title="Edit"
+                        >
+                          <FaRegEdit />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          className={`${styles.iconButton} ${styles.deleteIcon}`}
+                          onClick={() => handleDelete(r)}
+                          title="Delete"
+                        >
+                          <FaTrashAlt />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

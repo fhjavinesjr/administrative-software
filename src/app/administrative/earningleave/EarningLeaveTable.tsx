@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import styles from "@/styles/EarningLeaveTable.module.scss";
@@ -9,8 +11,7 @@ import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 
-const API_BASE_URL_ADMINISTRATIVE =
-  runtimeConfig.getApiUrl("administrative");
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 type EarningLeaveItem = {
   earningLeaveId?: number;
@@ -25,6 +26,9 @@ type EarningLeaveHistory = {
 };
 
 export default function EarningLeaveTable() {
+  const canAdd = localStorageUtil.canAdd("admin.earningleave");
+  const canEdit = localStorageUtil.canEdit("admin.earningleave");
+  const canDelete = localStorageUtil.canDelete("admin.earningleave");
   const [rows, setRows] = useState<EarningLeaveItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [effectivityDate, setEffectivityDate] = useState<string>("");
@@ -40,7 +44,7 @@ export default function EarningLeaveTable() {
   const fetchHistory = useCallback(async () => {
     try {
       const response = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/get-all`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/get-all`,
       );
 
       if (!response.ok) {
@@ -51,7 +55,7 @@ export default function EarningLeaveTable() {
 
       const grouped = new Map<string, number>();
 
-      data.forEach(item => {
+      data.forEach((item) => {
         if (!item.effectivityDate) return;
 
         const dateKey = toDateInputValue(item.effectivityDate);
@@ -74,46 +78,49 @@ export default function EarningLeaveTable() {
   /* ========================
      Fetch existing data
   ========================= */
-  const fetchEarningLeave = useCallback(async (dateToFetch?: string) => {
-    const dateValue = dateToFetch || effectivityDate;
-    if (!dateValue) return;
+  const fetchEarningLeave = useCallback(
+    async (dateToFetch?: string) => {
+      const dateValue = dateToFetch || effectivityDate;
+      if (!dateValue) return;
 
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      const response = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/get-all`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch earning leave");
-      }
-
-      const data: EarningLeaveItem[] = await response.json();
-
-      const filtered = data.filter(
-        item => item.effectivityDate?.startsWith(dateValue)
-      );
-
-      if (filtered.length > 0) {
-        setRows(
-          filtered.map(item => ({
-            earningLeaveId: item.earningLeaveId,
-            effectivityDate: item.effectivityDate,
-            day: item.day,
-            earn: item.earn ?? "",
-          }))
+        const response = await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/get-all`,
         );
-      } else {
-        setRows([{ day: "1", earn: "" }]);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch earning leave");
+        }
+
+        const data: EarningLeaveItem[] = await response.json();
+
+        const filtered = data.filter((item) =>
+          item.effectivityDate?.startsWith(dateValue),
+        );
+
+        if (filtered.length > 0) {
+          setRows(
+            filtered.map((item) => ({
+              earningLeaveId: item.earningLeaveId,
+              effectivityDate: item.effectivityDate,
+              day: item.day,
+              earn: item.earn ?? "",
+            })),
+          );
+        } else {
+          setRows([{ day: "1", earn: "" }]);
+        }
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "Failed to load Earning Leave table", "error");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to load Earning Leave table", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [effectivityDate]);
+    },
+    [effectivityDate],
+  );
 
   useEffect(() => {
     if (skipFetchRef.current) {
@@ -129,18 +136,24 @@ export default function EarningLeaveTable() {
   ========================= */
 
   const addRow = () => {
-    setRows(prev => [
-      ...prev,
-      { day: String(prev.length + 1), earn: "" },
-    ]);
+    if (!canAdd && !canEdit) return;
+    setRows((prev) => [...prev, { day: String(prev.length + 1), earn: "" }]);
   };
 
   const removeRow = () => {
-    setRows(prev => {
+    setRows((prev) => {
       if (prev.length <= 1) return prev;
       const removed = prev[prev.length - 1];
+      if (removed?.earningLeaveId && !canDelete) {
+        void Swal.fire({
+          icon: "warning",
+          title: "Permission denied",
+          text: "Deleting a saved row requires Delete permission.",
+        });
+        return prev;
+      }
       if (removed && removed.earningLeaveId) {
-        setDeletedRows(d => [...d, removed]);
+        setDeletedRows((d) => [...d, removed]);
       }
       return prev.slice(0, -1);
     });
@@ -148,7 +161,7 @@ export default function EarningLeaveTable() {
 
   const checkExistingByEffectivityDate = async (date: string) => {
     const response = await fetchWithAuth(
-      `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/getBy/${toCustomFormat(date, false)}`
+      `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/getBy/${toCustomFormat(date, false)}`,
     );
 
     if (!response.ok) {
@@ -159,22 +172,40 @@ export default function EarningLeaveTable() {
     return data;
   };
 
-
   /* ========================
      Save (Create / Update)
   ========================= */
   const handleSave = async () => {
+    const editingExisting = rows.some((r) => r.earningLeaveId);
+    if (editingExisting ? !canEdit : !canAdd) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: editingExisting
+          ? "You do not have permission to edit this table."
+          : "You do not have permission to add this table.",
+      });
+      return;
+    }
+    if (deletedRows.length > 0 && !canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "Deleting saved rows requires Delete permission.",
+      });
+      return;
+    }
     try {
       if (!effectivityDate) {
         Swal.fire("Validation", "Effectivity Date is required", "warning");
         return;
       }
 
-      if (rows.some(r => !r.day.trim() || !r.earn.trim())) {
+      if (rows.some((r) => !r.day.trim() || !r.earn.trim())) {
         Swal.fire(
           "Validation",
           "Day(s) and Earned Leave cannot be empty",
-          "warning"
+          "warning",
         );
         return;
       }
@@ -182,9 +213,10 @@ export default function EarningLeaveTable() {
       setLoading(true);
 
       // 🔍 CHECK EXISTING DATA FIRST
-      const existingData = await checkExistingByEffectivityDate(effectivityDate);
+      const existingData =
+        await checkExistingByEffectivityDate(effectivityDate);
 
-      const isEditing = rows.some(r => r.earningLeaveId);
+      const isEditing = rows.some((r) => r.earningLeaveId);
 
       // ❌ Prevent duplicate creation
       if (!isEditing && existingData.length > 0) {
@@ -196,7 +228,7 @@ export default function EarningLeaveTable() {
         return;
       }
 
-      const payload = rows.map(row => ({
+      const payload = rows.map((row) => ({
         ...row,
         effectivityDate: toCustomFormat(effectivityDate, false),
       }));
@@ -213,11 +245,16 @@ export default function EarningLeaveTable() {
       // If there are removed rows that have persisted IDs, call deleteById endpoint
       if (deletedRows.length > 0) {
         try {
-          const delPayload = deletedRows.map(r => ({ earningLeaveId: r.earningLeaveId }));
-          await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/deleteById`, {
-            method: "DELETE",
-            body: JSON.stringify(delPayload),
-          });
+          const delPayload = deletedRows.map((r) => ({
+            earningLeaveId: r.earningLeaveId,
+          }));
+          await fetchWithAuth(
+            `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/deleteById`,
+            {
+              method: "DELETE",
+              body: JSON.stringify(delPayload),
+            },
+          );
           // clear deleted rows after successful deletion
           setDeletedRows([]);
         } catch (err) {
@@ -269,37 +306,44 @@ export default function EarningLeaveTable() {
   const updateRow = (
     index: number,
     field: keyof EarningLeaveItem,
-    value: string
-    ) => {
-    setRows(prev =>
-        prev.map((row, i) =>
-        i === index ? { ...row, [field]: value } : row
-        )
+    value: string,
+  ) => {
+    setRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
     );
   };
 
   const handleEditHistory = async (selectedDate: string) => {
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this table.",
+      });
+      return;
+    }
     try {
       setLoading(true);
 
       // Use the effectivityDate from the clicked history row
       const response = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/getBy/${toCustomFormat(selectedDate, false)}`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/getBy/${toCustomFormat(selectedDate, false)}`,
       );
 
-      if (!response.ok) throw new Error("Failed to fetch earning leave for the selected date");
+      if (!response.ok)
+        throw new Error("Failed to fetch earning leave for the selected date");
 
       const data: EarningLeaveItem[] = await response.json();
 
       if (data.length > 0) {
         // Set rows first, then set the date to avoid race condition
         setRows(
-          data.map(item => ({
+          data.map((item) => ({
             earningLeaveId: item.earningLeaveId,
             effectivityDate: item.effectivityDate,
             day: item.day,
             earn: item.earn ?? "",
-          }))
+          })),
         );
         // Mark to skip the automatic fetch in useEffect
         skipFetchRef.current = true;
@@ -318,6 +362,14 @@ export default function EarningLeaveTable() {
   };
 
   const handleDeleteHistory = async (date: string) => {
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this table.",
+      });
+      return;
+    }
     const confirm = await Swal.fire({
       text: `Delete earning leave effective ${date}?`,
       icon: "warning",
@@ -331,9 +383,9 @@ export default function EarningLeaveTable() {
       await fetchWithAuth(
         `${API_BASE_URL_ADMINISTRATIVE}/api/earningLeave/delete/${toCustomFormat(
           date,
-          false
+          false,
         )}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
 
       Swal.fire("Deleted", "History deleted successfully", "success");
@@ -347,7 +399,6 @@ export default function EarningLeaveTable() {
       Swal.fire("Error", "Failed to delete history", "error");
     }
   };
-
 
   /* ========================
      Render
@@ -366,14 +417,14 @@ export default function EarningLeaveTable() {
                 <button
                   className={styles.newButton}
                   onClick={handleSave}
-                  disabled={loading}
+                  disabled={
+                    loading ||
+                    (rows.some((r) => r.earningLeaveId) ? !canEdit : !canAdd)
+                  }
                 >
                   💾 Save
                 </button>
-                <button
-                  className={styles.clearButton}
-                  onClick={handleClear}
-                >
+                <button className={styles.clearButton} onClick={handleClear}>
                   ✖ Clear
                 </button>
               </div>
@@ -382,7 +433,7 @@ export default function EarningLeaveTable() {
                 <input
                   type="date"
                   value={effectivityDate}
-                  onChange={e => setEffectivityDate(e.target.value)}
+                  onChange={(e) => setEffectivityDate(e.target.value)}
                 />
               </div>
 
@@ -399,36 +450,45 @@ export default function EarningLeaveTable() {
                       <tr key={index}>
                         <td>
                           <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className={styles.earnedLeaveInput}
-                                value={row.day}
-                                onChange={e => updateRow(index, "day", e.target.value)}
-                            />
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className={styles.earnedLeaveInput}
+                            value={row.day}
+                            onChange={(e) =>
+                              updateRow(index, "day", e.target.value)
+                            }
+                          />
                         </td>
                         <td>
                           <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className={styles.earnedLeaveInput}
-                                value={row.earn}
-                                onChange={e => updateRow(index, "earn", e.target.value)}
-                            />
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className={styles.earnedLeaveInput}
+                            value={row.earn}
+                            onChange={(e) =>
+                              updateRow(index, "earn", e.target.value)
+                            }
+                          />
                         </td>
                       </tr>
                     ))}
 
                     <tr>
                       <td colSpan={2} className={styles.addTableRow}>
-                        <button className={styles.myButton} onClick={addRow}>
+                        <button
+                          className={styles.myButton}
+                          onClick={addRow}
+                          disabled={!canAdd && !canEdit}
+                        >
                           + Add
                         </button>
                         &nbsp;&nbsp;&nbsp;
                         <button
                           className={styles.myButton}
                           onClick={removeRow}
+                          disabled={!canAdd && !canEdit}
                         >
                           − Remove
                         </button>
@@ -458,20 +518,26 @@ export default function EarningLeaveTable() {
                       </tr>
                     )}
 
-                    {history.map(item => (
+                    {history.map((item) => (
                       <tr key={item.effectivityDate}>
                         <td>{item.effectivityDate}</td>
                         <td>{item.totalRows}</td>
                         <td className={styles.actionsCell}>
                           <button
                             className={`${styles.iconButton} ${styles.editIcon}`}
-                            onClick={() => handleEditHistory(item.effectivityDate)}
+                            onClick={() =>
+                              handleEditHistory(item.effectivityDate)
+                            }
+                            disabled={!canEdit}
                           >
                             <FaRegEdit />
                           </button>
                           <button
                             className={`${styles.iconButton} ${styles.deleteIcon}`}
-                            onClick={() => handleDeleteHistory(item.effectivityDate)}
+                            onClick={() =>
+                              handleDeleteHistory(item.effectivityDate)
+                            }
+                            disabled={!canDelete}
                           >
                             <FaTrashAlt />
                           </button>

@@ -1,4 +1,6 @@
-"use client"
+"use client";
+
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect } from "react";
@@ -13,476 +15,538 @@ const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 const pageSizeOptions = [25, 50, 100, 300, 500, 750, 1000];
 
 export default function Plantilla() {
-    type PlantillaAPI = {
-        plantillaId: number;
-        plantillaName: string;
-        jobPositionId: number;
-    };
+  const canAdd = localStorageUtil.canAdd("admin.plantilla");
+  const canEdit = localStorageUtil.canEdit("admin.plantilla");
+  const canDelete = localStorageUtil.canDelete("admin.plantilla");
+  type PlantillaAPI = {
+    plantillaId: number;
+    plantillaName: string;
+    jobPositionId: number;
+  };
 
-    type JobPositionItem = {
-        jobPositionId: number;
-        jobPositionName: string;
-        salaryGrade: string;
-        salaryStep: string;
-    };
+  type JobPositionItem = {
+    jobPositionId: number;
+    jobPositionName: string;
+    salaryGrade: string;
+    salaryStep: string;
+  };
 
-    type PlantillaItem = {
-        plantillID: string;
-        itemNo: string;
-        position: string;
-        grade: string;
-        step: string;
-    }
+  type PlantillaItem = {
+    plantillID: string;
+    itemNo: string;
+    position: string;
+    grade: string;
+    step: string;
+  };
 
-    const [plantilla, setPlantilla] = useState<PlantillaItem[]>([]);
-    const [jobPositions, setJobPositions] = useState<JobPositionItem[]>([]);
-    const [itemNo, setItemNo] = useState("");
-    const [position, setPosition] = useState("");
-    const [grade, setGrade] = useState("");
-    const [step, setStep] = useState("");
+  const [plantilla, setPlantilla] = useState<PlantillaItem[]>([]);
+  const [jobPositions, setJobPositions] = useState<JobPositionItem[]>([]);
+  const [itemNo, setItemNo] = useState("");
+  const [position, setPosition] = useState("");
+  const [grade, setGrade] = useState("");
+  const [step, setStep] = useState("");
 
-    const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-    const [plantillaRaw, setPlantillaRaw] = useState<PlantillaAPI[]>([]);
+  const [plantillaRaw, setPlantillaRaw] = useState<PlantillaAPI[]>([]);
 
-    const [selectedPlantillaId, setSelectedPlantillaId] = useState<number | null>(null);
-    const [selectedJobPositionId, setSelectedJobPositionId] = useState<number | null>(null);
+  const [selectedPlantillaId, setSelectedPlantillaId] = useState<number | null>(
+    null,
+  );
+  const [selectedJobPositionId, setSelectedJobPositionId] = useState<
+    number | null
+  >(null);
 
-    const [search, setSearch] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
-    useEffect(() => {
-        const loadPlantilla = async () => {
-            try {
-                const res = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`);
-                if (!res.ok) throw new Error(await res.text());
-                const data = await res.json();
-                setPlantillaRaw(data);  // <-- NEW temporary state
-            } catch (err) {
-                console.error("Failed to load plantilla:", err);
-            }
-        };
-        loadPlantilla();
-    }, []);
-
-    useEffect(() => {
-        if (jobPositions.length === 0 || plantillaRaw.length === 0) return;
-
-        const formatted = plantillaRaw.map((p) => {
-            const job = jobPositions.find(j => j.jobPositionId === p.jobPositionId);
-
-            return {
-                plantillID: p.plantillaId.toString(),
-                itemNo: p.plantillaName,
-                position: job ? job.jobPositionName : "",
-                grade: job ? job.salaryGrade : "",
-                step: job ? job.salaryStep : "",
-            };
-        });
-
-        setPlantilla(formatted);
-
-    }, [jobPositions, plantillaRaw]);
-
-    // 🔵 FETCH JOB POSITIONS FROM BACKEND
-    useEffect(() => {
-        const loadJobPositions = async () => {
-        try {
-            const res = await fetchWithAuth(
-            `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`
-            );
-            if (!res.ok) throw new Error(await res.text());
-
-            const data = (await res.json()) as JobPositionItem[];
-
-            const sorted = data.sort((a, b) =>
-            a.jobPositionName.localeCompare(b.jobPositionName)
-            );
-
-            setJobPositions(sorted);
-        } catch (err) {
-            console.error("Failed to load job positions:", err);
-        }
-        };
-
-        loadJobPositions();
-    }, []);
-
-    // 🔵 AUTO-FILL GRADE WHEN POSITION SELECTED
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedName = e.target.value;
-        setPosition(selectedName);
-
-        const found = jobPositions.find(
-        (p) => p.jobPositionName === selectedName
+  useEffect(() => {
+    const loadPlantilla = async () => {
+      try {
+        const res = await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`,
         );
-
-        if (found) {
-            setSelectedJobPositionId(found.jobPositionId);
-            setGrade(found.salaryGrade); // salary grade only
-            setStep(found.salaryStep); // salary step only
-        } else {
-            setGrade("");
-            setStep("");
-        }
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        setPlantillaRaw(data); // <-- NEW temporary state
+      } catch (err) {
+        console.error("Failed to load plantilla:", err);
+      }
     };
+    loadPlantilla();
+  }, []);
 
-    // FORM SUBMIT
-    const onSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+  useEffect(() => {
+    if (jobPositions.length === 0 || plantillaRaw.length === 0) return;
 
-        const payload = {
-            plantillaName: itemNo,
-            jobPositionId: Number(selectedJobPositionId),
-        };
+    const formatted = plantillaRaw.map((p) => {
+      const job = jobPositions.find((j) => j.jobPositionId === p.jobPositionId);
 
-        try {
-            if (!isEditing) {
-                // CREATE
-                const res = await fetchWithAuth(
-                    `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/create`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload),
-                    }
-                );
-
-                if (!res.ok) throw new Error(await res.text());
-                Swal.fire({
-                    icon: "success",
-                    title: "Success",
-                    text: "Plantilla saved successfully!",
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-
-            } else {
-                // UPDATE
-                const res = await fetchWithAuth(
-                    `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/update/${selectedPlantillaId}`,
-                    {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload),
-                    }
-                );
-
-                if (!res.ok) throw new Error(await res.text());
-                Swal.fire({
-                    icon: "success",
-                    title: "Updated",
-                    text: "Plantilla updated successfully!",
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-
-                setIsEditing(false);
-            }
-
-            // REFRESH DATA
-            const refresh = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`
-            );
-            const list = await refresh.json();
-            setPlantilla(
-                list.map((p: PlantillaAPI) => {
-                    const job = jobPositions.find(j => j.jobPositionId === p.jobPositionId);
-
-                    return {
-                        plantillID: p.plantillaId.toString(),
-                        itemNo: p.plantillaName,
-                        position: job ? job.jobPositionName : "",
-                        grade: job ? job.salaryGrade : "",
-                        step: job ? job.salaryStep : "",
-                    };
-                })
-            );
-
-            // CLEAR FIELDS
-            setItemNo("");
-            setPosition("");
-            setGrade("");
-            setStep("");
-
-        } catch (err) {
-            console.error("Error saving plantilla:", err);
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "Failed to save plantilla. Please try again.",
-            });
-        }
-    };
-
-    // EDIT BUTTON
-    const handleEdit = (obj: PlantillaItem) => {
-        // 1. plantillaId from table
-        setSelectedPlantillaId(Number(obj.plantillID));
-
-        // 2. Find jobPositionId from position name
-        const job = jobPositions.find(j => j.jobPositionName === obj.position);
-        setSelectedJobPositionId(job ? job.jobPositionId : null);
-
-        setItemNo(obj.itemNo);
-        setPosition(obj.position);
-        setGrade(obj.grade);
-        setStep(obj.step);
-        setIsEditing(true);
-    };
-
-
-
-    // DELETE
-    const handleDelete = async (id: number) => {
-        const result = await Swal.fire({
-            title: "Are you sure?",
-            text: "This action cannot be undone.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, delete it!",
-        });
-
-        if (!result.isConfirmed) return;
-
-        try {
-            const res = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/delete/${id}`,
-                { method: "DELETE" }
-            );
-
-            if (!res.ok) throw new Error(await res.text());
-
-            Swal.fire({
-                icon: "success",
-                title: "Deleted",
-                text: "Plantilla deleted successfully!",
-                timer: 1500,
-                showConfirmButton: false
-            });
-
-            // Refresh table
-            const refresh = await fetchWithAuth(
-                `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`
-            );
-            const list = await refresh.json();
-
-            setPlantilla(
-                list.map((p: PlantillaAPI) => {
-                    const job = jobPositions.find(j => j.jobPositionId === p.jobPositionId);
-
-                    return {
-                        plantillID: p.plantillaId.toString(),
-                        itemNo: p.plantillaName,
-                        position: job ? job.jobPositionName : "",
-                        grade: job ? job.salaryGrade : "",
-                        step: job ? job.salaryStep : "",
-                    };
-                })
-            );
-
-        } catch (err) {
-            console.error("Delete failed:", err);
-            Swal.fire({
-                icon: "error",
-                title: "Delete Failed",
-                text: "Unable to delete plantilla.",
-            });
-        }
-
-        setIsEditing(false);
-    };
-
-    // CLEAR BUTTON
-    const handleClear = () => {
-        setItemNo("");
-        setPosition("");
-        setGrade("");
-        setStep("");
-        setIsEditing(false);
-    };
-
-    const filteredPlantilla = plantilla.filter((pl) => {
-        const q = search.toLowerCase();
-        return pl.itemNo.toLowerCase().includes(q) || pl.position.toLowerCase().includes(q);
+      return {
+        plantillID: p.plantillaId.toString(),
+        itemNo: p.plantillaName,
+        position: job ? job.jobPositionName : "",
+        grade: job ? job.salaryGrade : "",
+        step: job ? job.salaryStep : "",
+      };
     });
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const totalPages = Math.ceil(filteredPlantilla.length / itemsPerPage);
-    const paginatedPlantilla = filteredPlantilla.slice(startIndex, endIndex);
+    setPlantilla(formatted);
+  }, [jobPositions, plantillaRaw]);
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [search, itemsPerPage]);
+  // 🔵 FETCH JOB POSITIONS FROM BACKEND
+  useEffect(() => {
+    const loadJobPositions = async () => {
+      try {
+        const res = await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`,
+        );
+        if (!res.ok) throw new Error(await res.text());
 
+        const data = (await res.json()) as JobPositionItem[];
+
+        const sorted = data.sort((a, b) =>
+          a.jobPositionName.localeCompare(b.jobPositionName),
+        );
+
+        setJobPositions(sorted);
+      } catch (err) {
+        console.error("Failed to load job positions:", err);
+      }
+    };
+
+    loadJobPositions();
+  }, []);
+
+  // 🔵 AUTO-FILL GRADE WHEN POSITION SELECTED
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedName = e.target.value;
+    setPosition(selectedName);
+
+    const found = jobPositions.find((p) => p.jobPositionName === selectedName);
+
+    if (found) {
+      setSelectedJobPositionId(found.jobPositionId);
+      setGrade(found.salaryGrade); // salary grade only
+      setStep(found.salaryStep); // salary step only
+    } else {
+      setGrade("");
+      setStep("");
+    }
+  };
+
+  // FORM SUBMIT
+  const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
+    e.preventDefault();
+
+    const payload = {
+      plantillaName: itemNo,
+      jobPositionId: Number(selectedJobPositionId),
+    };
+
+    try {
+      if (!isEditing) {
+        // CREATE
+        const res = await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/create`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+
+        if (!res.ok) throw new Error(await res.text());
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: "Plantilla saved successfully!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        // UPDATE
+        const res = await fetchWithAuth(
+          `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/update/${selectedPlantillaId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+
+        if (!res.ok) throw new Error(await res.text());
+        Swal.fire({
+          icon: "success",
+          title: "Updated",
+          text: "Plantilla updated successfully!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        setIsEditing(false);
+      }
+
+      // REFRESH DATA
+      const refresh = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`,
+      );
+      const list = await refresh.json();
+      setPlantilla(
+        list.map((p: PlantillaAPI) => {
+          const job = jobPositions.find(
+            (j) => j.jobPositionId === p.jobPositionId,
+          );
+
+          return {
+            plantillID: p.plantillaId.toString(),
+            itemNo: p.plantillaName,
+            position: job ? job.jobPositionName : "",
+            grade: job ? job.salaryGrade : "",
+            step: job ? job.salaryStep : "",
+          };
+        }),
+      );
+
+      // CLEAR FIELDS
+      setItemNo("");
+      setPosition("");
+      setGrade("");
+      setStep("");
+    } catch (err) {
+      console.error("Error saving plantilla:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to save plantilla. Please try again.",
+      });
+    }
+  };
+
+  // EDIT BUTTON
+  const handleEdit = (obj: PlantillaItem) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
+    // 1. plantillaId from table
+    setSelectedPlantillaId(Number(obj.plantillID));
+
+    // 2. Find jobPositionId from position name
+    const job = jobPositions.find((j) => j.jobPositionName === obj.position);
+    setSelectedJobPositionId(job ? job.jobPositionId : null);
+
+    setItemNo(obj.itemNo);
+    setPosition(obj.position);
+    setGrade(obj.grade);
+    setStep(obj.step);
+    setIsEditing(true);
+  };
+
+  // DELETE
+  const handleDelete = async (id: number) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const res = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/delete/${id}`,
+        { method: "DELETE" },
+      );
+
+      if (!res.ok) throw new Error(await res.text());
+
+      Swal.fire({
+        icon: "success",
+        title: "Deleted",
+        text: "Plantilla deleted successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      // Refresh table
+      const refresh = await fetchWithAuth(
+        `${API_BASE_URL_ADMINISTRATIVE}/api/plantilla/get-all`,
+      );
+      const list = await refresh.json();
+
+      setPlantilla(
+        list.map((p: PlantillaAPI) => {
+          const job = jobPositions.find(
+            (j) => j.jobPositionId === p.jobPositionId,
+          );
+
+          return {
+            plantillID: p.plantillaId.toString(),
+            itemNo: p.plantillaName,
+            position: job ? job.jobPositionName : "",
+            grade: job ? job.salaryGrade : "",
+            step: job ? job.salaryStep : "",
+          };
+        }),
+      );
+    } catch (err) {
+      console.error("Delete failed:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Delete Failed",
+        text: "Unable to delete plantilla.",
+      });
+    }
+
+    setIsEditing(false);
+  };
+
+  // CLEAR BUTTON
+  const handleClear = () => {
+    setItemNo("");
+    setPosition("");
+    setGrade("");
+    setStep("");
+    setIsEditing(false);
+  };
+
+  const filteredPlantilla = plantilla.filter((pl) => {
+    const q = search.toLowerCase();
     return (
-        <div className={modalStyles.Modal}>
-            <div className={modalStyles.modalContent}>
-                <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>Plantilla</h2>
-                </div>
+      pl.itemNo.toLowerCase().includes(q) ||
+      pl.position.toLowerCase().includes(q)
+    );
+  });
 
-                <div className={modalStyles.modalBody}>
-                    <form className={styles.PlantillaForm} onSubmit={onSubmit}>
-                        <label>Plantilla/Item No</label>
-                        <input
-                            type="text"
-                            value={itemNo}
-                            onChange={e => setItemNo(e.target.value)}
-                            required={true}
-                        />
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const totalPages = Math.ceil(filteredPlantilla.length / itemsPerPage);
+  const paginatedPlantilla = filteredPlantilla.slice(startIndex, endIndex);
 
-                        <label>Position</label>
-                        <select
-                            onChange={handleChange}
-                            value={position}
-                            required
-                            className={styles.selectField}
-                            >
-                            <option value="">-- Select --</option>
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, itemsPerPage]);
 
-                            {jobPositions.map((pos) => (
-                                <option
-                                key={pos.jobPositionId}
-                                value={pos.jobPositionName}
-                                >
-                                {pos.jobPositionName}
-                                </option>
-                            ))}
-                        </select>
-
-                        <label>Salary Grade</label>
-                        <input
-                            readOnly
-                            value={grade}
-                            type="text"
-                            required={true}
-                        />
-
-                        <label>Salary Step</label>
-                        <input
-                            readOnly
-                            value={step}
-                            type="text"
-                            required
-                        />
-
-                        <div className={styles.buttonGroup}>
-                            <button
-                                type="submit"
-                                className={
-                                isEditing ? styles.updateButton : styles.saveButton
-                                }
-                            >
-                                {isEditing ? "Update" : "Save"}
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.clearButton}
-                                onClick={handleClear}
-                            >
-                                Clear
-                            </button>
-                        </div>
-                    </form>
-
-                    {plantilla.length > 0 && (
-                        <div className={styles.PlantillaTable}>
-                            <div className={styles.search}>
-                                <div className={styles.inputWrapper}>
-                                    <input
-                                        placeholder="Search Plantilla"
-                                        type="text"
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)} />
-                                    <span className={styles.iconSearch}><FaSearch /></span>
-                                </div>
-                                <div className={styles.paginationControls}>
-                                    <label>Rows per page: </label>
-                                    <select
-                                        className={styles.row_select}
-                                        value={itemsPerPage}
-                                        onChange={(e) => {
-                                            setItemsPerPage(Number(e.target.value));
-                                            setCurrentPage(1);
-                                        }}>
-                                        {pageSizeOptions.map((size) => (
-                                            <option key={size} value={size}>{size}</option>
-                                        ))}
-                                    </select>
-                                    <span className={styles.recordInfo}>
-                                        Showing {filteredPlantilla.length === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, filteredPlantilla.length)} of {filteredPlantilla.length}
-                                    </span>
-                                    <button
-                                        className={styles.pageBtn}
-                                        disabled={currentPage === 1}
-                                        onClick={(e) => { e.preventDefault(); setCurrentPage(1); }}>First
-                                    </button>
-                                    <button
-                                        className={styles.pageBtn}
-                                        disabled={currentPage === 1}
-                                        onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.max(p - 1, 1)); }}>Previous
-                                    </button>
-                                    <span className={styles.pageIndicator}>Page {currentPage} of {totalPages || 1}</span>
-                                    <button
-                                        className={styles.pageBtn}
-                                        disabled={currentPage === totalPages || totalPages === 0}
-                                        onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.min(p + 1, totalPages)); }}>Next
-                                    </button>
-                                    <button
-                                        className={styles.pageBtn}
-                                        disabled={currentPage === totalPages || totalPages === 0}
-                                        onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages); }}>Last
-                                    </button>
-                                </div>
-                            </div>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Plantilla/Item No</th>
-                                        <th>Position</th>
-                                        <th>Salary Grade</th>
-                                        <th>Salary Step</th> 
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {paginatedPlantilla.map((pl, indx) => (
-                                        <tr key={pl.plantillID ?? `row-${indx}`}>
-                                        <td>{pl.itemNo}</td>
-                                        <td>{pl.position}</td>
-                                        <td>{pl.grade}</td>
-                                        <td>{pl.step}</td>
-                                        <td>
-                                            <button
-                                            className={`${styles.iconButton} ${styles.editIcon}`}
-                                            onClick={() => handleEdit(pl)}
-                                            title="Edit"
-                                            >
-                                            <FaRegEdit />
-                                            </button>
-                                            <button
-                                            className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                            onClick={() =>
-                                                handleDelete(Number(pl.plantillID))
-                                            }
-                                            title="Delete"
-                                            >
-                                            <FaTrashAlt />
-                                            </button>
-                                        </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
+  return (
+    <div className={modalStyles.Modal}>
+      <div className={modalStyles.modalContent}>
+        <div className={modalStyles.modalHeader}>
+          <h2 className={modalStyles.mainTitle}>Plantilla</h2>
         </div>
-    )
+
+        <div className={modalStyles.modalBody}>
+          <form className={styles.PlantillaForm} onSubmit={onSubmit}>
+            <label>Plantilla/Item No</label>
+            <input
+              type="text"
+              value={itemNo}
+              onChange={(e) => setItemNo(e.target.value)}
+              required={true}
+            />
+
+            <label>Position</label>
+            <select
+              onChange={handleChange}
+              value={position}
+              required
+              className={styles.selectField}
+            >
+              <option value="">-- Select --</option>
+
+              {jobPositions.map((pos) => (
+                <option key={pos.jobPositionId} value={pos.jobPositionName}>
+                  {pos.jobPositionName}
+                </option>
+              ))}
+            </select>
+
+            <label>Salary Grade</label>
+            <input readOnly value={grade} type="text" required={true} />
+
+            <label>Salary Step</label>
+            <input readOnly value={step} type="text" required />
+
+            <div className={styles.buttonGroup}>
+              <button
+                type="submit"
+                className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isEditing ? !canEdit : !canAdd}
+              >
+                {isEditing ? "Update" : "Save"}
+              </button>
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={handleClear}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+
+          {plantilla.length > 0 && (
+            <div className={styles.PlantillaTable}>
+              <div className={styles.search}>
+                <div className={styles.inputWrapper}>
+                  <input
+                    placeholder="Search Plantilla"
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <span className={styles.iconSearch}>
+                    <FaSearch />
+                  </span>
+                </div>
+                <div className={styles.paginationControls}>
+                  <label>Rows per page: </label>
+                  <select
+                    className={styles.row_select}
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {pageSizeOptions.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                  <span className={styles.recordInfo}>
+                    Showing{" "}
+                    {filteredPlantilla.length === 0 ? 0 : startIndex + 1} to{" "}
+                    {Math.min(endIndex, filteredPlantilla.length)} of{" "}
+                    {filteredPlantilla.length}
+                  </span>
+                  <button
+                    className={styles.pageBtn}
+                    disabled={currentPage === 1}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(1);
+                    }}
+                  >
+                    First
+                  </button>
+                  <button
+                    className={styles.pageBtn}
+                    disabled={currentPage === 1}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage((p) => Math.max(p - 1, 1));
+                    }}
+                  >
+                    Previous
+                  </button>
+                  <span className={styles.pageIndicator}>
+                    Page {currentPage} of {totalPages || 1}
+                  </span>
+                  <button
+                    className={styles.pageBtn}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage((p) => Math.min(p + 1, totalPages));
+                    }}
+                  >
+                    Next
+                  </button>
+                  <button
+                    className={styles.pageBtn}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(totalPages);
+                    }}
+                  >
+                    Last
+                  </button>
+                </div>
+              </div>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Plantilla/Item No</th>
+                    <th>Position</th>
+                    <th>Salary Grade</th>
+                    <th>Salary Step</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedPlantilla.map((pl, indx) => (
+                    <tr key={pl.plantillID ?? `row-${indx}`}>
+                      <td>{pl.itemNo}</td>
+                      <td>{pl.position}</td>
+                      <td>{pl.grade}</td>
+                      <td>{pl.step}</td>
+                      <td>
+                        <button
+                          className={`${styles.iconButton} ${styles.editIcon}`}
+                          onClick={() => handleEdit(pl)}
+                          title="Edit"
+                          disabled={!canEdit}
+                        >
+                          <FaRegEdit />
+                        </button>
+                        <button
+                          className={`${styles.iconButton} ${styles.deleteIcon}`}
+                          onClick={() => handleDelete(Number(pl.plantillID))}
+                          title="Delete"
+                          disabled={!canDelete}
+                        >
+                          <FaTrashAlt />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,4 +1,6 @@
-"use client"
+"use client";
+
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
 
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect, useCallback } from "react";
@@ -9,413 +11,516 @@ import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
 export default function Tax() {
-    type WTAXContributionItem = {
-        wTaxContributionId: number;
-        salaryType: string;
-        incomeFrom: string;
-        incomeTo: string;
-        fixedAmount: string;
-        percentageOverBase: string;
-        taxAmount: string;
+  const canAdd = localStorageUtil.canAdd("admin.tax");
+  const canEdit = localStorageUtil.canEdit("admin.tax");
+  const canDelete = localStorageUtil.canDelete("admin.tax");
+  type WTAXContributionItem = {
+    wTaxContributionId: number;
+    salaryType: string;
+    incomeFrom: string;
+    incomeTo: string;
+    fixedAmount: string;
+    percentageOverBase: string;
+    taxAmount: string;
+  };
+
+  const [salaryType, setSalaryType] = useState("Monthly");
+  const [incomeFrom, setIncomeFrom] = useState("");
+  const [incomeTo, setIncomeTo] = useState("");
+  const [fixed, setFixed] = useState("");
+  const [percentage, setPercentage] = useState("");
+  const [amount, setAmount] = useState("");
+  const [monthly, setMonthly] = useState<WTAXContributionItem[]>([]);
+  const [semiMonthly, setSemiMonthly] = useState<WTAXContributionItem[]>([]);
+  const [weekly, setWeekly] = useState<WTAXContributionItem[]>([]);
+  const [daily, setDaily] = useState<WTAXContributionItem[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Formats a raw number string for display (e.g. "8541.80" → "8,541.80", "66667" → "66,667")
+  const formatDisplay = (val: string): string => {
+    if (!val) return "";
+    const num = parseFloat(val);
+    if (isNaN(num)) return val;
+    const hasDec = val.includes(".");
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: hasDec ? 2 : 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  // Strips commas and keeps only digits (+ optional decimal point for decimal fields)
+  const parseRawNum = (val: string, allowDecimal = false): string => {
+    const stripped = val.replace(/,/g, "");
+    return allowDecimal
+      ? stripped.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
+      : stripped.replace(/[^0-9]/g, "");
+  };
+
+  const loadTaxData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchWithAuth(
+        `${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/get-all`,
+      );
+      if (!res.ok) throw new Error(await res.text());
+      const data: WTAXContributionItem[] = await res.json();
+
+      setMonthly(data.filter((d) => d.salaryType === "Monthly"));
+      setSemiMonthly(data.filter((d) => d.salaryType === "Semi-Monthly"));
+      setWeekly(data.filter((d) => d.salaryType === "Weekly"));
+      setDaily(data.filter((d) => d.salaryType === "Daily"));
+    } catch (err) {
+      console.error("Failed to load tax data:", err);
+      Swal.fire("Error", "Failed to load tax contribution data.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTaxData();
+  }, [loadTaxData]);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
+    e.preventDefault();
+
+    if (!fixed || !percentage || !incomeFrom) {
+      Swal.fire(
+        "Validation Error",
+        "Fixed Amount, Percentage, and Income From are required.",
+        "warning",
+      );
+      return;
+    }
+
+    const payload = {
+      salaryType,
+      incomeFrom,
+      incomeTo: incomeTo || null, // null = "and above" bracket
+      fixedAmount: fixed,
+      percentageOverBase: percentage,
+      taxAmount: amount || incomeTo, // Keep backward compatibility
     };
 
-    const [salaryType, setSalaryType] = useState("Monthly");
-    const [incomeFrom, setIncomeFrom] = useState("");
-    const [incomeTo, setIncomeTo] = useState("");
-    const [fixed, setFixed] = useState("");
-    const [percentage, setPercentage] = useState("");
-    const [amount, setAmount] = useState("");
-    const [monthly, setMonthly] = useState<WTAXContributionItem[]>([]);
-    const [semiMonthly, setSemiMonthly] = useState<WTAXContributionItem[]>([]);
-    const [weekly, setWeekly] = useState<WTAXContributionItem[]>([]);
-    const [daily, setDaily] = useState<WTAXContributionItem[]>([]);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editId, setEditId] = useState<number | null>(null);
-    const [loading, setLoading] = useState(false);
-
-    // Formats a raw number string for display (e.g. "8541.80" → "8,541.80", "66667" → "66,667")
-    const formatDisplay = (val: string): string => {
-        if (!val) return "";
-        const num = parseFloat(val);
-        if (isNaN(num)) return val;
-        const hasDec = val.includes(".");
-        return num.toLocaleString(undefined, {
-            minimumFractionDigits: hasDec ? 2 : 0,
-            maximumFractionDigits: 2,
+    try {
+      if (!isEditing) {
+        const res = await fetchWithAuth(
+          `${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/create`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!res.ok) throw new Error(await res.text());
+        Swal.fire({
+          icon: "success",
+          title: "Saved!",
+          timer: 1500,
+          showConfirmButton: false,
         });
-    };
-
-    // Strips commas and keeps only digits (+ optional decimal point for decimal fields)
-    const parseRawNum = (val: string, allowDecimal = false): string => {
-        const stripped = val.replace(/,/g, "");
-        return allowDecimal
-            ? stripped.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
-            : stripped.replace(/[^0-9]/g, "");
-    };
-
-    const loadTaxData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/get-all`);
-            if (!res.ok) throw new Error(await res.text());
-            const data: WTAXContributionItem[] = await res.json();
-
-            setMonthly(data.filter(d => d.salaryType === "Monthly"));
-            setSemiMonthly(data.filter(d => d.salaryType === "Semi-Monthly"));
-            setWeekly(data.filter(d => d.salaryType === "Weekly"));
-            setDaily(data.filter(d => d.salaryType === "Daily"));
-        } catch (err) {
-            console.error("Failed to load tax data:", err);
-            Swal.fire("Error", "Failed to load tax contribution data.", "error");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { loadTaxData(); }, [loadTaxData]);
-
-    const onSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!fixed || !percentage || !incomeFrom) {
-            Swal.fire("Validation Error", "Fixed Amount, Percentage, and Income From are required.", "warning");
-            return;
-        }
-
-        const payload = {
-            salaryType,
-            incomeFrom,
-            incomeTo: incomeTo || null, // null = "and above" bracket
-            fixedAmount: fixed,
-            percentageOverBase: percentage,
-            taxAmount: amount || incomeTo, // Keep backward compatibility
-        };
-
-        try {
-            if (!isEditing) {
-                const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/create`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) throw new Error(await res.text());
-                Swal.fire({ icon: "success", title: "Saved!", timer: 1500, showConfirmButton: false });
-            } else {
-                const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/update/${editId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) throw new Error(await res.text());
-                Swal.fire({ icon: "success", title: "Updated!", timer: 1500, showConfirmButton: false });
-                setIsEditing(false);
-                setEditId(null);
-            }
-
-            await loadTaxData();
-            handleClear();
-        } catch (err) {
-            console.error("Save failed:", err);
-            Swal.fire("Error", "Failed to save record.", "error");
-        }
-    };
-
-    const handleClear = () => {
-        setSalaryType("Monthly");
-        setIncomeFrom("");
-        setIncomeTo("");
-        setFixed("");
-        setPercentage("");
-        setAmount("");
+      } else {
+        const res = await fetchWithAuth(
+          `${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/update/${editId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!res.ok) throw new Error(await res.text());
+        Swal.fire({
+          icon: "success",
+          title: "Updated!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
         setIsEditing(false);
         setEditId(null);
-    };
+      }
 
-    const handleEdit = (obj: WTAXContributionItem) => {
-        setEditId(obj.wTaxContributionId);
-        setSalaryType(obj.salaryType);
-        setIncomeFrom(obj.incomeFrom || "");
-        setIncomeTo(obj.incomeTo || "");
-        setFixed(obj.fixedAmount);
-        setPercentage(obj.percentageOverBase);
-        setAmount(obj.taxAmount || obj.incomeTo || ""); // Backward compatibility
-        setIsEditing(true);
-    };
+      await loadTaxData();
+      handleClear();
+    } catch (err) {
+      console.error("Save failed:", err);
+      Swal.fire("Error", "Failed to save record.", "error");
+    }
+  };
 
-    const handleDelete = async (idOrObj: number | WTAXContributionItem) => {
-        const id = typeof idOrObj === "number" ? idOrObj : idOrObj.wTaxContributionId;
-        const result = await Swal.fire({
-            icon: "warning",
-            title: "Are you sure?",
-            text: "This action cannot be undone.",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            confirmButtonText: "Yes, delete it!"
-        });
-        if (!result.isConfirmed) return;
-        try {
-            const res = await fetchWithAuth(`${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/delete/${id}`, { method: "DELETE" });
-            if (!res.ok) throw new Error(await res.text());
-            Swal.fire({ icon: "success", title: "Deleted!", timer: 1500, showConfirmButton: false });
-            await loadTaxData();
-        } catch (err) {
-            console.error(err);
-            Swal.fire("Error", "Failed to delete record.", "error");
-        }
-    };
+  const handleClear = () => {
+    setSalaryType("Monthly");
+    setIncomeFrom("");
+    setIncomeTo("");
+    setFixed("");
+    setPercentage("");
+    setAmount("");
+    setIsEditing(false);
+    setEditId(null);
+  };
 
-    return (
-        <div className={modalStyles.Modal}>
-            <div className={modalStyles.modalContent}>
-                <div className={modalStyles.modalHeader}>
-                    <h2 className={modalStyles.mainTitle}>With-Holding Tax Table</h2>
-                </div>
-                <div className={modalStyles.modalBody}>
-                    <form className={styles.TaxForm}  onSubmit={onSubmit}>
-                        <label>Salary Type</label>
-                        <select
-                            value={salaryType}
-                            onChange={(e) => setSalaryType(e.target.value)}>
-                                <option value="Monthly">Monthly</option>
-                                <option value="Semi-Monthly">Semi-Monthly</option>
-                                <option value="Weekly">Weekly</option>
-                                <option value="Daily">Daily</option>
-                        </select>
-                        <label>Income From (Minimum Taxable) *</label>
-                        <input
-                            className={styles.date}
-                            type="text"
-                            placeholder="e.g., 0 or 10417"
-                            value={formatDisplay(incomeFrom)}
-                            onChange={e => setIncomeFrom(parseRawNum(e.target.value))}
-                            required={true}
-                        />
-                        <label>Income To (Maximum - Leave blank for &quot;and above&quot;)</label>
-                        <input
-                            className={styles.date}
-                            type="text"
-                            placeholder="e.g., 10417 (leave blank for last bracket)"
-                            value={formatDisplay(incomeTo)}
-                            onChange={e => setIncomeTo(parseRawNum(e.target.value))}
-                        />
-                        <label>Fixed Amount (Base Tax)</label>
-                        <input
-                            className={styles.date}
-                            type="text"
-                            placeholder="e.g., 0 or 1250"
-                            value={formatDisplay(fixed)}
-                            onChange={e => setFixed(parseRawNum(e.target.value, true))}
-                            required={true}
-                        />
-                        <label>Percentage Over Base</label>
-                         <input
-                            className={styles.date}
-                            type="text"
-                            placeholder="e.g., 20 or 25"
-                            value={percentage}
-                            onChange={e => setPercentage(e.target.value)}
-                            required={true}
-                        />
-                        <label>Amount (Legacy - optional)</label>
-                         <input
-                            className={styles.date}
-                            type="text"
-                            placeholder="Optional - for backward compatibility"
-                            value={formatDisplay(amount)}
-                            onChange={e => setAmount(parseRawNum(e.target.value))}
-                        />
-                        <div className={styles.buttonGroup}>
-                            <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton} disabled={loading}>
-                                {isEditing ? "Update" : "Save"}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleClear}
-                                className={styles.clearButton}
-                                disabled={loading}>
-                                Clear
-                            </button>
-                        </div>
-                    </form>
+  const handleEdit = (obj: WTAXContributionItem) => {
+    /* RBAC:handleEdit */
 
-                    {monthly.length > 0 && (
-                        <div>
-                            <h4 className={styles.tableHeader}>TAX TABLE ENTRIES MONTHLY</h4>
-                            <div className={styles.TaxTable}>
-                                <table className={styles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th>Salary Type</th>
-                                            {monthly.map((m, idx) => (
-                                                <th key={idx}>{idx + 1}</th>
-                                                ))}
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td>{monthly[0]?.salaryType}</td>
-                                            {monthly.map((m, mindx) => (
-                                            <td key={mindx}>
-                                                <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
-                                                </p>
-                                                <span>{formatDisplay(m.fixedAmount)}</span>
-                                                <p>+ {m.percentageOverBase} Over</p>
-                                                <button
-                                                        className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m)}
-                                                        title="Edit">
-                                                        <FaRegEdit />
-                                                    </button>
-                                                    <button
-                                                        className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m.wTaxContributionId)}
-                                                        title="Delete">
-                                                        <FaTrashAlt />
-                                                    </button>
-                                            </td>
-                                            ))}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
 
-                    {semiMonthly.length > 0 && (
-                        <div>
-                            <h4 className={styles.tableHeader}>TAX TABLE ENTRIES SEMI-MONTHLY</h4>
-                            <div className={styles.TaxTable}>
-                                <table className={styles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th>Salary Type</th>
-                                            {semiMonthly.map((m, idx) => (
-                                            <th key={idx}>{idx + 1}</th>
-                                            ))}
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td>{semiMonthly[0]?.salaryType}</td>
-                                            {semiMonthly.map((m, mindx) => (
-                                            <td key={mindx}>
-                                                <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
-                                                </p>
-                                                <span>{formatDisplay(m.fixedAmount)}</span>
-                                                <p>+ {m.percentageOverBase} Over</p>
-                                                <p>{formatDisplay(m.taxAmount)}</p>
-                                                <button
-                                                        className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m)}
-                                                        title="Edit">
-                                                        <FaRegEdit />
-                                                    </button>
-                                                    <button
-                                                        className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m.wTaxContributionId)}
-                                                        title="Delete">
-                                                        <FaTrashAlt />
-                                                    </button>
-                                            </td>
-                                            ))}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+      return;
+    }
+    setEditId(obj.wTaxContributionId);
+    setSalaryType(obj.salaryType);
+    setIncomeFrom(obj.incomeFrom || "");
+    setIncomeTo(obj.incomeTo || "");
+    setFixed(obj.fixedAmount);
+    setPercentage(obj.percentageOverBase);
+    setAmount(obj.taxAmount || obj.incomeTo || ""); // Backward compatibility
+    setIsEditing(true);
+  };
 
-                    {weekly.length > 0 && (
-                        <div>
-                            <h4 className={styles.tableHeader}>TAX TABLE ENTRIES WEEKLY</h4>
-                            <div className={styles.TaxTable}>
-                                <table className={styles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th>Salary Type</th>
-                                            {weekly.map((m, idx) => (
-                                            <th key={idx}>{idx + 1}</th>
-                                            ))}
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td>{weekly[0]?.salaryType}</td>
-                                            {weekly.map((m, mindx) => (
-                                            <td key={mindx}>
-                                                <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
-                                                </p>
-                                                <span>{formatDisplay(m.fixedAmount)}</span>
-                                                <p>+ {m.percentageOverBase} Over</p>
-                                                <button
-                                                        className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m)}
-                                                        title="Edit">
-                                                        <FaRegEdit />
-                                                    </button>
-                                                    <button
-                                                        className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m.wTaxContributionId)}
-                                                        title="Delete">
-                                                        <FaTrashAlt />
-                                                    </button>
-                                            </td>
-                                            ))}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+  const handleDelete = async (idOrObj: number | WTAXContributionItem) => {
+    /* RBAC:handleDelete */
 
-                    {daily.length > 0 && (
-                        <div>
-                            <h4 className={styles.tableHeader}>TAX TABLE ENTRIES DAILY</h4>
-                            <div className={styles.TaxTable}>
-                                <table className={styles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th>Salary Type</th>
-                                            {daily.map((m, idx) => (
-                                            <th key={idx}>{idx + 1}</th>
-                                            ))}
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td>{daily[0]?.salaryType}</td>
-                                            {daily.map((m, mindx) => (
-                                            <td key={mindx}>
-                                                <p style={{ fontSize: '11px', color: '#666' }}>
-                                                    {formatDisplay(m.incomeFrom) || '0'} - {m.incomeTo ? formatDisplay(m.incomeTo) : '∞'}
-                                                </p>
-                                                <span>{formatDisplay(m.fixedAmount)}</span>
-                                                <p>+ {m.percentageOverBase} Over</p>
-                                                <button
-                                                        className={`${styles.iconButton} ${styles.editIcon}`}
-                                                         onClick={() => handleEdit(m)}
-                                                        title="Edit">
-                                                        <FaRegEdit />
-                                                    </button>
-                                                    <button
-                                                        className={`${styles.iconButton} ${styles.deleteIcon}`}
-                                                        onClick={() => handleDelete(m.wTaxContributionId)}
-                                                        title="Delete">
-                                                        <FaTrashAlt />
-                                                    </button>
-                                            </td>
-                                            ))}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
+    const id =
+      typeof idOrObj === "number" ? idOrObj : idOrObj.wTaxContributionId;
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      text: "This action cannot be undone.",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      const res = await fetchWithAuth(
+        `${runtimeConfig.getApiUrl("administrative")}/api/wTAXContribution/delete/${id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) throw new Error(await res.text());
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      await loadTaxData();
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to delete record.", "error");
+    }
+  };
+
+  return (
+    <div className={modalStyles.Modal}>
+      <div className={modalStyles.modalContent}>
+        <div className={modalStyles.modalHeader}>
+          <h2 className={modalStyles.mainTitle}>With-Holding Tax Table</h2>
         </div>
-    )
+        <div className={modalStyles.modalBody}>
+          <form className={styles.TaxForm} onSubmit={onSubmit}>
+            <label>Salary Type</label>
+            <select
+              value={salaryType}
+              onChange={(e) => setSalaryType(e.target.value)}
+            >
+              <option value="Monthly">Monthly</option>
+              <option value="Semi-Monthly">Semi-Monthly</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Daily">Daily</option>
+            </select>
+            <label>Income From (Minimum Taxable) *</label>
+            <input
+              className={styles.date}
+              type="text"
+              placeholder="e.g., 0 or 10417"
+              value={formatDisplay(incomeFrom)}
+              onChange={(e) => setIncomeFrom(parseRawNum(e.target.value))}
+              required={true}
+            />
+            <label>
+              Income To (Maximum - Leave blank for &quot;and above&quot;)
+            </label>
+            <input
+              className={styles.date}
+              type="text"
+              placeholder="e.g., 10417 (leave blank for last bracket)"
+              value={formatDisplay(incomeTo)}
+              onChange={(e) => setIncomeTo(parseRawNum(e.target.value))}
+            />
+            <label>Fixed Amount (Base Tax)</label>
+            <input
+              className={styles.date}
+              type="text"
+              placeholder="e.g., 0 or 1250"
+              value={formatDisplay(fixed)}
+              onChange={(e) => setFixed(parseRawNum(e.target.value, true))}
+              required={true}
+            />
+            <label>Percentage Over Base</label>
+            <input
+              className={styles.date}
+              type="text"
+              placeholder="e.g., 20 or 25"
+              value={percentage}
+              onChange={(e) => setPercentage(e.target.value)}
+              required={true}
+            />
+            <label>Amount (Legacy - optional)</label>
+            <input
+              className={styles.date}
+              type="text"
+              placeholder="Optional - for backward compatibility"
+              value={formatDisplay(amount)}
+              onChange={(e) => setAmount(parseRawNum(e.target.value))}
+            />
+            <div className={styles.buttonGroup}>
+              <button
+                type="submit"
+                className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={loading}
+              >
+                {isEditing ? "Update" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={handleClear}
+                className={styles.clearButton}
+                disabled={loading}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+
+          {monthly.length > 0 && (
+            <div>
+              <h4 className={styles.tableHeader}>TAX TABLE ENTRIES MONTHLY</h4>
+              <div className={styles.TaxTable}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Salary Type</th>
+                      {monthly.map((m, idx) => (
+                        <th key={idx}>{idx + 1}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{monthly[0]?.salaryType}</td>
+                      {monthly.map((m, mindx) => (
+                        <td key={mindx}>
+                          <p style={{ fontSize: "11px", color: "#666" }}>
+                            {formatDisplay(m.incomeFrom) || "0"} -{" "}
+                            {m.incomeTo ? formatDisplay(m.incomeTo) : "∞"}
+                          </p>
+                          <span>{formatDisplay(m.fixedAmount)}</span>
+                          <p>+ {m.percentageOverBase} Over</p>
+                          <button
+                            className={`${styles.iconButton} ${styles.editIcon}`}
+                            onClick={() => handleEdit(m)}
+                            title="Edit"
+                            disabled={!canEdit}
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className={`${styles.iconButton} ${styles.deleteIcon}`}
+                            onClick={() => handleDelete(m.wTaxContributionId)}
+                            title="Delete"
+                            disabled={!canDelete}
+                          >
+                            <FaTrashAlt />
+                          </button>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {semiMonthly.length > 0 && (
+            <div>
+              <h4 className={styles.tableHeader}>
+                TAX TABLE ENTRIES SEMI-MONTHLY
+              </h4>
+              <div className={styles.TaxTable}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Salary Type</th>
+                      {semiMonthly.map((m, idx) => (
+                        <th key={idx}>{idx + 1}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{semiMonthly[0]?.salaryType}</td>
+                      {semiMonthly.map((m, mindx) => (
+                        <td key={mindx}>
+                          <p style={{ fontSize: "11px", color: "#666" }}>
+                            {formatDisplay(m.incomeFrom) || "0"} -{" "}
+                            {m.incomeTo ? formatDisplay(m.incomeTo) : "∞"}
+                          </p>
+                          <span>{formatDisplay(m.fixedAmount)}</span>
+                          <p>+ {m.percentageOverBase} Over</p>
+                          <p>{formatDisplay(m.taxAmount)}</p>
+                          <button
+                            className={`${styles.iconButton} ${styles.editIcon}`}
+                            onClick={() => handleEdit(m)}
+                            title="Edit"
+                            disabled={!canEdit}
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className={`${styles.iconButton} ${styles.deleteIcon}`}
+                            onClick={() => handleDelete(m.wTaxContributionId)}
+                            title="Delete"
+                            disabled={!canDelete}
+                          >
+                            <FaTrashAlt />
+                          </button>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {weekly.length > 0 && (
+            <div>
+              <h4 className={styles.tableHeader}>TAX TABLE ENTRIES WEEKLY</h4>
+              <div className={styles.TaxTable}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Salary Type</th>
+                      {weekly.map((m, idx) => (
+                        <th key={idx}>{idx + 1}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{weekly[0]?.salaryType}</td>
+                      {weekly.map((m, mindx) => (
+                        <td key={mindx}>
+                          <p style={{ fontSize: "11px", color: "#666" }}>
+                            {formatDisplay(m.incomeFrom) || "0"} -{" "}
+                            {m.incomeTo ? formatDisplay(m.incomeTo) : "∞"}
+                          </p>
+                          <span>{formatDisplay(m.fixedAmount)}</span>
+                          <p>+ {m.percentageOverBase} Over</p>
+                          <button
+                            className={`${styles.iconButton} ${styles.editIcon}`}
+                            onClick={() => handleEdit(m)}
+                            title="Edit"
+                            disabled={!canEdit}
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className={`${styles.iconButton} ${styles.deleteIcon}`}
+                            onClick={() => handleDelete(m.wTaxContributionId)}
+                            title="Delete"
+                            disabled={!canDelete}
+                          >
+                            <FaTrashAlt />
+                          </button>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {daily.length > 0 && (
+            <div>
+              <h4 className={styles.tableHeader}>TAX TABLE ENTRIES DAILY</h4>
+              <div className={styles.TaxTable}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Salary Type</th>
+                      {daily.map((m, idx) => (
+                        <th key={idx}>{idx + 1}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{daily[0]?.salaryType}</td>
+                      {daily.map((m, mindx) => (
+                        <td key={mindx}>
+                          <p style={{ fontSize: "11px", color: "#666" }}>
+                            {formatDisplay(m.incomeFrom) || "0"} -{" "}
+                            {m.incomeTo ? formatDisplay(m.incomeTo) : "∞"}
+                          </p>
+                          <span>{formatDisplay(m.fixedAmount)}</span>
+                          <p>+ {m.percentageOverBase} Over</p>
+                          <button
+                            className={`${styles.iconButton} ${styles.editIcon}`}
+                            onClick={() => handleEdit(m)}
+                            title="Edit"
+                            disabled={!canEdit}
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className={`${styles.iconButton} ${styles.deleteIcon}`}
+                            onClick={() => handleDelete(m.wTaxContributionId)}
+                            title="Delete"
+                            disabled={!canDelete}
+                          >
+                            <FaTrashAlt />
+                          </button>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

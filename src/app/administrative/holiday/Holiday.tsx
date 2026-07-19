@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -8,8 +10,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-const API_BASE_URL_ADMINISTRATIVE =
-  runtimeConfig.getApiUrl("administrative");
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 type Holiday = {
   holidayId?: number;
@@ -56,6 +57,9 @@ const toBackendDate = (value?: string) => {
 };
 
 export default function HolidayModule() {
+  const canAdd = localStorageUtil.canAdd("admin.holiday");
+  const canEdit = localStorageUtil.canEdit("admin.holiday");
+  const canDelete = localStorageUtil.canDelete("admin.holiday");
   const [arr, setArr] = useState<Holiday[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editItem, setEditItem] = useState<Holiday | null>(null);
@@ -87,7 +91,7 @@ export default function HolidayModule() {
   const loadHolidays = useCallback(async () => {
     try {
       const response = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/holiday/get-all`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/holiday/get-all`,
       );
 
       if (!response.ok) {
@@ -125,6 +129,17 @@ export default function HolidayModule() {
   };
 
   const handleEdit = (item: Holiday) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setEditItem(item);
     setIsEditing(true);
     setForm({
@@ -138,6 +153,17 @@ export default function HolidayModule() {
   };
 
   const handleDelete = (item: Holiday) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     Swal.fire({
       text: `Are you sure you want to delete "${item.name}"?`,
       icon: "warning",
@@ -148,7 +174,7 @@ export default function HolidayModule() {
         try {
           const response = await fetchWithAuth(
             `${API_BASE_URL_ADMINISTRATIVE}/api/holiday/delete/${item.holidayId}`,
-            { method: "DELETE" }
+            { method: "DELETE" },
           );
 
           if (!response.ok) {
@@ -165,6 +191,21 @@ export default function HolidayModule() {
   };
 
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     const payload = {
@@ -182,7 +223,7 @@ export default function HolidayModule() {
           {
             method: "POST",
             body: JSON.stringify(payload),
-          }
+          },
         );
 
         if (!response.ok) {
@@ -196,7 +237,7 @@ export default function HolidayModule() {
           {
             method: "PUT",
             body: JSON.stringify(payload),
-          }
+          },
         );
 
         if (!response.ok) {
@@ -226,7 +267,9 @@ export default function HolidayModule() {
             <input
               type="text"
               value={form.code}
-              onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, code: e.target.value }))
+              }
               required
             />
 
@@ -234,7 +277,9 @@ export default function HolidayModule() {
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, name: e.target.value }))
+              }
               required
             />
 
@@ -242,7 +287,9 @@ export default function HolidayModule() {
             <input
               type="date"
               value={form.holidayDate}
-              onChange={(e) => setForm((prev) => ({ ...prev, holidayDate: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, holidayDate: e.target.value }))
+              }
               required
             />
 
@@ -250,13 +297,17 @@ export default function HolidayModule() {
             <input
               type="date"
               value={form.observedDate || ""}
-              onChange={(e) => setForm((prev) => ({ ...prev, observedDate: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, observedDate: e.target.value }))
+              }
             />
 
             <label>Holiday Type</label>
             <select
               value={form.holidayType}
-              onChange={(e) => setForm((prev) => ({ ...prev, holidayType: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, holidayType: e.target.value }))
+              }
               required
             >
               {HOLIDAY_TYPES.map((type) => (
@@ -269,7 +320,9 @@ export default function HolidayModule() {
             <label>Scope</label>
             <select
               value={form.holidayScope}
-              onChange={(e) => setForm((prev) => ({ ...prev, holidayScope: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, holidayScope: e.target.value }))
+              }
               required
             >
               {HOLIDAY_SCOPES.map((scope) => (
@@ -293,7 +346,10 @@ export default function HolidayModule() {
               type="text"
               value={form.sourceReference ?? ""}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, sourceReference: e.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  sourceReference: e.target.value,
+                }))
               }
             />
 
@@ -302,7 +358,9 @@ export default function HolidayModule() {
                 <input
                   type="checkbox"
                   checked={form.withPay}
-                  onChange={(e) => setForm((prev) => ({ ...prev, withPay: e.target.checked }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, withPay: e.target.checked }))
+                  }
                 />
                 With Pay
               </label>
@@ -312,7 +370,10 @@ export default function HolidayModule() {
                   type="checkbox"
                   checked={form.isWorkingHoliday}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, isWorkingHoliday: e.target.checked }))
+                    setForm((prev) => ({
+                      ...prev,
+                      isWorkingHoliday: e.target.checked,
+                    }))
                   }
                 />
                 Working Holiday
@@ -322,7 +383,12 @@ export default function HolidayModule() {
                 <input
                   type="checkbox"
                   checked={form.recurringAlways}
-                  onChange={(e) => setForm((prev) => ({ ...prev, recurringAlways: e.target.checked }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      recurringAlways: e.target.checked,
+                    }))
+                  }
                 />
                 Recurring Annually
               </label>
@@ -331,7 +397,9 @@ export default function HolidayModule() {
                 <input
                   type="checkbox"
                   checked={form.isActive}
-                  onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, isActive: e.target.checked }))
+                  }
                 />
                 Active
               </label>
@@ -341,6 +409,7 @@ export default function HolidayModule() {
               <button
                 type="submit"
                 className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isEditing ? !canEdit : !canAdd}
               >
                 {isEditing ? "Update" : "Save"}
               </button>

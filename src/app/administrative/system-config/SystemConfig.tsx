@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import React, { useState, useEffect, useCallback } from "react";
 import styles from "@/styles/SystemConfig.module.scss";
 import Swal from "sweetalert2";
@@ -15,6 +17,7 @@ type SystemConfigEntry = {
 };
 
 export default function SystemConfig() {
+  const canEdit = localStorageUtil.canEdit("admin.technicalSettings");
   const [configs, setConfigs] = useState<SystemConfigEntry[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
@@ -25,7 +28,9 @@ export default function SystemConfig() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL}/api/system-config/get-all`);
+      const res = await fetchWithAuth(
+        `${API_BASE_URL}/api/system-config/get-all`,
+      );
       if (!res.ok) throw new Error("Failed to load system config");
       const data: SystemConfigEntry[] = await res.json();
       setConfigs(data);
@@ -47,6 +52,17 @@ export default function SystemConfig() {
   }, [load]);
 
   const startEdit = (entry: SystemConfigEntry) => {
+    /* RBAC:startEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setEditingKey(entry.configKey);
     setEditValue(entry.configValue);
   };
@@ -57,8 +73,24 @@ export default function SystemConfig() {
   };
 
   const saveEdit = async (configKey: string) => {
+    /* RBAC:saveEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     if (!editValue.trim()) {
-      Swal.fire({ title: "Validation", text: "Value cannot be empty.", icon: "warning", confirmButtonText: "OK" });
+      Swal.fire({
+        title: "Validation",
+        text: "Value cannot be empty.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
       return;
     }
 
@@ -74,11 +106,14 @@ export default function SystemConfig() {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL}/api/system-config/update/${encodeURIComponent(configKey)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ configValue: editValue.trim() }),
-      });
+      const res = await fetchWithAuth(
+        `${API_BASE_URL}/api/system-config/update/${encodeURIComponent(configKey)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ configValue: editValue.trim() }),
+        },
+      );
 
       if (!res.ok) throw new Error("Update failed");
 
@@ -93,17 +128,25 @@ export default function SystemConfig() {
       await load();
     } catch (err) {
       console.error(err);
-      Swal.fire({ title: "Error", text: "Failed to update configuration.", icon: "error", confirmButtonText: "OK" });
+      Swal.fire({
+        title: "Error",
+        text: "Failed to update configuration.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     }
   };
 
   // Group configs by category
-  const grouped = configs.reduce<Record<string, SystemConfigEntry[]>>((acc, cfg) => {
-    const cat = cfg.category || "General";
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(cfg);
-    return acc;
-  }, {});
+  const grouped = configs.reduce<Record<string, SystemConfigEntry[]>>(
+    (acc, cfg) => {
+      const cat = cfg.category || "General";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(cfg);
+      return acc;
+    },
+    {},
+  );
 
   const categoryOrder = ["API Endpoints", "Security", "UI Navigation"];
   const sortedCategories = [
@@ -112,7 +155,9 @@ export default function SystemConfig() {
   ];
 
   if (loading) {
-    return <div className={styles.loadingText}>Loading system configuration...</div>;
+    return (
+      <div className={styles.loadingText}>Loading system configuration...</div>
+    );
   }
 
   return (
@@ -120,8 +165,8 @@ export default function SystemConfig() {
       <div className={styles.headerSection}>
         <h2 className={styles.pageTitle}>Technical / System Settings</h2>
         <p className={styles.pageSubtitle}>
-          Manage backend API endpoints, security settings, and UI navigation URLs.
-          Changes take effect on the next login or page refresh.
+          Manage backend API endpoints, security settings, and UI navigation
+          URLs. Changes take effect on the next login or page refresh.
         </p>
       </div>
 
@@ -140,7 +185,12 @@ export default function SystemConfig() {
               </thead>
               <tbody>
                 {grouped[category].map((cfg) => (
-                  <tr key={cfg.configKey} className={editingKey === cfg.configKey ? styles.rowEditing : ""}>
+                  <tr
+                    key={cfg.configKey}
+                    className={
+                      editingKey === cfg.configKey ? styles.rowEditing : ""
+                    }
+                  >
                     <td className={styles.keyCell}>
                       <code className={styles.keyCode}>{cfg.configKey}</code>
                     </td>
@@ -159,7 +209,9 @@ export default function SystemConfig() {
                           autoFocus
                         />
                       ) : (
-                        <span className={styles.valueText}>{cfg.configValue}</span>
+                        <span className={styles.valueText}>
+                          {cfg.configValue}
+                        </span>
                       )}
                     </td>
                     <td className={styles.actionCell}>
@@ -169,6 +221,7 @@ export default function SystemConfig() {
                             <button
                               className={styles.saveBtn}
                               onClick={() => saveEdit(cfg.configKey)}
+                              disabled={!canEdit}
                             >
                               Save
                             </button>
@@ -183,6 +236,7 @@ export default function SystemConfig() {
                           <button
                             className={styles.editBtn}
                             onClick={() => startEdit(cfg)}
+                            disabled={!canEdit}
                           >
                             Edit
                           </button>

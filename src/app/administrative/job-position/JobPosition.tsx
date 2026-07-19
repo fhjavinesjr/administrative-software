@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -12,6 +14,9 @@ import Swal from "sweetalert2";
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 export default function JobPosition() {
+  const canAdd = localStorageUtil.canAdd("admin.jobPosition");
+  const canEdit = localStorageUtil.canEdit("admin.jobPosition");
+  const canDelete = localStorageUtil.canDelete("admin.jobPosition");
   type JobPositionItem = {
     jobPositionId: number;
     jobPositionName: string;
@@ -37,7 +42,7 @@ export default function JobPosition() {
   const fetchJobPositions = useCallback(async () => {
     try {
       const res = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/get-all`,
       );
 
       if (!res.ok) {
@@ -48,7 +53,7 @@ export default function JobPosition() {
 
       // Sort alphabetically
       const sortedData = data.sort((a, b) =>
-        a.jobPositionName.localeCompare(b.jobPositionName)
+        a.jobPositionName.localeCompare(b.jobPositionName),
       );
 
       setPosition(sortedData);
@@ -60,7 +65,7 @@ export default function JobPosition() {
   useEffect(() => {
     fetchJobPositions();
   }, [fetchJobPositions]);
-  
+
   // fetch latest salary schedule and populate distinct grades
   useEffect(() => {
     const fetchGrades = async () => {
@@ -77,13 +82,11 @@ export default function JobPosition() {
         const withDates = data.filter((d) => !!d.effectivityDate);
         let latestDateStr: string | null = null;
         if (withDates.length > 0) {
-          const sorted = withDates
-            .slice()
-            .sort((a, b) => {
-              const ta = new Date(a.effectivityDate as string).getTime();
-              const tb = new Date(b.effectivityDate as string).getTime();
-              return tb - ta;
-            });
+          const sorted = withDates.slice().sort((a, b) => {
+            const ta = new Date(a.effectivityDate as string).getTime();
+            const tb = new Date(b.effectivityDate as string).getTime();
+            return tb - ta;
+          });
           latestDateStr = sorted[0].effectivityDate ?? null;
         }
 
@@ -147,18 +150,46 @@ export default function JobPosition() {
   };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     if (!jobPositionName.trim()) {
-      await Swal.fire("Missing Title", "Please enter a job position title.", "warning");
+      await Swal.fire(
+        "Missing Title",
+        "Please enter a job position title.",
+        "warning",
+      );
       return;
     }
     if (!salaryStep) {
-      await Swal.fire("Missing Step", "Please select a salary step.", "warning");
+      await Swal.fire(
+        "Missing Step",
+        "Please select a salary step.",
+        "warning",
+      );
       return;
     }
 
-    const newJob: JobPositionItem = { jobPositionId, jobPositionName, salaryGrade, salaryStep };
+    const newJob: JobPositionItem = {
+      jobPositionId,
+      jobPositionName,
+      salaryGrade,
+      salaryStep,
+    };
 
     try {
       // Swal.fire({
@@ -172,15 +203,15 @@ export default function JobPosition() {
 
       let url = `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/create`;
       let submitMethod = "POST";
-      if(isEditing) {
+      if (isEditing) {
         url = `${API_BASE_URL_ADMINISTRATIVE}/api/job-position/update/${jobPositionId}`;
         submitMethod = "PUT";
       }
 
       const res = await fetchWithAuth(url, {
-          method: submitMethod,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newJob),
+        method: submitMethod,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newJob),
       });
 
       if (!res.ok) {
@@ -226,7 +257,6 @@ export default function JobPosition() {
       // 🔁 Reload table with real IDs from backend
       await fetchJobPositions();
       handleClear();
-
     } catch (error) {
       console.error("Error saving job position:", error);
 
@@ -240,7 +270,8 @@ export default function JobPosition() {
         icon: "error",
         title: "Error",
         text:
-          message.includes("Failed to fetch") || message.includes("NetworkError")
+          message.includes("Failed to fetch") ||
+          message.includes("NetworkError")
             ? "Unable to reach the server. Please check your network or backend status."
             : message,
       });
@@ -256,6 +287,17 @@ export default function JobPosition() {
   };
 
   const handleDelete = async (obj: JobPositionItem) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     const { jobPositionId, jobPositionName } = obj;
 
     const confirm = await Swal.fire({
@@ -306,12 +348,15 @@ export default function JobPosition() {
       Swal.close();
       console.error("Error deleting job position:", error);
       const message =
-        error instanceof Error ? error.message : "An unexpected error occurred.";
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred.";
       await Swal.fire({
         icon: "error",
         title: "Error",
         text:
-          message.includes("Failed to fetch") || message.includes("NetworkError")
+          message.includes("Failed to fetch") ||
+          message.includes("NetworkError")
             ? "Unable to reach the server. Please check your network or backend status."
             : message,
       });
@@ -319,7 +364,23 @@ export default function JobPosition() {
   };
 
   const handleEdit = (obj: JobPositionItem, index: number) => {
-    const { jobPositionId: jobPositionId, jobPositionName: t, salaryGrade: g, salaryStep: s } = obj;
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
+    const {
+      jobPositionId: jobPositionId,
+      jobPositionName: t,
+      salaryGrade: g,
+      salaryStep: s,
+    } = obj;
     setEditIndex(index);
     setJobPositionId(jobPositionId);
     setJobPositionName(t);
@@ -393,7 +454,10 @@ export default function JobPosition() {
               <div className={styles.buttonGroup}>
                 <button
                   type="submit"
-                  className={isEditing ? styles.updateButton : styles.saveButton}
+                  className={
+                    isEditing ? styles.updateButton : styles.saveButton
+                  }
+                  disabled={isEditing ? !canEdit : !canAdd}
                 >
                   {isEditing ? "Update" : "Save"}
                 </button>
@@ -429,6 +493,7 @@ export default function JobPosition() {
                             className={`${styles.iconButton} ${styles.editIcon}`}
                             onClick={() => handleEdit(pos, indx)}
                             title="Edit"
+                            disabled={!canEdit}
                           >
                             <FaRegEdit />
                           </button>
@@ -436,6 +501,7 @@ export default function JobPosition() {
                             className={`${styles.iconButton} ${styles.deleteIcon}`}
                             onClick={() => handleDelete(pos)}
                             title="Delete"
+                            disabled={!canDelete}
                           >
                             <FaTrashAlt />
                           </button>

@@ -1,17 +1,21 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect, useRef } from "react";
 import styles from "@/styles/TimeShift.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
-const API_BASE_URL_ADMINISTRATIVE =
-  runtimeConfig.getApiUrl("administrative");
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 import to12HourFormat from "@/lib/utils/convert24To12HrFormat";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 export default function TimeShift() {
+  const canAdd = localStorageUtil.canAdd("admin.timeShift");
+  const canEdit = localStorageUtil.canEdit("admin.timeShift");
+  const canDelete = localStorageUtil.canDelete("admin.timeShift");
   const formRef = useRef<HTMLFormElement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -66,16 +70,16 @@ export default function TimeShift() {
   const [shifts, setShifts] = useState<TimeShift[]>([]); // store backend data
 
   const hours = Array.from({ length: 24 }, (_, i) =>
-    String(i).padStart(2, "0")
+    String(i).padStart(2, "0"),
   );
   const minutesSeconds = Array.from({ length: 60 }, (_, i) =>
-    String(i).padStart(2, "0")
+    String(i).padStart(2, "0"),
   );
 
   const handleChange = (
     field: "timeIn" | "breakOut" | "breakIn" | "timeOut",
     part: "hour" | "minute" | "second",
-    value: string
+    value: string,
   ) => {
     setForm((prev) => ({
       ...prev,
@@ -90,7 +94,7 @@ export default function TimeShift() {
   const fetchShifts = async () => {
     try {
       const res = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/getAll/time-shift`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/getAll/time-shift`,
       );
 
       if (!res.ok) {
@@ -101,7 +105,9 @@ export default function TimeShift() {
       setShifts(data);
     } catch (err) {
       console.error("Failed to fetch timeshifts:", err);
-      setMessage("Unable to load time shifts. Refresh the page or try again later.");
+      setMessage(
+        "Unable to load time shifts. Refresh the page or try again later.",
+      );
     }
   };
 
@@ -140,7 +146,7 @@ export default function TimeShift() {
   };
 
   const renderTimeSelect = (
-    field: "timeIn" | "breakOut" | "breakIn" | "timeOut"
+    field: "timeIn" | "breakOut" | "breakIn" | "timeOut",
   ) => (
     <div className={styles.timeGroup}>
       <select
@@ -172,16 +178,27 @@ export default function TimeShift() {
   );
 
   const handleDelete = async (id: number) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     try {
       const res = await fetchWithAuth(
         `${API_BASE_URL_ADMINISTRATIVE}/api/time-shift/delete/${id}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
 
       if (!res.ok) {
         throw new Error(`Delete failed: ${res.status}`);
       }
-        
+
       setShifts((prev) => prev.filter((s) => s.timeShiftId !== id));
       handleClear();
       setMessage("Time shift deleted successfully.");
@@ -192,6 +209,17 @@ export default function TimeShift() {
   };
 
   const handleEdit = (shift: TimeShift) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     const splitTime = (timeStr: string) => {
       if (!timeStr) return { hour: "", minute: "" };
       const [hour, minute] = timeStr.split(":");
@@ -240,7 +268,7 @@ export default function TimeShift() {
             block: "start",
           });
           const firstFocusable = formRef.current.querySelector(
-            "input, select, textarea, button"
+            "input, select, textarea, button",
           ) as HTMLElement | null;
           if (firstFocusable) firstFocusable.focus();
         } else {
@@ -272,12 +300,22 @@ export default function TimeShift() {
     }
 
     if (form.tsFlexible) {
-      const dayKeys: Array<keyof typeof form.flexibleDays> = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+      const dayKeys: Array<keyof typeof form.flexibleDays> = [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun",
+      ];
       for (const day of dayKeys) {
         if (form.flexibleDays[day]) {
           const limit = form.inTimeLimits[day];
           if (!limit.hour || !limit.minute) {
-            setMessage(`Please specify In-Time limit for ${day.toUpperCase()}.`);
+            setMessage(
+              `Please specify In-Time limit for ${day.toUpperCase()}.`,
+            );
             return false;
           }
         }
@@ -357,6 +395,21 @@ export default function TimeShift() {
   );
 
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     if (!validateForm()) {
@@ -419,10 +472,14 @@ export default function TimeShift() {
           const errorData = await res.json();
           // Check for duplicate code error (customize this if your backend uses a different message)
           if (
-            (errorData && errorData.message && errorData.message.toLowerCase().includes("duplicate")) ||
-            (typeof errorData === "string" && errorData.toLowerCase().includes("duplicate"))
+            (errorData &&
+              errorData.message &&
+              errorData.message.toLowerCase().includes("duplicate")) ||
+            (typeof errorData === "string" &&
+              errorData.toLowerCase().includes("duplicate"))
           ) {
-            errorMsg = "The code you entered already exists. Please use a unique code.";
+            errorMsg =
+              "The code you entered already exists. Please use a unique code.";
           } else if (errorData && errorData.message) {
             errorMsg = errorData.message;
           } else if (typeof errorData === "string") {
@@ -483,12 +540,19 @@ export default function TimeShift() {
         </div>
         <div className={modalStyles.modalBody}>
           <div className={styles.TimeShiftWrapper}>
-            <form ref={formRef} className={styles.TimeShiftForm} onSubmit={onSubmit}>
+            <form
+              ref={formRef}
+              className={styles.TimeShiftForm}
+              onSubmit={onSubmit}
+            >
               {message && (
                 <div
                   style={{
                     marginBottom: "0.75rem",
-                    color: message.includes("failed") || message.includes("Unable") ? "#b91c1c" : "#15803d",
+                    color:
+                      message.includes("failed") || message.includes("Unable")
+                        ? "#b91c1c"
+                        : "#15803d",
                   }}
                 >
                   {message}
@@ -520,7 +584,10 @@ export default function TimeShift() {
                   type="checkbox"
                   checked={form.tsFlexible}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, tsFlexible: e.target.checked }))
+                    setForm((prev) => ({
+                      ...prev,
+                      tsFlexible: e.target.checked,
+                    }))
                   }
                 />
               </div>
@@ -528,9 +595,26 @@ export default function TimeShift() {
               {form.tsFlexible && (
                 <div className={styles.flexibleSection}>
                   <label>Dynamic Flexible Schedule</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
-                    {(Object.keys(form.flexibleDays) as Array<keyof typeof form.flexibleDays>).map((day) => (
-                      <label key={day} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.75rem",
+                    }}
+                  >
+                    {(
+                      Object.keys(form.flexibleDays) as Array<
+                        keyof typeof form.flexibleDays
+                      >
+                    ).map((day) => (
+                      <label
+                        key={day}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                        }}
+                      >
                         <input
                           type="checkbox"
                           checked={form.flexibleDays[day]}
@@ -541,7 +625,11 @@ export default function TimeShift() {
                     ))}
                   </div>
 
-                  {(Object.keys(form.flexibleDays) as Array<keyof typeof form.flexibleDays>)
+                  {(
+                    Object.keys(form.flexibleDays) as Array<
+                      keyof typeof form.flexibleDays
+                    >
+                  )
                     .filter((day) => form.flexibleDays[day])
                     .map((day) => (
                       <div key={`${day}-limit`} style={{ marginTop: "0.5rem" }}>
@@ -564,7 +652,11 @@ export default function TimeShift() {
               {renderTimeSelect("timeOut")}
 
               <div className={styles.buttonGroup}>
-                <button type="submit" className={styles.saveButton}>
+                <button
+                  type="submit"
+                  className={styles.saveButton}
+                  disabled={isEditing ? !canEdit : !canAdd}
+                >
                   {isEditing ? "Update" : "Save"}
                 </button>
                 <button
@@ -596,21 +688,40 @@ export default function TimeShift() {
                       <tr key={shift.timeShiftId ?? `row-${idx}`}>
                         <td>{shift.tsCode}</td>
                         <td>{shift.tsName}</td>
-                        <td>{shift.timeIn + " [" + to12HourFormat(shift.timeIn) + "]"}</td>
+                        <td>
+                          {shift.timeIn +
+                            " [" +
+                            to12HourFormat(shift.timeIn) +
+                            "]"}
+                        </td>
                         <td>
                           {shift.breakOut
-                            ? shift.breakOut + " [" + to12HourFormat(shift.breakOut) + "]"
+                            ? shift.breakOut +
+                              " [" +
+                              to12HourFormat(shift.breakOut) +
+                              "]"
                             : "-"}
                         </td>
                         <td>
-                          {shift.breakIn ? shift.breakIn + " [" + to12HourFormat(shift.breakIn) + "]" : "-"}
+                          {shift.breakIn
+                            ? shift.breakIn +
+                              " [" +
+                              to12HourFormat(shift.breakIn) +
+                              "]"
+                            : "-"}
                         </td>
-                        <td>{shift.timeOut + " [" + to12HourFormat(shift.timeOut) + "]"}</td>
+                        <td>
+                          {shift.timeOut +
+                            " [" +
+                            to12HourFormat(shift.timeOut) +
+                            "]"}
+                        </td>
                         <td className={styles.actionsCell}>
                           <button
                             className={`${styles.iconButton} ${styles.editIcon}`}
                             onClick={() => handleEdit(shift)}
                             title="Edit"
+                            disabled={!canEdit}
                           >
                             <FaRegEdit />
                           </button>
@@ -618,6 +729,7 @@ export default function TimeShift() {
                             className={`${styles.iconButton} ${styles.deleteIcon}`}
                             onClick={() => handleDelete(shift.timeShiftId)}
                             title="Delete"
+                            disabled={!canDelete}
                           >
                             <FaTrashAlt />
                           </button>

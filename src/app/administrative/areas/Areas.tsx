@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -17,6 +19,9 @@ type AreasEntry = {
 };
 
 export default function Areas() {
+  const canAdd = localStorageUtil.canAdd("admin.areas");
+  const canEdit = localStorageUtil.canEdit("admin.areas");
+  const canDelete = localStorageUtil.canDelete("admin.areas");
 
   const [areasName, setAreasName] = useState("");
   const [areasDescription, setAreasDescription] = useState("");
@@ -40,16 +45,14 @@ export default function Areas() {
 
   const loadAreas = async () => {
     try {
-
       const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/get-all`, {
-        method: "GET"
+        method: "GET",
       });
 
       if (!res.ok) throw new Error("Failed loading areas");
 
       const data = await res.json();
       setAreas(data);
-
     } catch (err) {
       console.error(err);
     }
@@ -66,20 +69,33 @@ export default function Areas() {
   */
 
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     const payload = {
       areasName,
-      areasDescription
+      areasDescription,
     };
 
     try {
-
       if (!isEditing) {
-
         const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/create`, {
           method: "POST",
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
 
         if (!res.ok) throw new Error("Create failed");
@@ -92,15 +108,16 @@ export default function Areas() {
           icon: "success",
           title: "Area created",
           timer: 2000,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
-
       } else {
-
-        const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/update/${editId}`, {
-          method: "PUT",
-          body: JSON.stringify(payload)
-        });
+        const res = await fetchWithAuth(
+          `${API_BASE_URL}/api/areas/update/${editId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          },
+        );
 
         if (!res.ok) throw new Error("Update failed");
 
@@ -112,12 +129,11 @@ export default function Areas() {
           icon: "success",
           title: "Area updated",
           timer: 2000,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       }
 
       handleClear();
-
     } catch (err) {
       console.error(err);
     }
@@ -130,21 +146,34 @@ export default function Areas() {
   */
 
   const handleDelete = async (id: number) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
 
     const result = await Swal.fire({
       text: "Are you sure you want to delete this record?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Delete"
+      confirmButtonText: "Delete",
     });
 
     if (!result.isConfirmed) return;
 
     try {
-
-      const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/delete/${id}`, {
-        method: "DELETE"
-      });
+      const res = await fetchWithAuth(
+        `${API_BASE_URL}/api/areas/delete/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!res.ok) throw new Error("Delete failed");
 
@@ -156,9 +185,8 @@ export default function Areas() {
         icon: "success",
         title: "Deleted successfully",
         timer: 2000,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
-
     } catch (err) {
       console.error(err);
     }
@@ -171,6 +199,17 @@ export default function Areas() {
   */
 
   const handleEdit = (area: AreasEntry) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setIsEditing(true);
     setEditId(area.areasId!);
     setAreasName(area.areasName);
@@ -180,15 +219,12 @@ export default function Areas() {
   return (
     <div className={modalStyles.Modal}>
       <div className={modalStyles.modalContent}>
-
         <div className={modalStyles.modalHeader}>
           <h2 className={modalStyles.mainTitle}>Areas</h2>
         </div>
 
         <div className={modalStyles.modalBody}>
-
           <form className={styles.AreasForm} onSubmit={onSubmit}>
-
             <label>Area Name</label>
             <input
               type="text"
@@ -206,10 +242,10 @@ export default function Areas() {
             />
 
             <div className={styles.buttonGroup}>
-
               <button
                 type="submit"
                 className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isEditing ? !canEdit : !canAdd}
               >
                 {isEditing ? "Update" : "Save"}
               </button>
@@ -221,16 +257,12 @@ export default function Areas() {
               >
                 Clear
               </button>
-
             </div>
           </form>
 
           {areas.length > 0 && (
-
             <div className={styles.AreasTable}>
-
               <table className={styles.table}>
-
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -240,16 +272,12 @@ export default function Areas() {
                 </thead>
 
                 <tbody>
-
                   {areas.map((area) => (
-
                     <tr key={area.areasId}>
-
                       <td>{area.areasName}</td>
                       <td>{area.areasDescription}</td>
 
                       <td>
-
                         <button
                           className={`${styles.iconButton} ${styles.editIcon}`}
                           onClick={() => handleEdit(area)}
@@ -263,23 +291,14 @@ export default function Areas() {
                         >
                           <FaTrashAlt />
                         </button>
-
                       </td>
-
                     </tr>
-
                   ))}
-
                 </tbody>
-
               </table>
-
             </div>
-
           )}
-
         </div>
-
       </div>
     </div>
   );

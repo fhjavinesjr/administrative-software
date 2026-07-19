@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -25,6 +27,9 @@ type BusinessUnit = {
 };
 
 export default function BusinessUnit() {
+  const canAdd = localStorageUtil.canAdd("admin.businessUnits");
+  const canEdit = localStorageUtil.canEdit("admin.businessUnits");
+  const canDelete = localStorageUtil.canDelete("admin.businessUnits");
   const [areas, setAreas] = useState<Area[]>([]);
   const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
 
@@ -46,13 +51,18 @@ export default function BusinessUnit() {
   };
 
   const loadAreas = async () => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/get-all`, { method: "GET" });
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/areas/get-all`, {
+      method: "GET",
+    });
     const data = await res.json();
     setAreas(data);
   };
 
   const loadBusinessUnits = async () => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/businessUnits/get-all`, { method: "GET" });
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/businessUnits/get-all`,
+      { method: "GET" },
+    );
     const data = await res.json();
     setBusinessUnits(data);
   };
@@ -63,6 +73,21 @@ export default function BusinessUnit() {
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     // This payload matches the structure of BusinessUnitsDTO.java
@@ -73,10 +98,10 @@ export default function BusinessUnit() {
     };
 
     try {
-      const url = isEditing 
-        ? `${API_BASE_URL}/api/businessUnits/update/${editId}` 
+      const url = isEditing
+        ? `${API_BASE_URL}/api/businessUnits/update/${editId}`
         : `${API_BASE_URL}/api/businessUnits/create`;
-      
+
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetchWithAuth(url, {
@@ -103,6 +128,17 @@ export default function BusinessUnit() {
   };
 
   const handleDelete = async (id: number) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     const result = await Swal.fire({
       text: "Are you sure you want to delete this record?",
       icon: "warning",
@@ -112,11 +148,24 @@ export default function BusinessUnit() {
 
     if (!result.isConfirmed) return;
 
-    await fetchWithAuth(`${API_BASE_URL}/api/businessUnits/delete/${id}`, { method: "DELETE" });
+    await fetchWithAuth(`${API_BASE_URL}/api/businessUnits/delete/${id}`, {
+      method: "DELETE",
+    });
     loadBusinessUnits();
   };
 
   const handleEdit = (bu: BusinessUnit) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setIsEditing(true);
     setEditId(bu.businessUnitsId!);
     setBuName(bu.businessUnitsName);
@@ -125,7 +174,7 @@ export default function BusinessUnit() {
   };
 
   const getAreaName = (areaId: number) => {
-    const area = areas.find(a => a.areasId === areaId);
+    const area = areas.find((a) => a.areasId === areaId);
     return area ? area.areasName : "N/A";
   };
 
@@ -171,10 +220,18 @@ export default function BusinessUnit() {
             />
 
             <div className={styles.buttonGroup}>
-              <button type="submit" className={isEditing ? styles.updateButton : styles.saveButton}>
+              <button
+                type="submit"
+                className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isEditing ? !canEdit : !canAdd}
+              >
                 {isEditing ? "Update" : "Save"}
               </button>
-              <button type="button" className={styles.clearButton} onClick={handleClear}>
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={handleClear}
+              >
                 Clear
               </button>
             </div>
@@ -182,12 +239,31 @@ export default function BusinessUnit() {
 
           {businessUnits.length > 0 && (
             <div className={styles.BusinessUnitsTable}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #e0e0e0", display: "flex", alignItems: "center", gap: "12px" }}>
-                <label style={{ fontWeight: "bold", whiteSpace: "nowrap" }}>Filter by Area:</label>
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #e0e0e0",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+              >
+                <label style={{ fontWeight: "bold", whiteSpace: "nowrap" }}>
+                  Filter by Area:
+                </label>
                 <select
                   value={filterAreaId}
-                  onChange={(e) => setFilterAreaId(e.target.value === "" ? "" : Number(e.target.value))}
-                  style={{ borderRadius: "4px", border: "1px solid #ccc", padding: "6px 10px", minWidth: "220px" }}
+                  onChange={(e) =>
+                    setFilterAreaId(
+                      e.target.value === "" ? "" : Number(e.target.value),
+                    )
+                  }
+                  style={{
+                    borderRadius: "4px",
+                    border: "1px solid #ccc",
+                    padding: "6px 10px",
+                    minWidth: "220px",
+                  }}
                 >
                   <option value="">All Areas</option>
                   {areas.map((area) => (
@@ -208,23 +284,32 @@ export default function BusinessUnit() {
                 </thead>
                 <tbody>
                   {businessUnits
-                    .filter((bu) => filterAreaId === "" || bu.areasId === filterAreaId)
+                    .filter(
+                      (bu) =>
+                        filterAreaId === "" || bu.areasId === filterAreaId,
+                    )
                     .map((bu) => (
-                    <tr key={bu.businessUnitsId}>
-                      <td>{bu.businessUnitsCode}</td>
-                      <td>{bu.businessUnitsName}</td>
-                      <td>{getAreaName(bu.areasId)}</td>
+                      <tr key={bu.businessUnitsId}>
+                        <td>{bu.businessUnitsCode}</td>
+                        <td>{bu.businessUnitsName}</td>
+                        <td>{getAreaName(bu.areasId)}</td>
 
-                      <td>
-                        <button className={`${styles.iconButton} ${styles.editIcon}`} onClick={() => handleEdit(bu)}>
-                          <FaRegEdit />
-                        </button>
-                        <button className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => handleDelete(bu.businessUnitsId!)}>
-                          <FaTrashAlt />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        <td>
+                          <button
+                            className={`${styles.iconButton} ${styles.editIcon}`}
+                            onClick={() => handleEdit(bu)}
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className={`${styles.iconButton} ${styles.deleteIcon}`}
+                            onClick={() => handleDelete(bu.businessUnitsId!)}
+                          >
+                            <FaTrashAlt />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

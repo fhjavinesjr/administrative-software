@@ -18,6 +18,8 @@ type Props = {
   eoDate: string;
   selectedItems?: SalaryScheduleItem[] | null;
   onClear?: () => void;
+  canAdd: boolean;
+  canEdit: boolean;
 };
 
 export default function SalaryScheduleTable({
@@ -27,14 +29,19 @@ export default function SalaryScheduleTable({
   eoNo,
   eoDate,
   selectedItems = null,
-  onClear
+  onClear,
+  canAdd,
+  canEdit,
 }: Props) {
   const steps = Array.from({ length: 8 }, (_, i) => i + 1);
   const grades = Array.from({ length: 33 }, (_, i) => i + 1);
 
   const [isEditing, setIsEditing] = useState<boolean | null>(false);
-  const initialSalaryData: SalaryCell[][] = grades.map(() => steps.map(() => ({ monthly: "" })));
-  const [salaryData, setSalaryData] = useState<SalaryCell[][]>(initialSalaryData);
+  const initialSalaryData: SalaryCell[][] = grades.map(() =>
+    steps.map(() => ({ monthly: "" })),
+  );
+  const [salaryData, setSalaryData] =
+    useState<SalaryCell[][]>(initialSalaryData);
 
   // populate grid when selectedItems is provided (audit -> view)
   useEffect(() => {
@@ -43,14 +50,23 @@ export default function SalaryScheduleTable({
     }
 
     // create fresh empty grid
-    const newGrid: SalaryCell[][] = grades.map(() => steps.map(() => ({ monthly: "" })));
+    const newGrid: SalaryCell[][] = grades.map(() =>
+      steps.map(() => ({ monthly: "" })),
+    );
 
     selectedItems.forEach((it) => {
       // expect salaryGrade and salaryStep in item
       const g = Number(it.salaryGrade);
       const s = Number(it.salaryStep);
       const monthly = it.monthlySalary != null ? String(it.monthlySalary) : "";
-      if (!isNaN(g) && !isNaN(s) && g >= 1 && g <= grades.length && s >= 1 && s <= steps.length) {
+      if (
+        !isNaN(g) &&
+        !isNaN(s) &&
+        g >= 1 &&
+        g <= grades.length &&
+        s >= 1 &&
+        s <= steps.length
+      ) {
         newGrid[g - 1][s - 1].monthly = monthly;
       }
     });
@@ -61,13 +77,28 @@ export default function SalaryScheduleTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedItems]);
 
-  const handleInputChange = (gradeIndex: number, stepIndex: number, value: string) => {
+  const handleInputChange = (
+    gradeIndex: number,
+    stepIndex: number,
+    value: string,
+  ) => {
+    if (isEditing ? !canEdit : !canAdd) return;
     const updated = [...salaryData];
     updated[gradeIndex][stepIndex].monthly = value;
     setSalaryData(updated);
   };
 
   const handleSave = async () => {
+    if (isEditing ? !canEdit : !canAdd) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this salary schedule."
+          : "You do not have permission to add a salary schedule.",
+      });
+      return;
+    }
     try {
       let adminSvcUrl = `${API_BASE_URL_ADMINISTRATIVE}/api/salary-schedule/create`;
       let submitMethod = "POST";
@@ -86,7 +117,7 @@ export default function SalaryScheduleTable({
             const existing = selectedItems?.find(
               (it) =>
                 Number(it.salaryGrade) === gradeIndex + 1 &&
-                Number(it.salaryStep) === stepIndex + 1
+                Number(it.salaryStep) === stepIndex + 1,
             );
             items.push({
               salaryScheduleId: existing?.salaryScheduleId ?? null,
@@ -103,8 +134,11 @@ export default function SalaryScheduleTable({
         });
       });
 
-      if(items.length < 264) { //264 is the total no of salary schedule
-        throw new Error("Please complete all salary grade and step entries before saving.");
+      if (items.length < 264) {
+        //264 is the total no of salary schedule
+        throw new Error(
+          "Please complete all salary grade and step entries before saving.",
+        );
       }
 
       const salaryScheduleResponse = await fetchWithAuth(adminSvcUrl, {
@@ -122,7 +156,9 @@ export default function SalaryScheduleTable({
 
       Swal.fire({
         icon: "success",
-        title: !isEditing ? "Salary Schedule Created" : "Salary Schedule Updated",
+        title: !isEditing
+          ? "Salary Schedule Created"
+          : "Salary Schedule Updated",
         text: "",
       });
 
@@ -141,19 +177,20 @@ export default function SalaryScheduleTable({
       grades.map(() =>
         steps.map(() => ({
           monthly: "",
-        }))
-      )
+        })),
+      ),
     );
 
-    if(onClear) {
+    if (onClear) {
       onClear();
-    } 
+    }
 
     // exit edit mode when clearing
     setIsEditing(false);
   };
 
   const handleNew = () => {
+    if (!canAdd) return;
     setIsEditing(null);
   };
 
@@ -161,12 +198,20 @@ export default function SalaryScheduleTable({
     <div className={styles.SalaryScheduleTable}>
       <div className={styles.toolbar}>
         {isEditing != null && isEditing === false ? (
-          <button onClick={handleNew} className={styles.newButton}>
+          <button
+            onClick={handleNew}
+            className={styles.newButton}
+            disabled={!canAdd}
+          >
             + New
           </button>
         ) : (
           <>
-            <button onClick={handleSave} className={styles.saveButton}>
+            <button
+              onClick={handleSave}
+              className={styles.saveButton}
+              disabled={isEditing ? !canEdit : !canAdd}
+            >
               💾 Save
             </button>
           </>
@@ -195,17 +240,22 @@ export default function SalaryScheduleTable({
                 <td className={styles.gradeCell}>SG {grade}</td>
                 {steps.map((step, stepIndex) => (
                   <td key={step} className={styles.salaryCell}>
-                    {isEditing == null || isEditing ? (
+                    {(isEditing == null && canAdd) ||
+                    (isEditing === true && canEdit) ? (
                       <input
                         type="text"
                         value={
                           salaryData[gradeIndex][stepIndex].monthly
-                            ? Number(salaryData[gradeIndex][stepIndex].monthly).toLocaleString()
+                            ? Number(
+                                salaryData[gradeIndex][stepIndex].monthly,
+                              ).toLocaleString()
                             : ""
                         }
                         onChange={(e) => {
                           // Strip commas and any non-digit characters before storing
-                          const raw = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                          const raw = e.target.value
+                            .replace(/,/g, "")
+                            .replace(/[^0-9]/g, "");
                           handleInputChange(gradeIndex, stepIndex, raw);
                         }}
                         className={styles.salaryInput}
@@ -214,18 +264,20 @@ export default function SalaryScheduleTable({
                     ) : (
                       <div className={styles.salaryContent}>
                         <div className={styles.monthly}>
-                          <span className={styles.label}>Monthly:</span>{" "}
-                          ₱
+                          <span className={styles.label}>Monthly:</span> ₱
                           {salaryData[gradeIndex][stepIndex].monthly
-                            ? Number(salaryData[gradeIndex][stepIndex].monthly).toLocaleString()
+                            ? Number(
+                                salaryData[gradeIndex][stepIndex].monthly,
+                              ).toLocaleString()
                             : "-"}
                         </div>
                         <div className={styles.annual}>
-                          <span className={styles.label}>Annual:</span>{" "}
-                          ₱
+                          <span className={styles.label}>Annual:</span> ₱
                           {salaryData[gradeIndex][stepIndex].monthly
                             ? (
-                                Number(salaryData[gradeIndex][stepIndex].monthly) * 12
+                                Number(
+                                  salaryData[gradeIndex][stepIndex].monthly,
+                                ) * 12
                               ).toLocaleString()
                             : "-"}
                         </div>

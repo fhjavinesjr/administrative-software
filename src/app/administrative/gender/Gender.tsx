@@ -1,5 +1,7 @@
 "use client";
 
+import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+
 import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useEffect, useState, useCallback } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
@@ -8,8 +10,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 
-const API_BASE_URL_ADMINISTRATIVE =
-  runtimeConfig.getApiUrl("administrative");
+const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
 type GenderItem = {
   genderId?: number;
@@ -18,6 +19,9 @@ type GenderItem = {
 };
 
 export default function Gender() {
+  const canAdd = localStorageUtil.canAdd("admin.gender");
+  const canEdit = localStorageUtil.canEdit("admin.gender");
+  const canDelete = localStorageUtil.canDelete("admin.gender");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [datas, setData] = useState<GenderItem[]>([]);
@@ -38,7 +42,7 @@ export default function Gender() {
   const loadGenders = useCallback(async () => {
     try {
       const response = await fetchWithAuth(
-        `${API_BASE_URL_ADMINISTRATIVE}/api/gender/get-all`
+        `${API_BASE_URL_ADMINISTRATIVE}/api/gender/get-all`,
       );
 
       if (!response.ok) {
@@ -58,6 +62,21 @@ export default function Gender() {
 
   /* ------------------ Submit ------------------ */
   const onSubmit = async (e: React.FormEvent) => {
+    /* RBAC:onSubmit */
+
+    if (isEditing ? !canEdit : !canAdd) {
+      e.preventDefault();
+
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: isEditing
+          ? "You do not have permission to edit this record."
+          : "You do not have permission to add a record.",
+      });
+
+      return;
+    }
     e.preventDefault();
 
     const payload = { code, name };
@@ -69,7 +88,7 @@ export default function Gender() {
           {
             method: "POST",
             body: JSON.stringify(payload),
-          }
+          },
         );
 
         toast("success", "Successfully Created!");
@@ -79,7 +98,7 @@ export default function Gender() {
           {
             method: "PUT",
             body: JSON.stringify(payload),
-          }
+          },
         );
 
         toast("success", "Successfully Updated!");
@@ -102,6 +121,17 @@ export default function Gender() {
 
   /* ------------------ Edit ------------------ */
   const handleEdit = (item: GenderItem) => {
+    /* RBAC:handleEdit */
+
+    if (!canEdit) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to edit this record.",
+      });
+
+      return;
+    }
     setEditItem(item);
     setCode(item.code);
     setName(item.name);
@@ -110,6 +140,17 @@ export default function Gender() {
 
   /* ------------------ Delete ------------------ */
   const handleDelete = (item: GenderItem) => {
+    /* RBAC:handleDelete */
+
+    if (!canDelete) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Permission denied",
+        text: "You do not have permission to delete this record.",
+      });
+
+      return;
+    }
     Swal.fire({
       text: `Are you sure you want to delete "${item.name}"?`,
       icon: "warning",
@@ -120,7 +161,7 @@ export default function Gender() {
         try {
           await fetchWithAuth(
             `${API_BASE_URL_ADMINISTRATIVE}/api/gender/delete/${item.genderId}`,
-            { method: "DELETE" }
+            { method: "DELETE" },
           );
 
           toast("success", "Successfully Deleted!");
@@ -161,6 +202,7 @@ export default function Gender() {
               <button
                 type="submit"
                 className={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isEditing ? !canEdit : !canAdd}
               >
                 {isEditing ? "Update" : "Save"}
               </button>
