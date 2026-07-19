@@ -524,6 +524,24 @@ const MODULE_LIST: ModuleEntry[] = [
     hasEdit: true,
     hasDelete: true,
   },
+  {
+    key: "payroll.reports.earnings",
+    label: "Reports - Earnings",
+    type: "module",
+    indent: 0,
+  },
+  {
+    key: "payroll.reports.deductions",
+    label: "Reports - Deductions",
+    type: "module",
+    indent: 0,
+  },
+  {
+    key: "payroll.reports.remittances",
+    label: "Reports - Remittances",
+    type: "module",
+    indent: 0,
+  },
 
   // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
   {
@@ -610,7 +628,10 @@ type PermEntry = {
 type PermMap = Record<string, PermEntry>;
 
 type PortalModuleKey =
-  "administrative" | "hrManagement" | "timeKeeping" | "payroll";
+  | "administrative"
+  | "hrManagement"
+  | "timeKeeping"
+  | "payroll";
 type PortalModuleAccess = Record<PortalModuleKey, boolean>;
 
 type RulesetRow = {
