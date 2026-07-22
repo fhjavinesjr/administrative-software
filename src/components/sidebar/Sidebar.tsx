@@ -97,7 +97,7 @@ const hrItems: MenuItemType[] = [
   {
     id: 8,
     icon: "/leave.png",
-    label: "Leave",
+    label: "Leave Types",
     goto: "/administrative/leavetypes",
     permKey: "admin.leave",
   },
