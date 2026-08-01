@@ -11,6 +11,7 @@ export const AUTH_CONFIG = {
   PUBLIC_PAGES: [
     "/administrative/login",
     "/administrative/registration",
+    "/administrative/sso",
     "/employee-portal/login",
     "/employee-portal/registration",
     "time-keeping/login",
