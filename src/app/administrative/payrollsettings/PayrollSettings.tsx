@@ -22,6 +22,8 @@ export default function PayrollSettings() {
     effectivityDate: string;
     cutoffDays: number;
     peraProrationDivisor: number;
+    regularDayMultiplier: number;
+    regularOvertimeMultiplier: number;
   };
 
   const [data, setData] = useState<PayrollSettingsItem[]>([]);
@@ -29,6 +31,9 @@ export default function PayrollSettings() {
   const [effectivityDate, setEffectivityDate] = useState("");
   const [cutoffDays, setCutoffDays] = useState("");
   const [peraProrationDivisor, setPeraProrationDivisor] = useState("");
+  const [regularDayMultiplier, setRegularDayMultiplier] = useState("1.00");
+  const [regularOvertimeMultiplier, setRegularOvertimeMultiplier] =
+    useState("1.25");
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
 
@@ -69,7 +74,13 @@ export default function PayrollSettings() {
       return;
     }
     e.preventDefault();
-    if (!effectivityDate || !cutoffDays || !peraProrationDivisor) {
+    if (
+      !effectivityDate ||
+      !cutoffDays ||
+      !peraProrationDivisor ||
+      !regularDayMultiplier ||
+      !regularOvertimeMultiplier
+    ) {
       Swal.fire("Validation Error", "All fields are required.", "warning");
       return;
     }
@@ -78,6 +89,8 @@ export default function PayrollSettings() {
       effectivityDate: toCustomFormat(effectivityDate, false),
       cutoffDays: parseInt(cutoffDays, 10),
       peraProrationDivisor: parseInt(peraProrationDivisor, 10),
+      regularDayMultiplier: parseFloat(regularDayMultiplier),
+      regularOvertimeMultiplier: parseFloat(regularOvertimeMultiplier),
     };
 
     try {
@@ -150,6 +163,8 @@ export default function PayrollSettings() {
     setEffectivityDate(toDateInputValue(item.effectivityDate));
     setCutoffDays(String(item.cutoffDays));
     setPeraProrationDivisor(String(item.peraProrationDivisor));
+    setRegularDayMultiplier(String(item.regularDayMultiplier ?? 1));
+    setRegularOvertimeMultiplier(String(item.regularOvertimeMultiplier ?? 1.25));
     setIsEditing(true);
   };
 
@@ -197,6 +212,8 @@ export default function PayrollSettings() {
     setEffectivityDate("");
     setCutoffDays("");
     setPeraProrationDivisor("");
+    setRegularDayMultiplier("1.00");
+    setRegularOvertimeMultiplier("1.25");
     setIsEditing(false);
     setEditId(null);
   };
@@ -246,6 +263,36 @@ export default function PayrollSettings() {
               Divisor used for PERA absent-day proration (default: 22).
             </span>
 
+            <label>Regular Day Multiplier</label>
+            <input
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              value={regularDayMultiplier}
+              onChange={(e) => setRegularDayMultiplier(e.target.value)}
+              placeholder="e.g. 1.00"
+              required
+            />
+            <span className={styles.fieldNote}>
+              Base factor for regular-day premium-pay computations (default:
+              1.00).
+            </span>
+
+            <label>Regular Overtime Multiplier</label>
+            <input
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              value={regularOvertimeMultiplier}
+              onChange={(e) => setRegularOvertimeMultiplier(e.target.value)}
+              placeholder="e.g. 1.25"
+              required
+            />
+            <span className={styles.fieldNote}>
+              Factor for regular-day overtime premium-pay computations
+              (default: 1.25).
+            </span>
+
             <div className={styles.buttonGroup}>
               <button
                 type="submit"
@@ -274,6 +321,8 @@ export default function PayrollSettings() {
                     <th>Effectivity Date</th>
                     <th>Cutoff Days</th>
                     <th>PERA Proration Divisor</th>
+                    <th>Regular Day</th>
+                    <th>Regular Overtime</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -283,6 +332,12 @@ export default function PayrollSettings() {
                       <td>{item.effectivityDate}</td>
                       <td>{item.cutoffDays}</td>
                       <td>{item.peraProrationDivisor}</td>
+                      <td>{Number(item.regularDayMultiplier ?? 1).toFixed(4)}</td>
+                      <td>
+                        {Number(item.regularOvertimeMultiplier ?? 1.25).toFixed(
+                          4,
+                        )}
+                      </td>
                       <td>
                         <button
                           className={`${styles.iconButton} ${styles.editIcon}`}
