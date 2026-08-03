@@ -543,6 +543,17 @@ const MODULE_LIST: ModuleEntry[] = [
     indent: 0,
   },
 
+  { key: "app.primehr", label: "PRIME-HRM", type: "app-header", indent: 0 },
+  {
+    key: "primehr.competency",
+    label: "Competency Administration",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasDelete: true,
+  },
+
   // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
   {
     key: "app.empPortal",
@@ -631,7 +642,8 @@ type PortalModuleKey =
   | "administrative"
   | "hrManagement"
   | "timeKeeping"
-  | "payroll";
+  | "payroll"
+  | "primeHr";
 type PortalModuleAccess = Record<PortalModuleKey, boolean>;
 
 type RulesetRow = {
@@ -654,6 +666,7 @@ const EMPTY_PORTAL_MODULE_ACCESS: PortalModuleAccess = {
   hrManagement: false,
   timeKeeping: false,
   payroll: false,
+  primeHr: false,
 };
 
 const PORTAL_MODULE_BY_APP_KEY: Partial<Record<string, PortalModuleKey>> = {
@@ -661,6 +674,7 @@ const PORTAL_MODULE_BY_APP_KEY: Partial<Record<string, PortalModuleKey>> = {
   "app.hrm": "hrManagement",
   "app.tk": "timeKeeping",
   "app.payroll": "payroll",
+  "app.primehr": "primeHr",
 };
 
 function buildEmptyMap(): PermMap {
@@ -692,6 +706,7 @@ function parsePortalModuleAccess(
       hrManagement: parsed.hrManagement === true,
       timeKeeping: parsed.timeKeeping === true,
       payroll: parsed.payroll === true,
+      primeHr: parsed.primeHr === true,
     };
   } catch {
     return { ...EMPTY_PORTAL_MODULE_ACCESS };
@@ -780,6 +795,7 @@ export default function Permission() {
         hrManagement: true,
         timeKeeping: true,
         payroll: true,
+        primeHr: true,
       });
     }
   };
