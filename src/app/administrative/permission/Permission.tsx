@@ -27,6 +27,7 @@ type ModuleEntry = {
   hasAdd?: boolean;
   hasEdit?: boolean;
   hasDelete?: boolean;
+  hasPublish?: boolean;
 };
 
 const MODULE_LIST: ModuleEntry[] = [
@@ -552,6 +553,7 @@ const MODULE_LIST: ModuleEntry[] = [
     hasAdd: true,
     hasEdit: true,
     hasDelete: true,
+    hasPublish: true,
   },
 
   // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
@@ -635,6 +637,7 @@ type PermEntry = {
   canAdd: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  canPublish: boolean;
 };
 type PermMap = Record<string, PermEntry>;
 
@@ -659,6 +662,7 @@ const EMPTY_ENTRY: PermEntry = {
   canAdd: false,
   canEdit: false,
   canDelete: false,
+  canPublish: false,
 };
 
 const EMPTY_PORTAL_MODULE_ACCESS: PortalModuleAccess = {
@@ -688,8 +692,19 @@ function buildEmptyMap(): PermMap {
 function parsePermissionData(json: string | null | undefined): PermMap {
   if (!json) return buildEmptyMap();
   try {
-    const parsed = JSON.parse(json) as PermMap;
-    return { ...buildEmptyMap(), ...parsed };
+    const parsed = JSON.parse(json) as Record<string, Partial<PermEntry>>;
+    const normalized = buildEmptyMap();
+    Object.entries(parsed).forEach(([key, entry]) => {
+      if (!(key in normalized)) return;
+      normalized[key] = {
+        canAccess: entry.canAccess === true,
+        canAdd: entry.canAdd === true,
+        canEdit: entry.canEdit === true,
+        canDelete: entry.canDelete === true,
+        canPublish: entry.canAccess === true && entry.canPublish === true,
+      };
+    });
+    return normalized;
   } catch {
     return buildEmptyMap();
   }
@@ -762,10 +777,17 @@ export default function Permission() {
   };
 
   const toggle = (key: string, field: keyof PermEntry) => {
-    setPermMap((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], [field]: !prev[key][field] },
-    }));
+    setPermMap((prev) => {
+      const current = prev[key] ?? EMPTY_ENTRY;
+      const next = { ...current, [field]: !current[field] };
+      if (field === "canAccess" && current.canAccess) {
+        next.canPublish = false;
+      }
+      if (field === "canPublish" && !current.canPublish) {
+        next.canAccess = true;
+      }
+      return { ...prev, [key]: next };
+    });
   };
 
   const togglePortalModule = (key: PortalModuleKey) => {
@@ -786,6 +808,7 @@ export default function Permission() {
             canAdd: !!m.hasAdd,
             canEdit: !!m.hasEdit,
             canDelete: !!m.hasDelete,
+            canPublish: !!m.hasPublish,
           };
         }
       });
@@ -1008,6 +1031,7 @@ export default function Permission() {
                     <th className={styles.crudCol}>Add</th>
                     <th className={styles.crudCol}>Edit</th>
                     <th className={styles.crudCol}>Delete</th>
+                    <th className={styles.crudCol}>Publish</th>
                     <th className={styles.crudCol}>Portal</th>
                   </tr>
                 </thead>
@@ -1021,6 +1045,7 @@ export default function Permission() {
                             <td style={getIndentStyle(m.indent)}>
                               <strong>{m.label}</strong>
                             </td>
+                            <td />
                             <td />
                             <td />
                             <td />
@@ -1041,7 +1066,7 @@ export default function Permission() {
                       }
                       return (
                         <tr key={m.key} className={styles.appHeader}>
-                          <td colSpan={6} style={getIndentStyle(m.indent)}>
+                          <td colSpan={7} style={getIndentStyle(m.indent)}>
                             <strong>{m.label}</strong>
                           </td>
                         </tr>
@@ -1060,6 +1085,7 @@ export default function Permission() {
                               onChange={() => toggle(m.key, "canAccess")}
                             />
                           </td>
+                          <td />
                           <td />
                           <td />
                           <td />
@@ -1102,6 +1128,17 @@ export default function Permission() {
                               type="checkbox"
                               checked={entry.canDelete}
                               onChange={() => toggle(m.key, "canDelete")}
+                            />
+                          ) : null}
+                        </td>
+                        <td className={styles.cbCell}>
+                          {m.hasPublish ? (
+                            <input
+                              type="checkbox"
+                              checked={entry.canPublish}
+                              onChange={() => toggle(m.key, "canPublish")}
+                              aria-label={`Allow publishing in ${m.label}`}
+                              title={`Allow publishing in ${m.label}`}
                             />
                           ) : null}
                         </td>
