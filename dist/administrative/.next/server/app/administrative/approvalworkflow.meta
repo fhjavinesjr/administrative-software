@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/administrative/layout,_N_T_/administrative/approvalworkflow/layout,_N_T_/administrative/approvalworkflow/page,_N_T_/administrative/approvalworkflow"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/administrative/approvalworkflow/__PAGE__",
+    "/administrative/approvalworkflow",
+    "/administrative",
+    "/_index",
+    "/_head"
+  ]
+}

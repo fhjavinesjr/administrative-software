@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/administrative/layout,_N_T_/administrative/Earning-Types/layout,_N_T_/administrative/Earning-Types/page,_N_T_/administrative/Earning-Types"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/administrative/Earning-Types/__PAGE__",
+    "/administrative/Earning-Types",
+    "/administrative",
+    "/_index",
+    "/_head"
+  ]
+}

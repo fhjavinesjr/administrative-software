@@ -1,0 +1,13 @@
+var R=require("../../../chunks/ssr/[turbopack]_runtime.js")("server/app/administrative/natureofappointment/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__06.793z._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_11s8m4m.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0s6h13y._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0ucemvw._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_0inhx6q._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_forbidden_0ghu-f7.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_0cjv-23.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_0lgvd_..js")
+R.c("server/chunks/ssr/_0l9i~ol._.js")
+R.c("server/chunks/ssr/0zjb_server_app_administrative_natureofappointment_page_actions_0~1_5yy.js")
+R.m(80321)
+module.exports=R.m(80321).exports

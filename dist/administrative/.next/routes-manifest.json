@@ -1,0 +1,297 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "hybrid",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [],
+  "staticRoutes": [
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/administrative/announcement",
+      "regex": "^/administrative/announcement(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/announcement(?:/)?$"
+    },
+    {
+      "page": "/administrative/approvalworkflow",
+      "regex": "^/administrative/approvalworkflow(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/approvalworkflow(?:/)?$"
+    },
+    {
+      "page": "/administrative/areas",
+      "regex": "^/administrative/areas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/areas(?:/)?$"
+    },
+    {
+      "page": "/administrative/businessunits",
+      "regex": "^/administrative/businessunits(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/businessunits(?:/)?$"
+    },
+    {
+      "page": "/administrative/civilstatus",
+      "regex": "^/administrative/civilstatus(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/civilstatus(?:/)?$"
+    },
+    {
+      "page": "/administrative/dayequivalent",
+      "regex": "^/administrative/dayequivalent(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/dayequivalent(?:/)?$"
+    },
+    {
+      "page": "/administrative/Deduction-Types",
+      "regex": "^/administrative/Deduction\\-Types(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/Deduction\\-Types(?:/)?$"
+    },
+    {
+      "page": "/administrative/Earning-Types",
+      "regex": "^/administrative/Earning\\-Types(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/Earning\\-Types(?:/)?$"
+    },
+    {
+      "page": "/administrative/earningleave",
+      "regex": "^/administrative/earningleave(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/earningleave(?:/)?$"
+    },
+    {
+      "page": "/administrative/employeerequest",
+      "regex": "^/administrative/employeerequest(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/employeerequest(?:/)?$"
+    },
+    {
+      "page": "/administrative/gender",
+      "regex": "^/administrative/gender(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/gender(?:/)?$"
+    },
+    {
+      "page": "/administrative/gsis",
+      "regex": "^/administrative/gsis(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/gsis(?:/)?$"
+    },
+    {
+      "page": "/administrative/hazard",
+      "regex": "^/administrative/hazard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/hazard(?:/)?$"
+    },
+    {
+      "page": "/administrative/holiday",
+      "regex": "^/administrative/holiday(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/holiday(?:/)?$"
+    },
+    {
+      "page": "/administrative/job-position",
+      "regex": "^/administrative/job\\-position(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/job\\-position(?:/)?$"
+    },
+    {
+      "page": "/administrative/leavetypes",
+      "regex": "^/administrative/leavetypes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/leavetypes(?:/)?$"
+    },
+    {
+      "page": "/administrative/login",
+      "regex": "^/administrative/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/login(?:/)?$"
+    },
+    {
+      "page": "/administrative/managepersonnel",
+      "regex": "^/administrative/managepersonnel(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/managepersonnel(?:/)?$"
+    },
+    {
+      "page": "/administrative/natureofappointment",
+      "regex": "^/administrative/natureofappointment(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/natureofappointment(?:/)?$"
+    },
+    {
+      "page": "/administrative/natureofseparation",
+      "regex": "^/administrative/natureofseparation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/natureofseparation(?:/)?$"
+    },
+    {
+      "page": "/administrative/officialengagement",
+      "regex": "^/administrative/officialengagement(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/officialengagement(?:/)?$"
+    },
+    {
+      "page": "/administrative/pagibig",
+      "regex": "^/administrative/pagibig(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/pagibig(?:/)?$"
+    },
+    {
+      "page": "/administrative/payrollsettings",
+      "regex": "^/administrative/payrollsettings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/payrollsettings(?:/)?$"
+    },
+    {
+      "page": "/administrative/permission",
+      "regex": "^/administrative/permission(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/permission(?:/)?$"
+    },
+    {
+      "page": "/administrative/philHealth",
+      "regex": "^/administrative/philHealth(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/philHealth(?:/)?$"
+    },
+    {
+      "page": "/administrative/plantilla",
+      "regex": "^/administrative/plantilla(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/plantilla(?:/)?$"
+    },
+    {
+      "page": "/administrative/premiumpaymultiplier",
+      "regex": "^/administrative/premiumpaymultiplier(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/premiumpaymultiplier(?:/)?$"
+    },
+    {
+      "page": "/administrative/registration",
+      "regex": "^/administrative/registration(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/registration(?:/)?$"
+    },
+    {
+      "page": "/administrative/salary",
+      "regex": "^/administrative/salary(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/salary(?:/)?$"
+    },
+    {
+      "page": "/administrative/salaryschedule",
+      "regex": "^/administrative/salaryschedule(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/salaryschedule(?:/)?$"
+    },
+    {
+      "page": "/administrative/sso",
+      "regex": "^/administrative/sso(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/sso(?:/)?$"
+    },
+    {
+      "page": "/administrative/system-config",
+      "regex": "^/administrative/system\\-config(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/system\\-config(?:/)?$"
+    },
+    {
+      "page": "/administrative/systemsetup",
+      "regex": "^/administrative/systemsetup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/systemsetup(?:/)?$"
+    },
+    {
+      "page": "/administrative/tax",
+      "regex": "^/administrative/tax(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/tax(?:/)?$"
+    },
+    {
+      "page": "/administrative/time-shift",
+      "regex": "^/administrative/time\\-shift(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/time\\-shift(?:/)?$"
+    },
+    {
+      "page": "/administrative/usersetting",
+      "regex": "^/administrative/usersetting(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/usersetting(?:/)?$"
+    },
+    {
+      "page": "/administrative/welcomepage",
+      "regex": "^/administrative/welcomepage(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/administrative/welcomepage(?:/)?$"
+    },
+    {
+      "page": "/api/accounts",
+      "regex": "^/api/accounts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/accounts(?:/)?$"
+    },
+    {
+      "page": "/api/login",
+      "regex": "^/api/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/login(?:/)?$"
+    },
+    {
+      "page": "/api/register",
+      "regex": "^/api/register(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/register(?:/)?$"
+    },
+    {
+      "page": "/runtime-config.js",
+      "regex": "^/runtime\\-config\\.js(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/runtime\\-config\\.js(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

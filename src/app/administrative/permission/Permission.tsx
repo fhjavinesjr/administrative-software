@@ -28,6 +28,8 @@ type ModuleEntry = {
   hasEdit?: boolean;
   hasDelete?: boolean;
   hasPublish?: boolean;
+  hasSubmit?: boolean;
+  hasApprove?: boolean;
 };
 
 const MODULE_LIST: ModuleEntry[] = [
@@ -555,6 +557,17 @@ const MODULE_LIST: ModuleEntry[] = [
     hasDelete: true,
     hasPublish: true,
   },
+  {
+    key: "primehr.position-profile",
+    label: "Position Competency Profiles",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasDelete: true,
+    hasSubmit: true,
+    hasApprove: true,
+  },
 
   // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
   {
@@ -638,6 +651,8 @@ type PermEntry = {
   canEdit: boolean;
   canDelete: boolean;
   canPublish: boolean;
+  canSubmit: boolean;
+  canApprove: boolean;
 };
 type PermMap = Record<string, PermEntry>;
 
@@ -663,6 +678,8 @@ const EMPTY_ENTRY: PermEntry = {
   canEdit: false,
   canDelete: false,
   canPublish: false,
+  canSubmit: false,
+  canApprove: false,
 };
 
 const EMPTY_PORTAL_MODULE_ACCESS: PortalModuleAccess = {
@@ -698,10 +715,12 @@ function parsePermissionData(json: string | null | undefined): PermMap {
       if (!(key in normalized)) return;
       normalized[key] = {
         canAccess: entry.canAccess === true,
-        canAdd: entry.canAdd === true,
-        canEdit: entry.canEdit === true,
-        canDelete: entry.canDelete === true,
+        canAdd: entry.canAccess === true && entry.canAdd === true,
+        canEdit: entry.canAccess === true && entry.canEdit === true,
+        canDelete: entry.canAccess === true && entry.canDelete === true,
         canPublish: entry.canAccess === true && entry.canPublish === true,
+        canSubmit: entry.canAccess === true && entry.canSubmit === true,
+        canApprove: entry.canAccess === true && entry.canApprove === true,
       };
     });
     return normalized;
@@ -781,9 +800,18 @@ export default function Permission() {
       const current = prev[key] ?? EMPTY_ENTRY;
       const next = { ...current, [field]: !current[field] };
       if (field === "canAccess" && current.canAccess) {
+        next.canAdd = false;
+        next.canEdit = false;
+        next.canDelete = false;
         next.canPublish = false;
+        next.canSubmit = false;
+        next.canApprove = false;
       }
-      if (field === "canPublish" && !current.canPublish) {
+      if (
+        (field === "canAdd" || field === "canEdit" || field === "canDelete" ||
+          field === "canPublish" || field === "canSubmit" || field === "canApprove") &&
+        !current[field]
+      ) {
         next.canAccess = true;
       }
       return { ...prev, [key]: next };
@@ -809,6 +837,8 @@ export default function Permission() {
             canEdit: !!m.hasEdit,
             canDelete: !!m.hasDelete,
             canPublish: !!m.hasPublish,
+            canSubmit: !!m.hasSubmit,
+            canApprove: !!m.hasApprove,
           };
         }
       });
@@ -1032,6 +1062,8 @@ export default function Permission() {
                     <th className={styles.crudCol}>Edit</th>
                     <th className={styles.crudCol}>Delete</th>
                     <th className={styles.crudCol}>Publish</th>
+                    <th className={styles.crudCol}>Submit</th>
+                    <th className={styles.crudCol}>Approve</th>
                     <th className={styles.crudCol}>Portal</th>
                   </tr>
                 </thead>
@@ -1045,6 +1077,8 @@ export default function Permission() {
                             <td style={getIndentStyle(m.indent)}>
                               <strong>{m.label}</strong>
                             </td>
+                            <td />
+                            <td />
                             <td />
                             <td />
                             <td />
@@ -1066,7 +1100,7 @@ export default function Permission() {
                       }
                       return (
                         <tr key={m.key} className={styles.appHeader}>
-                          <td colSpan={7} style={getIndentStyle(m.indent)}>
+                          <td colSpan={9} style={getIndentStyle(m.indent)}>
                             <strong>{m.label}</strong>
                           </td>
                         </tr>
@@ -1085,6 +1119,8 @@ export default function Permission() {
                               onChange={() => toggle(m.key, "canAccess")}
                             />
                           </td>
+                          <td />
+                          <td />
                           <td />
                           <td />
                           <td />
@@ -1139,6 +1175,28 @@ export default function Permission() {
                               onChange={() => toggle(m.key, "canPublish")}
                               aria-label={`Allow publishing in ${m.label}`}
                               title={`Allow publishing in ${m.label}`}
+                            />
+                          ) : null}
+                        </td>
+                        <td className={styles.cbCell}>
+                          {m.hasSubmit ? (
+                            <input
+                              type="checkbox"
+                              checked={entry.canSubmit}
+                              onChange={() => toggle(m.key, "canSubmit")}
+                              aria-label={`Allow submission in ${m.label}`}
+                              title={`Allow submission in ${m.label}`}
+                            />
+                          ) : null}
+                        </td>
+                        <td className={styles.cbCell}>
+                          {m.hasApprove ? (
+                            <input
+                              type="checkbox"
+                              checked={entry.canApprove}
+                              onChange={() => toggle(m.key, "canApprove")}
+                              aria-label={`Allow approval in ${m.label}`}
+                              title={`Allow approval in ${m.label}`}
                             />
                           ) : null}
                         </td>

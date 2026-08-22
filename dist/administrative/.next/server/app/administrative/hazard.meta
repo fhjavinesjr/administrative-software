@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/administrative/layout,_N_T_/administrative/hazard/layout,_N_T_/administrative/hazard/page,_N_T_/administrative/hazard"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/administrative/hazard/__PAGE__",
+    "/administrative/hazard",
+    "/administrative",
+    "/_index",
+    "/_head"
+  ]
+}

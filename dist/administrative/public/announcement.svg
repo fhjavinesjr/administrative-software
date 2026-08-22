@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" stroke="#000" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Megaphone body -->
+  <path d="M64 176 L64 336 L160 336 L160 176 Z"/>
+  <!-- Megaphone horn -->
+  <path d="M160 176 L400 80 L400 432 L160 336 Z"/>
+  <!-- Speaker dot on left -->
+  <circle cx="112" cy="256" r="20" stroke="#000" stroke-width="24" fill="none"/>
+  <!-- Sound waves on right -->
+  <path d="M432 180 Q480 256 432 332" stroke-width="28" fill="none"/>
+  <path d="M460 148 Q530 256 460 364" stroke-width="28" fill="none"/>
+  <!-- Handle/stand below -->
+  <path d="M160 336 L176 416 L224 416" stroke-width="28" fill="none"/>
+</svg>

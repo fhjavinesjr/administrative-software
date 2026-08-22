@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/administrative/layout,_N_T_/administrative/pagibig/layout,_N_T_/administrative/pagibig/page,_N_T_/administrative/pagibig"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/administrative/pagibig/__PAGE__",
+    "/administrative/pagibig",
+    "/administrative",
+    "/_index",
+    "/_head"
+  ]
+}

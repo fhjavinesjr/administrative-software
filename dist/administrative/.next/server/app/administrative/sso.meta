@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/administrative/layout,_N_T_/administrative/sso/layout,_N_T_/administrative/sso/page,_N_T_/administrative/sso"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/administrative/sso/__PAGE__",
+    "/administrative/sso",
+    "/administrative",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -1,0 +1,13 @@
+var R=require("../../../chunks/ssr/[turbopack]_runtime.js")("server/app/administrative/premiumpaymultiplier/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0eal9_i._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_02kms_f.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0s6h13y._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0ucemvw._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_0inhx6q._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_forbidden_0ghu-f7.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_0cjv-23.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_0lgvd_..js")
+R.c("server/chunks/ssr/_0l9i~ol._.js")
+R.c("server/chunks/ssr/0zjb_server_app_administrative_premiumpaymultiplier_page_actions_0_jamaj.js")
+R.m(61677)
+module.exports=R.m(61677).exports
