@@ -16,6 +16,18 @@ type SystemConfigEntry = {
   editable: boolean;
 };
 
+const isUrlConfigKey = (configKey: string): boolean =>
+  configKey.startsWith("api.url.") || configKey.startsWith("ui.url.");
+
+const isValidHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return (url.protocol === "http:" || url.protocol === "https:") && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 export default function SystemConfig() {
   const canEdit = localStorageUtil.canEdit("admin.technicalSettings");
   const [configs, setConfigs] = useState<SystemConfigEntry[]>([]);
@@ -88,6 +100,15 @@ export default function SystemConfig() {
       Swal.fire({
         title: "Validation",
         text: "Value cannot be empty.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+    if (isUrlConfigKey(configKey) && !isValidHttpUrl(editValue.trim())) {
+      Swal.fire({
+        title: "Invalid URL",
+        text: "Enter an absolute URL beginning with http:// or https://.",
         icon: "warning",
         confirmButtonText: "OK",
       });
