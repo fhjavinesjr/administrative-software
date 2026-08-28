@@ -30,6 +30,10 @@ type ModuleEntry = {
   hasPublish?: boolean;
   hasSubmit?: boolean;
   hasApprove?: boolean;
+  hasAssess?: boolean;
+  hasValidate?: boolean;
+  hasFinalize?: boolean;
+  hasDataScope?: boolean;
 };
 
 const MODULE_LIST: ModuleEntry[] = [
@@ -568,6 +572,42 @@ const MODULE_LIST: ModuleEntry[] = [
     hasSubmit: true,
     hasApprove: true,
   },
+  {
+    key: "primehr.assessment-administration",
+    label: "Assessment Administration",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasDelete: true,
+    hasPublish: true,
+    hasFinalize: true,
+    hasDataScope: true,
+  },
+  {
+    key: "primehr.competency-assessment",
+    label: "Competency Assessment",
+    type: "module",
+    indent: 0,
+    hasSubmit: true,
+    hasAssess: true,
+    hasDataScope: true,
+  },
+  {
+    key: "primehr.assessment-validation",
+    label: "Assessment Validation",
+    type: "module",
+    indent: 0,
+    hasValidate: true,
+    hasDataScope: true,
+  },
+  {
+    key: "primehr.person-profile",
+    label: "Person Competency Profiles",
+    type: "module",
+    indent: 0,
+    hasDataScope: true,
+  },
 
   // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
   {
@@ -653,6 +693,10 @@ type PermEntry = {
   canPublish: boolean;
   canSubmit: boolean;
   canApprove: boolean;
+  canAssess: boolean;
+  canValidate: boolean;
+  canFinalize: boolean;
+  dataScope: "NONE" | "OWN_RECORDS" | "ASSIGNED_RECORDS" | "AGENCY_WIDE";
 };
 type PermMap = Record<string, PermEntry>;
 
@@ -680,6 +724,10 @@ const EMPTY_ENTRY: PermEntry = {
   canPublish: false,
   canSubmit: false,
   canApprove: false,
+  canAssess: false,
+  canValidate: false,
+  canFinalize: false,
+  dataScope: "NONE",
 };
 
 const EMPTY_PORTAL_MODULE_ACCESS: PortalModuleAccess = {
@@ -721,6 +769,14 @@ function parsePermissionData(json: string | null | undefined): PermMap {
         canPublish: entry.canAccess === true && entry.canPublish === true,
         canSubmit: entry.canAccess === true && entry.canSubmit === true,
         canApprove: entry.canAccess === true && entry.canApprove === true,
+        canAssess: entry.canAccess === true && entry.canAssess === true,
+        canValidate: entry.canAccess === true && entry.canValidate === true,
+        canFinalize: entry.canAccess === true && entry.canFinalize === true,
+        dataScope: entry.canAccess === true &&
+          (entry.dataScope === "OWN_RECORDS" || entry.dataScope === "ASSIGNED_RECORDS" ||
+            entry.dataScope === "AGENCY_WIDE")
+          ? entry.dataScope
+          : "NONE",
       };
     });
     return normalized;
@@ -806,15 +862,34 @@ export default function Permission() {
         next.canPublish = false;
         next.canSubmit = false;
         next.canApprove = false;
+        next.canAssess = false;
+        next.canValidate = false;
+        next.canFinalize = false;
+        next.dataScope = "NONE";
       }
       if (
         (field === "canAdd" || field === "canEdit" || field === "canDelete" ||
-          field === "canPublish" || field === "canSubmit" || field === "canApprove") &&
+          field === "canPublish" || field === "canSubmit" || field === "canApprove" ||
+          field === "canAssess" || field === "canValidate" || field === "canFinalize") &&
         !current[field]
       ) {
         next.canAccess = true;
       }
       return { ...prev, [key]: next };
+    });
+  };
+
+  const changeDataScope = (key: string, dataScope: PermEntry["dataScope"]) => {
+    setPermMap((previous) => {
+      const current = previous[key] ?? EMPTY_ENTRY;
+      return {
+        ...previous,
+        [key]: {
+          ...current,
+          canAccess: dataScope === "NONE" ? current.canAccess : true,
+          dataScope,
+        },
+      };
     });
   };
 
@@ -839,6 +914,10 @@ export default function Permission() {
             canPublish: !!m.hasPublish,
             canSubmit: !!m.hasSubmit,
             canApprove: !!m.hasApprove,
+            canAssess: !!m.hasAssess,
+            canValidate: !!m.hasValidate,
+            canFinalize: !!m.hasFinalize,
+            dataScope: m.hasDataScope ? "AGENCY_WIDE" : "NONE",
           };
         }
       });
@@ -1064,6 +1143,10 @@ export default function Permission() {
                     <th className={styles.crudCol}>Publish</th>
                     <th className={styles.crudCol}>Submit</th>
                     <th className={styles.crudCol}>Approve</th>
+                    <th className={styles.crudCol}>Assess</th>
+                    <th className={styles.crudCol}>Validate</th>
+                    <th className={styles.crudCol}>Finalize</th>
+                    <th className={styles.crudCol}>Data Scope</th>
                     <th className={styles.crudCol}>Portal</th>
                   </tr>
                 </thead>
@@ -1077,6 +1160,10 @@ export default function Permission() {
                             <td style={getIndentStyle(m.indent)}>
                               <strong>{m.label}</strong>
                             </td>
+                            <td />
+                            <td />
+                            <td />
+                            <td />
                             <td />
                             <td />
                             <td />
@@ -1100,7 +1187,7 @@ export default function Permission() {
                       }
                       return (
                         <tr key={m.key} className={styles.appHeader}>
-                          <td colSpan={9} style={getIndentStyle(m.indent)}>
+                          <td colSpan={13} style={getIndentStyle(m.indent)}>
                             <strong>{m.label}</strong>
                           </td>
                         </tr>
@@ -1119,6 +1206,10 @@ export default function Permission() {
                               onChange={() => toggle(m.key, "canAccess")}
                             />
                           </td>
+                          <td />
+                          <td />
+                          <td />
+                          <td />
                           <td />
                           <td />
                           <td />
@@ -1198,6 +1289,53 @@ export default function Permission() {
                               aria-label={`Allow approval in ${m.label}`}
                               title={`Allow approval in ${m.label}`}
                             />
+                          ) : null}
+                        </td>
+                        <td className={styles.cbCell}>
+                          {m.hasAssess ? (
+                            <input
+                              type="checkbox"
+                              checked={entry.canAssess}
+                              onChange={() => toggle(m.key, "canAssess")}
+                              aria-label={`Allow assessment in ${m.label}`}
+                            />
+                          ) : null}
+                        </td>
+                        <td className={styles.cbCell}>
+                          {m.hasValidate ? (
+                            <input
+                              type="checkbox"
+                              checked={entry.canValidate}
+                              onChange={() => toggle(m.key, "canValidate")}
+                              aria-label={`Allow validation in ${m.label}`}
+                            />
+                          ) : null}
+                        </td>
+                        <td className={styles.cbCell}>
+                          {m.hasFinalize ? (
+                            <input
+                              type="checkbox"
+                              checked={entry.canFinalize}
+                              onChange={() => toggle(m.key, "canFinalize")}
+                              aria-label={`Allow finalization in ${m.label}`}
+                            />
+                          ) : null}
+                        </td>
+                        <td className={styles.cbCell}>
+                          {m.hasDataScope ? (
+                            <select
+                              value={entry.dataScope}
+                              onChange={(event) => changeDataScope(
+                                m.key,
+                                event.target.value as PermEntry["dataScope"],
+                              )}
+                              aria-label={`Data scope for ${m.label}`}
+                            >
+                              <option value="NONE">None</option>
+                              <option value="OWN_RECORDS">Own records</option>
+                              <option value="ASSIGNED_RECORDS">Assigned records</option>
+                              <option value="AGENCY_WIDE">Agency-wide</option>
+                            </select>
                           ) : null}
                         </td>
                         <td />
