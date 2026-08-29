@@ -609,6 +609,37 @@ const MODULE_LIST: ModuleEntry[] = [
     hasDataScope: true,
   },
 
+  {
+    key: "primehr.gap-configuration",
+    label: "Development Priority Configuration",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasDelete: true,
+    hasPublish: true,
+    hasDataScope: true,
+  },
+  {
+    key: "primehr.competency-gap",
+    label: "Competency Gap Analysis",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasDataScope: true,
+  },
+  {
+    key: "primehr.ld-referral",
+    label: "Learning and Development Referrals",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasDelete: true,
+    hasSubmit: true,
+    hasDataScope: true,
+  },
+
   // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
   {
     key: "app.empPortal",
