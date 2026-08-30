@@ -68,6 +68,13 @@ const hrItems: MenuItemType[] = [
     permKey: "admin.jobPosition",
   },
   {
+    id: 31,
+    icon: "/jobposition.png",
+    label: "Qualification Standards",
+    goto: "/administrative/qualification-standards",
+    permKey: "administrative.qualification-standard",
+  },
+  {
     id: 4,
     icon: "/plantilla.png",
     label: "Plantilla",
