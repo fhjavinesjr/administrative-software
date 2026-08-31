@@ -682,6 +682,27 @@ const MODULE_LIST: ModuleEntry[] = [
     hasAdd: true,
     hasDataScope: true,
   },
+  {
+    key: "primehr.rsp-screening-policy",
+    label: "Screening Policy",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasPublish: true,
+    hasDataScope: true,
+  },
+  {
+    key: "primehr.rsp-application-screening",
+    label: "Application Screening",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasSubmit: true,
+    hasApprove: true,
+    hasDataScope: true,
+  },
 
   // ── EMPLOYEE PORTAL ──────────────────────────────────────────────────
   {
