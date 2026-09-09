@@ -10,6 +10,7 @@ import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
+import { sanitizeDecimal } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -456,7 +457,11 @@ export default function EarningLeaveTable() {
                             className={styles.earnedLeaveInput}
                             value={row.day}
                             onChange={(e) =>
-                              updateRow(index, "day", e.target.value)
+                              updateRow(
+                                index,
+                                "day",
+                                sanitizeDecimal(e.target.value),
+                              )
                             }
                           />
                         </td>
@@ -468,7 +473,11 @@ export default function EarningLeaveTable() {
                             className={styles.earnedLeaveInput}
                             value={row.earn}
                             onChange={(e) =>
-                              updateRow(index, "earn", e.target.value)
+                              updateRow(
+                                index,
+                                "earn",
+                                sanitizeDecimal(e.target.value, ),
+                              )
                             }
                           />
                         </td>

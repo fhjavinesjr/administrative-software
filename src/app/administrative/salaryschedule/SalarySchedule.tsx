@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SalaryScheduleForm from "./SalaryScheduleForm";
 import SalaryScheduleTable from "./SalaryScheduleTable";
 import AuditTrailTable from "./SalaryScheduleTrailTable";
@@ -47,6 +47,13 @@ export default function SalarySchedulePage() {
     setSelectedItems(null);
   };
 
+  // Auto-clear edit state when switching to Audit Trail tab
+  useEffect(() => {
+    if (activeTab === "audit") {
+      handleClearAll();
+    }
+  }, [activeTab]);
+
   const handleSelectAudit = (payload: {
     effectivityDate: string;
     nbcNo: string;
@@ -73,7 +80,7 @@ export default function SalarySchedulePage() {
         <div className={modalStyles.modalHeader}>
           <h2 className={modalStyles.mainTitle}>Salary Schedule</h2>
         </div>
-
+        
         <div className={modalStyles.modalBody}>
           <div className={salaryScheduleStyle.SalarySchedule}>
             {/* --- Tabs Header --- */}

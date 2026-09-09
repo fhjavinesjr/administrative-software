@@ -9,6 +9,7 @@ import styles from "@/styles/Plantilla.module.scss";
 import { FaRegEdit, FaTrashAlt, FaSearch } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
+import { sanitizeShortName } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -379,7 +380,8 @@ export default function Plantilla() {
             <input
               type="text"
               value={itemNo}
-              onChange={(e) => setItemNo(e.target.value)}
+              placeholder="Enter Plantilla/Item No"
+              onChange={(e) => setItemNo(sanitizeShortName(e.target.value))}
               required={true}
             />
 
@@ -390,7 +392,7 @@ export default function Plantilla() {
               required
               className={styles.selectField}
             >
-              <option value="">-- Select --</option>
+              <option value="" disabled>-- Select --</option>
 
               {jobPositions.map((pos) => (
                 <option key={pos.jobPositionId} value={pos.jobPositionName}>

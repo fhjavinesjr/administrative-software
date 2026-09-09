@@ -9,6 +9,7 @@ import styles from "@/styles/Areas.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeShortName, sanitizeText } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 
@@ -229,7 +230,8 @@ export default function Areas() {
             <input
               type="text"
               value={areasName}
-              onChange={(e) => setAreasName(e.target.value)}
+              placeholder="Enter Area Name"
+              onChange={(e) => setAreasName(sanitizeShortName(e.target.value))}
               required
             />
 
@@ -237,7 +239,8 @@ export default function Areas() {
             <input
               type="text"
               value={areasDescription}
-              onChange={(e) => setAreasDescription(e.target.value)}
+              placeholder="Enter Description"
+              onChange={(e) => setAreasDescription(sanitizeText(e.target.value))}
               required
             />
 

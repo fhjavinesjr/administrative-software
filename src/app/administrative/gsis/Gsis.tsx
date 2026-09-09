@@ -9,6 +9,7 @@ import styles from "@/styles/Gsis.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
+import { sanitizePercentage } from "@/lib/utils/inputSanitizers";
 import Swal from "sweetalert2";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
@@ -236,17 +237,27 @@ export default function Gsis() {
 
             <label className={styles.empLabel}>Employer&apos;s Share (%)</label>
             <input
-              type="text"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
               value={employerSharePercentage}
-              onChange={(e) => setEmployerSharePercentage(e.target.value)}
+              onChange={(e) =>
+                setEmployerSharePercentage(sanitizePercentage(e.target.value))
+              }
               required
             />
 
             <label className={styles.empLabel}>Employee&apos;s Share (%)</label>
             <input
-              type="text"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
               value={employeeSharePercentage}
-              onChange={(e) => setEmployeeSharePercentage(e.target.value)}
+              onChange={(e) =>
+                setEmployeeSharePercentage(sanitizePercentage(e.target.value))
+              }
               required
             />
 

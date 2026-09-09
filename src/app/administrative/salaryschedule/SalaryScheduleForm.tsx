@@ -2,6 +2,7 @@
 
 import styles from "@/styles/SalaryScheduleForm.module.scss";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
+import { sanitizeNumbers } from "@/lib/utils/inputSanitizers";
 
 type Props = {
   effectivityDate: string;
@@ -54,7 +55,8 @@ export default function SalaryScheduleForm({
           <input
             type="text"
             value={nbcNo}
-            onChange={(e) => setNbcNo(e.target.value)}
+            placeholder="eg. 2023-1"
+            onChange={(e) => setNbcNo(sanitizeNumbers(e.target.value))}
             className={styles.shortInput}
             disabled={!canModify}
           />
@@ -77,7 +79,8 @@ export default function SalaryScheduleForm({
           <input
             type="text"
             value={eoNo}
-            onChange={(e) => setEoNo(e.target.value)}
+            placeholder="eg. 2023-1"
+            onChange={(e) => setEoNo(sanitizeNumbers(e.target.value))}
             className={styles.shortInput}
             disabled={!canModify}
           />

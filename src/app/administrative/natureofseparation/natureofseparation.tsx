@@ -9,6 +9,7 @@ import styles from "@/styles/Natureofseparation.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeShortName } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -228,15 +229,17 @@ export default function Natureofseparation() {
             <input
               type="text"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => setCode(sanitizeShortName(e.target.value))}
               required={true}
+              placeholder="Enter Code"
             />
             <label>Nature</label>
             <input
               type="text"
               value={nature}
-              onChange={(e) => setNature(e.target.value)}
+              onChange={(e) => setNature(sanitizeShortName(e.target.value))}
               required={true}
+              placeholder="Enter Nature"
             />
 
             <div className={styles.buttonGroup}>

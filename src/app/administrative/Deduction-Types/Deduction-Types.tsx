@@ -9,6 +9,7 @@ import styles from "@/styles/DeductionType.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeText } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 
@@ -146,7 +147,11 @@ export default function DeductionTypes() {
       return;
     }
     e.preventDefault();
-    const payload: DeductionTypeEntry = { accountingCode, name, ...flags };
+    const payload: DeductionTypeEntry = {
+      accountingCode: accountingCode.trim(),
+      name: name.trim(),
+      ...flags,
+    };
 
     try {
       if (!isEditing) {
@@ -260,14 +265,16 @@ export default function DeductionTypes() {
             <input
               type="text"
               value={accountingCode}
-              onChange={(e) => setAccountingCode(e.target.value)}
+              maxLength={50}
+              onChange={(e) => setAccountingCode(sanitizeText(e.target.value))}
               required
             />
             <label>Name</label>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              onChange={(e) => setName(sanitizeText(e.target.value))}
               required
             />
             <h4 className={styles.settings}>DEDUCTION SETTINGS</h4>

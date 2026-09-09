@@ -9,6 +9,25 @@ import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
 import { localStorageUtil } from "@/lib/utils/localStorageUtil";
+import {
+  sanitizeText,
+  sanitizeCity,
+  sanitizeAddress,
+  sanitizeNumbers,
+  sanitizePhone,
+  sanitizeEmail,
+  sanitizeISO,
+  sanitizeZipCode,
+  sanitizeShortName,
+} from "@/lib/utils/inputSanitizers";
+
+import {
+  formatPagibigNo,
+  formatPhilhealthNo,
+  formatTinNo,
+  formatPhoneNo,
+  formatTelephoneNo,
+} from "@/lib/utils/inputFormatters";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -390,31 +409,36 @@ export default function SystemSetup() {
                   className={styles.date}
                   type="text"
                   value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
+                  onChange={(e) => setCompanyName(sanitizeText(e.target.value))}
                   required={true}
                 />
+
                 <label>Short Name</label>
                 <input
                   className={styles.date}
                   type="text"
                   value={shortName}
-                  onChange={(e) => setShortName(e.target.value)}
+                  onChange={(e) => setShortName(sanitizeShortName(e.target.value))}
+                  maxLength={50}
                   required={true}
                 />
+
                 <label>City</label>
                 <input
                   className={styles.date}
                   type="text"
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
+                  onChange={(e) => setCity(sanitizeCity(e.target.value))}
                   required={true}
                 />
+
                 <label>Address</label>
                 <textarea
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => setAddress(sanitizeAddress(e.target.value))}
                   className={styles.address}
                 />
+
                 <label>Hospital Agency</label>
                 <div className={styles.checkboxWrapper}>
                   <input
@@ -432,55 +456,65 @@ export default function SystemSetup() {
                   className={styles.date}
                   type="text"
                   value={iso}
-                  onChange={(e) => setISO(e.target.value)}
+                  onChange={(e) => setISO(sanitizeISO(e.target.value))}
                   required={true}
                 />
+
                 <label>ZIP Code</label>
                 <input
                   className={styles.date}
                   type="text"
                   value={zipcode}
-                  onChange={(e) => setZipcode(e.target.value)}
+                  onChange={(e) => setZipcode(sanitizeZipCode(e.target.value))}
                   required={true}
                 />
+
                 <label>Telephone/Mobile No.</label>
                 <input
                   className={styles.date}
                   type="text"
                   value={telNo}
-                  onChange={(e) => setTelNo(e.target.value)}
+                  onChange={(e) => setTelNo(formatPhoneNo(e.target.value))}
                   required={true}
                 />
+
                 <label>Email Address</label>
                 <input
                   className={styles.date}
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
                   required={true}
                 />
+
                 <label>TIN No.</label>
                 <input
                   className={styles.date}
                   type="text"
                   value={tinNo}
-                  onChange={(e) => setTinNo(e.target.value)}
+                  onChange={(e) => setTinNo(formatTinNo(e.target.value))}
                   required={true}
                 />
+
                 <label>Pag-Ibig No.</label>
                 <input
                   className={styles.date}
                   type="text"
                   value={pagibigNo}
-                  onChange={(e) => setPagibigNo(e.target.value)}
+                  onChange={(e) =>
+                    setPagibigNo(formatPagibigNo(e.target.value))
+                  }
                   required={true}
                 />
+
                 <label>PhilHealth No.</label>
                 <input
                   className={styles.date}
                   type="text"
                   value={philhealtNo}
-                  onChange={(e) => setPhilhealthNo(e.target.value)}
+                  onChange={(e) =>
+                    setPhilhealthNo(formatPhilhealthNo(e.target.value))
+                  }
                   required={true}
                 />
               </div>
