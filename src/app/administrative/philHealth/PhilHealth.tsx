@@ -17,6 +17,15 @@ import Swal from "sweetalert2";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
+const toNumber = (value: string) => Number(value.replace(/,/g, ""));
+
+// A zero "To" value is the existing API's marker for a fixed floor/cap share.
+const isValidShareRange = (from: string, to: string) => {
+  const fromValue = toNumber(from);
+  const toValue = toNumber(to);
+  return toValue === 0 || fromValue <= toValue;
+};
+
 export default function PhilHealth() {
   const canAdd = localStorageUtil.canAdd("admin.philhealth");
   const canEdit = localStorageUtil.canEdit("admin.philhealth");
@@ -60,8 +69,14 @@ export default function PhilHealth() {
         `${API_BASE_URL_ADMINISTRATIVE}/api/philHealthContribution/get-all`,
       );
       if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setPhilHealthData(data);
+      const data: PhilHealthContributionItem[] = await res.json();
+      setPhilHealthData(
+        [...data].sort(
+          (left, right) =>
+            toNumber(left.monthlySalaryRangeFrom) -
+            toNumber(right.monthlySalaryRangeFrom),
+        ),
+      );
     } catch (err) {
       console.error("Failed to load PhilHealth data:", err);
       Swal.fire(
@@ -117,17 +132,14 @@ export default function PhilHealth() {
     }
 
     const invalidRange =
-      Number(monthlySalaryRangeFrom.replace(/,/g, "")) >
-        Number(monthlySalaryRangeTo.replace(/,/g, "")) ||
-      Number(personalShareFrom.replace(/,/g, "")) >
-        Number(personalShareTo.replace(/,/g, "")) ||
-      Number(employerShareFrom.replace(/,/g, "")) >
-        Number(employerShareTo.replace(/,/g, ""));
+      toNumber(monthlySalaryRangeFrom) > toNumber(monthlySalaryRangeTo) ||
+      !isValidShareRange(personalShareFrom, personalShareTo) ||
+      !isValidShareRange(employerShareFrom, employerShareTo);
 
     if (invalidRange) {
       Swal.fire(
         "Validation Error",
-        "Each From value must be less than or equal to its To value.",
+        'Each salary range must increase. A share "To" value of 0 is allowed for a fixed floor or ceiling contribution.',
         "warning",
       );
       return;
@@ -422,43 +434,59 @@ export default function PhilHealth() {
                     </tr>
                   </thead>
                   <tbody>
-                    {philHealthData.map((item) => (
-                      <tr key={item.philhealthContributionId}>
-                        <td>{item.effectivityDate}</td>
-                        <td>
-                          {item.monthlySalaryRangeFrom} -{" "}
-                          {item.monthlySalaryRangeTo}
-                        </td>
-                        <td>{item.ratePercentage}</td>
-                        <td>
-                          {item.personalShareFrom} - {item.personalShareTo}
-                        </td>
-                        <td>
-                          {item.employerShareFrom} - {item.employerShareTo}
-                        </td>
-                        <td>
-                          <button
-                            className={`${styles.iconButton} ${styles.editIcon}`}
-                            onClick={() => handleEdit(item)}
-                            title="Edit"
-                            disabled={loading}
-                          >
-                            <FaRegEdit />
-                          </button>
+                    {philHealthData.map((item, index) => {
+                      const hasFixedShares =
+                        toNumber(item.personalShareTo) === 0 &&
+                        toNumber(item.employerShareTo) === 0;
+                      const isFloorBracket = hasFixedShares && index === 0;
+                      const isCeilingBracket =
+                        hasFixedShares && index === philHealthData.length - 1;
 
-                          <button
-                            className={`${styles.iconButton} ${styles.deleteIcon}`}
-                            onClick={() =>
-                              handleDelete(item.philhealthContributionId)
-                            }
-                            title="Delete"
-                            disabled={loading}
-                          >
-                            <FaTrashAlt />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                      return (
+                        <tr key={item.philhealthContributionId}>
+                          <td>{item.effectivityDate}</td>
+                          <td>
+                            {isFloorBracket
+                              ? `${item.monthlySalaryRangeTo} and below`
+                              : isCeilingBracket
+                                ? `${item.monthlySalaryRangeFrom} and above`
+                                : `${item.monthlySalaryRangeFrom} - ${item.monthlySalaryRangeTo}`}
+                          </td>
+                          <td>{item.ratePercentage}</td>
+                          <td>
+                            {hasFixedShares
+                              ? item.personalShareFrom
+                              : `${item.personalShareFrom} - ${item.personalShareTo}`}
+                          </td>
+                          <td>
+                            {hasFixedShares
+                              ? item.employerShareFrom
+                              : `${item.employerShareFrom} - ${item.employerShareTo}`}
+                          </td>
+                          <td>
+                            <button
+                              className={`${styles.iconButton} ${styles.editIcon}`}
+                              onClick={() => handleEdit(item)}
+                              title="Edit"
+                              disabled={loading}
+                            >
+                              <FaRegEdit />
+                            </button>
+
+                            <button
+                              className={`${styles.iconButton} ${styles.deleteIcon}`}
+                              onClick={() =>
+                                handleDelete(item.philhealthContributionId)
+                              }
+                              title="Delete"
+                              disabled={loading}
+                            >
+                              <FaTrashAlt />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
