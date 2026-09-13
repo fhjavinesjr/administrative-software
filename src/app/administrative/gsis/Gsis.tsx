@@ -291,8 +291,8 @@ export default function Gsis() {
                   <thead>
                     <tr>
                       <th>Effectivity Date</th>
-                      <th>Employer Share (%)</th>
                       <th>Employee Share (%)</th>
+                      <th>Employer Share (%)</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -300,8 +300,8 @@ export default function Gsis() {
                     {gsisData.map((item) => (
                       <tr key={item.gsisContributionId}>
                         <td>{item.effectivityDate}</td>
-                        <td>{item.employerSharePercentage}</td>
                         <td>{item.employeeSharePercentage}</td>
+                        <td>{item.employerSharePercentage}</td>
                         <td>
                           <button
                             className={`${styles.iconButton} ${styles.editIcon}`}
