@@ -9,6 +9,7 @@ import styles from "@/styles/BusinessUnits.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeShortName } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 
@@ -193,7 +194,7 @@ export default function BusinessUnit() {
               onChange={(e) => setSelectedArea(Number(e.target.value))}
               required
             >
-              <option value="">Choose an Area</option>
+              <option value="" disabled>Choose an Area</option>
               {areas.map((area) => (
                 <option key={area.areasId} value={area.areasId}>
                   {area.areasName}
@@ -205,7 +206,7 @@ export default function BusinessUnit() {
             <input
               type="text"
               value={buCode}
-              onChange={(e) => setBuCode(e.target.value)}
+              onChange={(e) => setBuCode(sanitizeShortName(e.target.value))}
               required
               placeholder="e.g. BU-2024"
             />
@@ -214,7 +215,7 @@ export default function BusinessUnit() {
             <input
               type="text"
               value={buName}
-              onChange={(e) => setBuName(e.target.value)}
+              onChange={(e) => setBuName(sanitizeShortName(e.target.value))}
               required
               placeholder="Enter Name"
             />

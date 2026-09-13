@@ -10,6 +10,7 @@ import Swal from "sweetalert2";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
+import { sanitizeNumbers } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -729,10 +730,15 @@ export default function DayEquivalentTable() {
                               }
                               value={row.hours}
                               onChange={(e) =>
-                                updateRow(idx, "hours", e.target.value)
+                                updateRow(
+                                  idx,
+                                  "hours",
+                                  sanitizeNumbers(e.target.value),
+                                )
                               }
                             />
                           </td>
+
                           <td>
                             <input
                               type="text"
@@ -744,7 +750,7 @@ export default function DayEquivalentTable() {
                                 updateRow(
                                   idx,
                                   "hoursEquivalent",
-                                  e.target.value,
+                                  sanitizeNumbers(e.target.value),
                                 )
                               }
                             />
@@ -798,7 +804,7 @@ export default function DayEquivalentTable() {
                               }
                               value={row.minutes}
                               onChange={(e) =>
-                                updateMinuteRow(idx, "minutes", e.target.value)
+                                updateMinuteRow(idx, "minutes",sanitizeNumbers(e.target.value))
                               }
                             />
                           </td>
@@ -810,11 +816,7 @@ export default function DayEquivalentTable() {
                               }
                               value={row.minutesEquivalent}
                               onChange={(e) =>
-                                updateMinuteRow(
-                                  idx,
-                                  "minutesEquivalent",
-                                  e.target.value,
-                                )
+                                updateMinuteRow(idx, "minutesEquivalent",sanitizeNumbers(e.target.value,))
                               }
                             />
                           </td>

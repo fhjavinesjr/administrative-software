@@ -8,6 +8,21 @@
   font-family: "Segoe UI", Arial, sans-serif;
   font-size: 0.9rem;
 
+  .myButton {
+    margin-top: 6px;
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .myButton:hover {
+    background-color: #0059c9;
+  }
+
   .earnedLeaveInput {
     width: 80px;            // make the input wider
     text-align: right;      // align text to the right
@@ -45,6 +60,11 @@
   .earningTable td {
     border: 1px solid #ddd;
     padding: 0.5rem;
+  }
+
+  .earningTable .addTableRow {
+    text-align: center;
+    border: none;
   }
 
   .earningTable thead {

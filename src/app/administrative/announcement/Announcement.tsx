@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 import styles from "@/styles/Announcement.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeDate, sanitizeText } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -183,21 +184,23 @@ export default function Announcement() {
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      effectivityDate: e.target.value,
+                      effectivityDate: sanitizeDate(e.target.value),
                     }))
                   }
                   required
                 />
               </div>
+
               <div className={styles.dateField}>
                 <label>Effective Until</label>
                 <input
                   type="date"
                   value={form.effectiveUntil}
+                  min={form.effectivityDate || undefined}
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      effectiveUntil: e.target.value,
+                      effectiveUntil: sanitizeDate(e.target.value),
                     }))
                   }
                   required
@@ -210,7 +213,10 @@ export default function Announcement() {
               type="text"
               value={form.title}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, title: e.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  title: sanitizeText(e.target.value),
+                }))
               }
               required
             />
@@ -219,7 +225,10 @@ export default function Announcement() {
             <textarea
               value={form.content}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, content: e.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  content: sanitizeText(e.target.value),
+                }))
               }
               required
             />

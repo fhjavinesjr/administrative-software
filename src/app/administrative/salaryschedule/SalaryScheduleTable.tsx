@@ -217,7 +217,7 @@ export default function SalaryScheduleTable({
           </>
         )}
         <button onClick={handleClear} className={styles.clearButton}>
-          ✖ Clear
+          ✖ {(isEditing != null && isEditing !== false) ? "Cancel" : "Clear"}
         </button>
       </div>
 

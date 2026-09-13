@@ -9,6 +9,7 @@ import styles from "@/styles/NatureOfAppointment.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import Swal from "sweetalert2";
+import { sanitizeShortName } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -214,7 +215,8 @@ export default function NatureOfAppointment() {
             <input
               type="text"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              placeholder="Enter Code"
+              onChange={(e) => setCode(sanitizeShortName(e.target.value))}
               required
             />
 
@@ -222,7 +224,8 @@ export default function NatureOfAppointment() {
             <input
               type="text"
               value={nature}
-              onChange={(e) => setNature(e.target.value)} // <-- updated
+              placeholder="Enter Nature"
+              onChange={(e) => setNature(sanitizeShortName(e.target.value))}
               required
             />
 

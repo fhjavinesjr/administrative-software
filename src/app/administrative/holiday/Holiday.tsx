@@ -9,6 +9,7 @@ import styles from "@/styles/Holiday.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeShortName, sanitizeText } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -268,7 +269,10 @@ export default function HolidayModule() {
               type="text"
               value={form.code}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, code: e.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  code: sanitizeShortName(e.target.value),
+                }))
               }
               required
             />
@@ -278,7 +282,10 @@ export default function HolidayModule() {
               type="text"
               value={form.name}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, name: e.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  name: sanitizeText(e.target.value),
+                }))
               }
               required
             />
@@ -337,7 +344,10 @@ export default function HolidayModule() {
               type="text"
               value={form.localityCode ?? ""}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, localityCode: e.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  localityCode: sanitizeShortName(e.target.value),
+                }))
               }
             />
 
@@ -348,7 +358,7 @@ export default function HolidayModule() {
               onChange={(e) =>
                 setForm((prev) => ({
                   ...prev,
-                  sourceReference: e.target.value,
+                  sourceReference: sanitizeText(e.target.value),
                 }))
               }
             />

@@ -11,6 +11,7 @@ const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 import to12HourFormat from "@/lib/utils/convert24To12HrFormat";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { sanitizeShortName } from "@/lib/utils/inputSanitizers";
 
 export default function TimeShift() {
   const canAdd = localStorageUtil.canAdd("admin.timeShift");
@@ -562,8 +563,9 @@ export default function TimeShift() {
               <input
                 type="text"
                 value={form.code}
+                placeholder="Enter Code"
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, code: e.target.value }))
+                  setForm((prev) => ({ ...prev, code: sanitizeShortName(e.target.value) }))
                 }
                 required={true}
               />
@@ -572,8 +574,9 @@ export default function TimeShift() {
               <input
                 type="text"
                 value={form.name}
+                placeholder="Enter Name"
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, name: e.target.value }))
+                  setForm((prev) => ({ ...prev, name: sanitizeShortName(e.target.value) }))
                 }
                 required={true}
               />
@@ -597,9 +600,10 @@ export default function TimeShift() {
                   <label>Dynamic Flexible Schedule</label>
                   <div
                     style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "0.75rem",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "1rem 1.5rem",
+                      marginBottom: "1rem",
                     }}
                   >
                     {(
@@ -612,13 +616,15 @@ export default function TimeShift() {
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: "0.25rem",
+                          gap: "0.5rem",
+                          cursor: "pointer",
                         }}
                       >
                         <input
                           type="checkbox"
                           checked={form.flexibleDays[day]}
                           onChange={() => toggleDay(day)}
+                          style={{ cursor: "pointer", width: "18px", height: "18px" }}
                         />
                         {dayNames[day]}
                       </label>

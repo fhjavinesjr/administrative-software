@@ -9,6 +9,7 @@ import styles from "@/styles/EarningType.module.scss";
 import modalStyles from "@/styles/Modal.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeText } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL = runtimeConfig.getApiUrl("administrative");
 
@@ -170,7 +171,11 @@ export default function EarningTypes() {
       return;
     }
     e.preventDefault();
-    const payload: EarningTypeEntry = { accountingCode, name, ...flags };
+    const payload: EarningTypeEntry = {
+      accountingCode: accountingCode.trim(),
+      name: name.trim(),
+      ...flags,
+    };
 
     try {
       if (!isEditing) {
@@ -292,14 +297,16 @@ export default function EarningTypes() {
             <input
               type="text"
               value={accountingCode}
-              onChange={(e) => setAccountingCode(e.target.value)}
+              maxLength={50}
+              onChange={(e) => setAccountingCode(sanitizeText(e.target.value))}
               required
             />
             <label>Name</label>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              onChange={(e) => setName(sanitizeText(e.target.value))}
               required
             />
 

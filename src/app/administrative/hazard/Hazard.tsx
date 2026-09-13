@@ -10,6 +10,10 @@ import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
 import Swal from "sweetalert2";
+import {
+  sanitizeDecimal,
+  sanitizeNumbers,
+} from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -209,24 +213,17 @@ export default function Hazard() {
 
   const handleSave = async () => {
     const editingExisting = rows.some((r) => r.hazardPayId);
+
     if (editingExisting ? !canEdit : !canAdd) {
-      void Swal.fire({
-        icon: "warning",
-        title: "Permission denied",
-        text: editingExisting
-          ? "You do not have permission to edit this table."
-          : "You do not have permission to add this table.",
-      });
+      // ...
       return;
     }
+
     if (deletedRows.length > 0 && !canDelete) {
-      void Swal.fire({
-        icon: "warning",
-        title: "Permission denied",
-        text: "Deleting saved rows requires Delete permission.",
-      });
+      // ...
       return;
     }
+
     try {
       if (!effectivityDate) {
         Swal.fire("Validation", "Effectivity Date is required", "warning");
@@ -244,7 +241,23 @@ export default function Hazard() {
         return;
       }
 
+      // ✅ Salary Grade must be 1–33
+      if (
+        rows.some(
+          (r) => Number(r.salaryGrade) < 1 || Number(r.salaryGrade) > 33,
+        )
+      ) {
+        Swal.fire(
+          "Validation",
+          "Salary Grade must be between 1 and 33.",
+          "warning",
+        );
+        return;
+      }
+
       setLoading(true);
+
+      // rest of your save logic...
       const existingData =
         await checkExistingByEffectivityDate(effectivityDate);
       const isEditing = rows.some((r) => r.hazardPayId);
@@ -491,23 +504,33 @@ export default function Hazard() {
                             type="text"
                             className={styles.hazInput}
                             value={row.salaryGrade}
-                            onChange={(e) =>
-                              updateRow(idx, "salaryGrade", e.target.value)
-                            }
+                            maxLength={2}
+                            onChange={(e) => {
+                              const value = sanitizeNumbers(e.target.value);
+                              updateRow(
+                                idx,
+                                "salaryGrade",
+                                value && Number(value) > 33 ? "33" : value,
+                              );
+                            }}
                           />
                         </td>
                         <td>
                           <input
-                            type="text"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
                             className={styles.hazInput}
                             value={row.basicPayPercentage}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const value = sanitizeDecimal(e.target.value);
                               updateRow(
                                 idx,
                                 "basicPayPercentage",
-                                e.target.value,
-                              )
-                            }
+                                value && Number(value) > 100 ? "100" : value,
+                              );
+                            }}
                           />
                           <span className={styles.percent}>%</span>
                         </td>

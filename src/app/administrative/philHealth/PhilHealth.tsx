@@ -9,6 +9,10 @@ import styles from "@/styles/PhilHealth.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { toCustomFormat, toDateInputValue } from "@/lib/utils/dateFormatUtils";
+import {
+  sanitizeAmount,
+  sanitizePercentage,
+} from "@/lib/utils/inputSanitizers";
 import Swal from "sweetalert2";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
@@ -109,6 +113,23 @@ export default function PhilHealth() {
       !employerShareTo
     ) {
       Swal.fire("Validation Error", "All fields are required.", "warning");
+      return;
+    }
+
+    const invalidRange =
+      Number(monthlySalaryRangeFrom.replace(/,/g, "")) >
+        Number(monthlySalaryRangeTo.replace(/,/g, "")) ||
+      Number(personalShareFrom.replace(/,/g, "")) >
+        Number(personalShareTo.replace(/,/g, "")) ||
+      Number(employerShareFrom.replace(/,/g, "")) >
+        Number(employerShareTo.replace(/,/g, ""));
+
+    if (invalidRange) {
+      Swal.fire(
+        "Validation Error",
+        "Each From value must be less than or equal to its To value.",
+        "warning",
+      );
       return;
     }
 
@@ -282,9 +303,14 @@ export default function PhilHealth() {
 
             <label>Rate (%)</label>
             <input
-              type="text"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
               value={ratePercentage}
-              onChange={(e) => setRatePercentage(e.target.value)}
+              onChange={(e) =>
+                setRatePercentage(sanitizePercentage(e.target.value))
+              }
               required
             />
 
@@ -294,10 +320,7 @@ export default function PhilHealth() {
               type="text"
               value={monthlySalaryRangeFrom}
               onChange={(e) => {
-                const rawValue = e.target.value.replace(/,/g, "");
-                if (!isNaN(Number(rawValue)) || rawValue === "") {
-                  setMonthlySalaryRangeFrom(rawValue);
-                }
+                setMonthlySalaryRangeFrom(sanitizeAmount(e.target.value));
               }}
               onBlur={(e) =>
                 setMonthlySalaryRangeFrom(formatNumber(e.target.value))
@@ -311,10 +334,7 @@ export default function PhilHealth() {
               type="text"
               value={monthlySalaryRangeTo}
               onChange={(e) => {
-                const rawValue = e.target.value.replace(/,/g, "");
-                if (!isNaN(Number(rawValue)) || rawValue === "") {
-                  setMonthlySalaryRangeTo(rawValue);
-                }
+                setMonthlySalaryRangeTo(sanitizeAmount(e.target.value));
               }}
               onBlur={(e) =>
                 setMonthlySalaryRangeTo(formatNumber(e.target.value))
@@ -327,7 +347,9 @@ export default function PhilHealth() {
               className={styles.rate}
               type="text"
               value={personalShareFrom}
-              onChange={(e) => setPersonalShareFrom(e.target.value)}
+              onChange={(e) =>
+                setPersonalShareFrom(sanitizeAmount(e.target.value))
+              }
               required
             />
 
@@ -336,7 +358,7 @@ export default function PhilHealth() {
               className={styles.rate}
               type="text"
               value={personalShareTo}
-              onChange={(e) => setPersonalShareTo(e.target.value)}
+              onChange={(e) => setPersonalShareTo(sanitizeAmount(e.target.value))}
               required
             />
 
@@ -345,7 +367,9 @@ export default function PhilHealth() {
               className={styles.rate}
               type="text"
               value={employerShareFrom}
-              onChange={(e) => setEmployerShareFrom(e.target.value)}
+              onChange={(e) =>
+                setEmployerShareFrom(sanitizeAmount(e.target.value))
+              }
               required
             />
 
@@ -354,7 +378,9 @@ export default function PhilHealth() {
               className={styles.rate}
               type="text"
               value={employerShareTo}
-              onChange={(e) => setEmployerShareTo(e.target.value)}
+              onChange={(e) =>
+                setEmployerShareTo(sanitizeAmount(e.target.value))
+              }
               required
             />
 

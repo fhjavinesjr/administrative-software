@@ -10,6 +10,7 @@ import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import type { SalaryScheduleItem } from "@/lib/types/SalaryScheduleItem";
 import Swal from "sweetalert2";
+import { sanitizeText } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -403,7 +404,9 @@ export default function JobPosition() {
               <input
                 type="text"
                 value={jobPositionName}
-                onChange={(e) => setJobPositionName(e.target.value)}
+                onChange={(e) =>
+                  setJobPositionName(sanitizeText(e.target.value))
+                }
                 required
               />
 
@@ -419,8 +422,8 @@ export default function JobPosition() {
                   <option value="">No grades</option>
                 ) : (
                   <>
-                    <option value="">-- select grade --</option>
-                    <option value="0">0</option>
+                    <option value="" disabled>-- select grade --</option>
+                    
                     {grades.map((g) => (
                       <option key={g} value={String(g)}>
                         SG {g}
@@ -440,8 +443,8 @@ export default function JobPosition() {
                   <option value="0">0</option>
                 ) : (
                   <>
-                    <option value="">-- select step --</option>
-                    <option value="0">0</option>
+                    <option value="" disabled>-- select step --</option>
+                    
                     {gradeSteps[salaryGrade]?.map((s) => (
                       <option key={s} value={String(s)}>
                         Step {s}

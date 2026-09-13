@@ -9,6 +9,7 @@ import styles from "@/styles/CivilStatus.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import { sanitizeShortName } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
@@ -181,7 +182,8 @@ export default function CivilStatus() {
             <input
               type="text"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              placeholder="Enter Code"
+              onChange={(e) => setCode(sanitizeShortName(e.target.value))}
               required
             />
 
@@ -189,7 +191,8 @@ export default function CivilStatus() {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter Name"
+              onChange={(e) => setName(sanitizeShortName(e.target.value))}
               required
             />
 

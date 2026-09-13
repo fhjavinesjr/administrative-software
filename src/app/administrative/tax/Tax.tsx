@@ -9,6 +9,10 @@ import styles from "@/styles/Tax.module.scss";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
+import {
+  sanitizeAmount,
+  sanitizePercentage,
+} from "@/lib/utils/inputSanitizers";
 
 export default function Tax() {
   const canAdd = localStorageUtil.canAdd("admin.tax");
@@ -291,7 +295,9 @@ export default function Tax() {
               type="text"
               placeholder="e.g., 20 or 25"
               value={percentage}
-              onChange={(e) => setPercentage(e.target.value)}
+              onChange={(e) =>
+                setPercentage(sanitizePercentage(e.target.value))
+              }
               required={true}
             />
             <label>Amount (Legacy - optional)</label>
@@ -300,7 +306,7 @@ export default function Tax() {
               type="text"
               placeholder="Optional - for backward compatibility"
               value={formatDisplay(amount)}
-              onChange={(e) => setAmount(parseRawNum(e.target.value))}
+              onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
             />
             <div className={styles.buttonGroup}>
               <button
