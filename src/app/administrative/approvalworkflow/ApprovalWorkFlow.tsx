@@ -223,6 +223,7 @@ export default function ApprovalWorkFlow() {
   );
 
   const resolveStatus = (p: ManagePersonnelEntry): string => {
+    if (p.head && p.otherStatus === "OIC") return "OIC Head";
     if (p.head) return "Head";
     if (p.coApprover) return "Co-Approver";
     if (p.otherStatus) return p.otherStatus;

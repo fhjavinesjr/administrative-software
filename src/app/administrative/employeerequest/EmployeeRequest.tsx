@@ -242,7 +242,7 @@ export default function EmployeeRequest() {
                   <tr>
                     <th>Code</th>
                     <th>Description</th>
-                    {/* <th>Maximum Count of Approval</th> */}
+                    <th>Maximum Count of Approval</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -251,7 +251,7 @@ export default function EmployeeRequest() {
                     <tr key={ent.employeeRequestId}>
                       <td>{ent.code}</td>
                       <td>{ent.name}</td>
-                      {/* <td>{ent.max}</td> */}
+                      <td>{ent.max}</td>
                       <td>
                         <button
                           className={`${styles.iconButton} ${styles.editIcon}`}

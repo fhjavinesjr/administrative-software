@@ -4,7 +4,7 @@ import { runtimeConfig } from "@/lib/utils/runtimeConfig";
 import React, { useState, useEffect } from "react";
 import modalStyles from "@/styles/Modal.module.scss";
 import styles from "@/styles/ManagePersonnel.module.scss";
-import { FaTrashAlt, FaUsers, FaPlus, FaSearch } from "react-icons/fa";
+import { FaTrashAlt, FaUsers, FaPlus, FaSearch, FaEdit } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { fetchWithAuth } from "@/lib/utils/fetchWithAuth";
 import { localStorageUtil } from "@/lib/utils/localStorageUtil";
@@ -24,6 +24,8 @@ type ManagePersonnelEntry = {
   otherStatus: string;
   status?: string;
   base?: string;
+  oicEffectiveFrom?: string | null;
+  oicEffectiveTo?: string | null;
 };
 
 type RowSelection = {
@@ -63,6 +65,8 @@ export default function ManagePersonnel() {
   const [selectedUnit, setSelectedUnit] = useState<string>("");
   const [otherStatus, setOtherStatus] = useState<{ [key: string]: string }>({});
   const [base, setBase] = useState<{ [key: string]: string }>({});
+  const [oicEffectiveFrom, setOicEffectiveFrom] = useState<Record<string, string>>({});
+  const [oicEffectiveTo, setOicEffectiveTo] = useState<Record<string, string>>({});
   const [fieldOne, setFieldOne] = useState(false);
   const [fieldTwo, setFieldTwo] = useState(false);
   const [search, setSearch] = useState("");
@@ -173,6 +177,21 @@ export default function ManagePersonnel() {
         return;
       }
 
+      const invalidOic = selected.find((emp) => {
+        const isOic = otherStatus[emp.employeeNo] === "OIC";
+        const from = oicEffectiveFrom[emp.employeeNo];
+        const to = oicEffectiveTo[emp.employeeNo];
+        return isOic && (!rowState[emp.employeeNo]?.head || !from || (to && to < from));
+      });
+      if (invalidOic) {
+        Swal.fire({
+          icon: "warning",
+          title: "Invalid OIC designation",
+          text: "OIC must be marked as Head, requires an Effective From date, and its Effective To date cannot be earlier.",
+        });
+        return;
+      }
+
       // Validate: An employee can only have Base=Yes in one Business Unit globally
       const alreadyBaseYes = selected.filter(
         (emp) =>
@@ -238,6 +257,12 @@ export default function ManagePersonnel() {
           coApprover: rowState[emp.employeeNo]?.coApprover ? 1 : 0,
           otherStatus: otherStatus[emp.employeeNo] || "",
           base: base[emp.employeeNo] || "",
+          oicEffectiveFrom: otherStatus[emp.employeeNo] === "OIC"
+            ? oicEffectiveFrom[emp.employeeNo]
+            : null,
+          oicEffectiveTo: otherStatus[emp.employeeNo] === "OIC"
+            ? (oicEffectiveTo[emp.employeeNo] || null)
+            : null,
         }));
 
       try {
@@ -262,6 +287,8 @@ export default function ManagePersonnel() {
         setRowState({});
         setOtherStatus({});
         setBase({});
+        setOicEffectiveFrom({});
+        setOicEffectiveTo({});
 
         const Toast = Swal.mixin({
           toast: true,
@@ -279,11 +306,11 @@ export default function ManagePersonnel() {
           icon: "success",
           title: "Successfully Added!",
         });
-      } catch {
+      } catch (error) {
         Swal.fire({
           icon: "error",
           title: "Failed to save",
-          text: "An error occurred while saving. Please try again.",
+          text: error instanceof Error ? error.message : "An error occurred while saving. Please try again.",
         });
       }
     } else {
@@ -351,6 +378,66 @@ export default function ManagePersonnel() {
         }
       }
     });
+  };
+
+  const handleEditDesignation = async (designation: ManagePersonnelEntry) => {
+    if (!canEdit || !designation.id) return;
+    const result = await Swal.fire({
+      title: "Edit Personnel Designation",
+      html: `
+        <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input id="mp-head" type="checkbox"> Head</label>
+        <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input id="mp-co" type="checkbox"> Co-Approver</label>
+        <label style="display:block;text-align:left;margin-top:10px">Other Status</label>
+        <select id="mp-status" class="swal2-select" style="width:100%;margin:4px 0"><option value="">None</option><option value="OIC">OIC</option></select>
+        <label style="display:block;text-align:left;margin-top:10px">OIC Effective From</label><input id="mp-from" type="date" class="swal2-input" style="width:100%;margin:4px 0">
+        <label style="display:block;text-align:left;margin-top:10px">OIC Effective To (optional)</label><input id="mp-to" type="date" class="swal2-input" style="width:100%;margin:4px 0">
+        <label style="display:block;text-align:left;margin-top:10px">Main Base Approval Level</label>
+        <select id="mp-base" class="swal2-select" style="width:100%;margin:4px 0"><option value="No">No</option><option value="Yes">Yes</option></select>`,
+      didOpen: () => {
+        (document.getElementById("mp-head") as HTMLInputElement).checked = Boolean(designation.head);
+        (document.getElementById("mp-co") as HTMLInputElement).checked = Boolean(designation.coApprover);
+        (document.getElementById("mp-status") as HTMLSelectElement).value = designation.otherStatus === "OIC" ? "OIC" : "";
+        (document.getElementById("mp-from") as HTMLInputElement).value = designation.oicEffectiveFrom ?? "";
+        (document.getElementById("mp-to") as HTMLInputElement).value = designation.oicEffectiveTo ?? "";
+        (document.getElementById("mp-base") as HTMLSelectElement).value = designation.base === "Yes" ? "Yes" : "No";
+      },
+      showCancelButton: true,
+      confirmButtonText: "Save Changes",
+      preConfirm: () => {
+        const status = (document.getElementById("mp-status") as HTMLSelectElement).value;
+        const head = (document.getElementById("mp-head") as HTMLInputElement).checked;
+        const from = (document.getElementById("mp-from") as HTMLInputElement).value;
+        const to = (document.getElementById("mp-to") as HTMLInputElement).value;
+        if (status === "OIC" && (!head || !from || (to && to < from))) {
+          Swal.showValidationMessage("OIC must be marked Head and have a valid Effective From/To period.");
+          return false;
+        }
+        return {
+          head,
+          coApprover: (document.getElementById("mp-co") as HTMLInputElement).checked,
+          otherStatus: status,
+          oicEffectiveFrom: status === "OIC" ? from : null,
+          oicEffectiveTo: status === "OIC" ? (to || null) : null,
+          base: (document.getElementById("mp-base") as HTMLSelectElement).value,
+        };
+      },
+    });
+    if (!result.isConfirmed || !result.value) return;
+    try {
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/manage-personnel/update/${designation.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...designation, ...result.value }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const saved: ManagePersonnelEntry = await response.json();
+      setEntry((current) => current.map((item) => item.id === designation.id
+        ? { ...item, ...saved, employeeName: item.employeeName, employeeNo: item.employeeNo }
+        : item));
+      void Swal.fire({ icon: "success", title: "Designation updated", timer: 1600, showConfirmButton: false });
+    } catch (error) {
+      void Swal.fire({ icon: "error", title: "Update failed", text: error instanceof Error ? error.message : "Unable to update the designation." });
+    }
   };
 
   // Always use the master employee list for Designate Personnel
@@ -427,6 +514,7 @@ export default function ManagePersonnel() {
                             <th>Head</th>
                             <th>Co-Approver</th>
                             <th>Other Status</th>
+                            <th>OIC Effective Period</th>
                             <th>Main Base of Approval Level</th>
                           </tr>
                         </thead>
@@ -447,7 +535,8 @@ export default function ManagePersonnel() {
                                 <td>{areaName}</td>
                                 <td>{!!r.head ? "Yes" : "No"}</td>
                                 <td>{!!r.coApprover ? "Yes" : "No"}</td>
-                                <td>{r.otherStatus}</td>
+                                <td>{r.otherStatus === "OIC" ? "OIC" : ""}</td>
+                                <td>{r.otherStatus === "OIC" ? `${r.oicEffectiveFrom ?? ""}${r.oicEffectiveTo ? ` to ${r.oicEffectiveTo}` : " onward"}` : ""}</td>
                                 <td>{r.base}</td>
                               </tr>
                             );
@@ -544,6 +633,7 @@ export default function ManagePersonnel() {
                               <th>Head</th>
                               <th>Co-Approver</th>
                               <th>Other Status</th>
+                              <th>OIC Effective Period</th>
                               <th>Main Base of Approval Level</th>
                               <th>Action</th>
                             </tr>
@@ -555,9 +645,21 @@ export default function ManagePersonnel() {
                                 <td>{ent.employeeName}</td>
                                 <td>{!!ent.head ? "Yes" : "No"}</td>
                                 <td>{!!ent.coApprover ? "Yes" : "No"}</td>
-                                <td>{ent.otherStatus}</td>
+                                <td>{ent.otherStatus === "OIC" ? "OIC" : ""}</td>
+                                <td>{ent.otherStatus === "OIC" ? `${ent.oicEffectiveFrom ?? ""}${ent.oicEffectiveTo ? ` to ${ent.oicEffectiveTo}` : " onward"}` : ""}</td>
                                 <td>{ent.base}</td>
                                 <td>
+                                  <button
+                                    className={styles.iconButton}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      void handleEditDesignation(ent);
+                                    }}
+                                    title="Edit designation"
+                                    disabled={!canEdit}
+                                  >
+                                    <FaEdit size={17} />
+                                  </button>
                                   <button
                                     className={`${styles.iconButton} ${styles.deleteIcon}`}
                                     onClick={(e) => {
@@ -701,6 +803,8 @@ export default function ManagePersonnel() {
                           <th>Head</th>
                           <th>Co-Approver</th>
                           <th>Other Status</th>
+                          <th>OIC Effective From</th>
+                          <th>OIC Effective To</th>
                           <th>Main Base Approval level</th>
                         </tr>
                       </thead>
@@ -768,19 +872,44 @@ export default function ManagePersonnel() {
                                   className={styles.stastus_base_base}
                                   id="otherStatus"
                                   value={otherStatus[emp.employeeNo] || ""}
-                                  onChange={(e) =>
+                                  onChange={(e) => {
                                     setOtherStatus((prev) => ({
                                       ...prev,
                                       [emp.employeeNo]: e.target.value,
-                                    }))
-                                  }
+                                    }));
+                                    if (e.target.value === "OIC") {
+                                      setRowState((prev) => ({
+                                        ...prev,
+                                        [emp.employeeNo]: { ...prev[emp.employeeNo], head: true },
+                                      }));
+                                    } else {
+                                      setOicEffectiveFrom((prev) => ({ ...prev, [emp.employeeNo]: "" }));
+                                      setOicEffectiveTo((prev) => ({ ...prev, [emp.employeeNo]: "" }));
+                                    }
+                                  }}
                                 >
                                   <option value=""></option>
-                                  <option value="Head of Agency">
-                                    Head of Agency
-                                  </option>
-                                  <option value="Head of HR">Head of HR</option>
+                                  <option value="OIC">OIC</option>
                                 </select>
+                              </td>
+                              <td>
+                                <input
+                                  type="date"
+                                  className={styles.stastus_base_base}
+                                  value={oicEffectiveFrom[emp.employeeNo] || ""}
+                                  disabled={otherStatus[emp.employeeNo] !== "OIC"}
+                                  onChange={(e) => setOicEffectiveFrom((prev) => ({ ...prev, [emp.employeeNo]: e.target.value }))}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="date"
+                                  className={styles.stastus_base_base}
+                                  value={oicEffectiveTo[emp.employeeNo] || ""}
+                                  min={oicEffectiveFrom[emp.employeeNo] || undefined}
+                                  disabled={otherStatus[emp.employeeNo] !== "OIC"}
+                                  onChange={(e) => setOicEffectiveTo((prev) => ({ ...prev, [emp.employeeNo]: e.target.value }))}
+                                />
                               </td>
                               <td>
                                 <select
