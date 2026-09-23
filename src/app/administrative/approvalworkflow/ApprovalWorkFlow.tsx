@@ -638,6 +638,11 @@ export default function ApprovalWorkFlow() {
                     </div>
                   </div>
 
+                  <div className={styles.workflowRecommendation} role="note">
+                    <strong>Recommendation:</strong> Approval Level 1 should be assigned
+                    to the Head of the selected Business Unit.
+                  </div>
+
                   {/* Workflow Entries Table */}
                   <div className={styles.ApprovalWorkflowTable}>
                     <table className={styles.table}>
