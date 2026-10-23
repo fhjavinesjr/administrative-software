@@ -280,6 +280,13 @@ const payrollItems = [
     goto: "/administrative/payrollsettings",
     permKey: "admin.payrollSettings",
   },
+  {
+    id: 13,
+    icon: "/salaryschedule.png",
+    label: "Minimum Wage Rates",
+    goto: "/administrative/minimum-wage-rates",
+    permKey: "payroll.annualization",
+  },
 ];
 
 const otherItems = [

@@ -21,6 +21,7 @@ export default function Tax() {
   type WTAXContributionItem = {
     wTaxContributionId: number;
     salaryType: string;
+    taxYear: number | null;
     incomeFrom: string;
     incomeTo: string;
     fixedAmount: string;
@@ -29,6 +30,7 @@ export default function Tax() {
   };
 
   const [salaryType, setSalaryType] = useState("Monthly");
+  const [taxYear, setTaxYear] = useState(String(new Date().getFullYear()));
   const [incomeFrom, setIncomeFrom] = useState("");
   const [incomeTo, setIncomeTo] = useState("");
   const [fixed, setFixed] = useState("");
@@ -38,6 +40,7 @@ export default function Tax() {
   const [semiMonthly, setSemiMonthly] = useState<WTAXContributionItem[]>([]);
   const [weekly, setWeekly] = useState<WTAXContributionItem[]>([]);
   const [daily, setDaily] = useState<WTAXContributionItem[]>([]);
+  const [annual, setAnnual] = useState<WTAXContributionItem[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,6 +78,11 @@ export default function Tax() {
       setSemiMonthly(data.filter((d) => d.salaryType === "Semi-Monthly"));
       setWeekly(data.filter((d) => d.salaryType === "Weekly"));
       setDaily(data.filter((d) => d.salaryType === "Daily"));
+      setAnnual(
+        data
+          .filter((d) => d.salaryType === "Annual")
+          .sort((a, b) => (b.taxYear ?? 0) - (a.taxYear ?? 0)),
+      );
     } catch (err) {
       console.error("Failed to load tax data:", err);
       Swal.fire("Error", "Failed to load tax contribution data.", "error");
@@ -114,8 +122,14 @@ export default function Tax() {
       return;
     }
 
+    if (salaryType === "Annual" && !/^\d{4}$/.test(taxYear)) {
+      Swal.fire("Validation Error", "Enter a valid four-digit tax year.", "warning");
+      return;
+    }
+
     const payload = {
       salaryType,
+      taxYear: salaryType === "Annual" ? Number(taxYear) : null,
       incomeFrom,
       incomeTo: incomeTo || null, // null = "and above" bracket
       fixedAmount: fixed,
@@ -170,6 +184,7 @@ export default function Tax() {
 
   const handleClear = () => {
     setSalaryType("Monthly");
+    setTaxYear(String(new Date().getFullYear()));
     setIncomeFrom("");
     setIncomeTo("");
     setFixed("");
@@ -193,6 +208,7 @@ export default function Tax() {
     }
     setEditId(obj.wTaxContributionId);
     setSalaryType(obj.salaryType);
+    setTaxYear(String(obj.taxYear ?? new Date().getFullYear()));
     setIncomeFrom(obj.incomeFrom || "");
     setIncomeTo(obj.incomeTo || "");
     setFixed(obj.fixedAmount);
@@ -260,7 +276,23 @@ export default function Tax() {
               <option value="Semi-Monthly">Semi-Monthly</option>
               <option value="Weekly">Weekly</option>
               <option value="Daily">Daily</option>
+              <option value="Annual">Annual</option>
             </select>
+            {salaryType === "Annual" && (
+              <>
+                <label>Tax Year *</label>
+                <input
+                  className={styles.date}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="e.g., 2026"
+                  value={taxYear}
+                  onChange={(e) => setTaxYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  required
+                />
+              </>
+            )}
             <label>Income From (Minimum Taxable) *</label>
             <input
               className={styles.date}
@@ -326,6 +358,56 @@ export default function Tax() {
               </button>
             </div>
           </form>
+
+          {annual.length > 0 && (
+            <div>
+              <h4 className={styles.tableHeader}>ANNUAL INCOME TAX TABLES</h4>
+              <div className={styles.TaxTable}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Tax Year</th>
+                      <th>Income Range</th>
+                      <th>Base Tax</th>
+                      <th>Rate Over Base</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {annual.map((entry) => (
+                      <tr key={entry.wTaxContributionId}>
+                        <td>{entry.taxYear ?? "—"}</td>
+                        <td>
+                          {formatDisplay(entry.incomeFrom) || "0"} –{" "}
+                          {entry.incomeTo ? formatDisplay(entry.incomeTo) : "and above"}
+                        </td>
+                        <td>{formatDisplay(entry.fixedAmount) || "0"}</td>
+                        <td>{entry.percentageOverBase}%</td>
+                        <td>
+                          <button
+                            className={`${styles.iconButton} ${styles.editIcon}`}
+                            onClick={() => handleEdit(entry)}
+                            title="Edit"
+                            disabled={!canEdit}
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className={`${styles.iconButton} ${styles.deleteIcon}`}
+                            onClick={() => handleDelete(entry.wTaxContributionId)}
+                            title="Delete"
+                            disabled={!canDelete}
+                          >
+                            <FaTrashAlt />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {monthly.length > 0 && (
             <div>

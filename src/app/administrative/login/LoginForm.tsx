@@ -93,14 +93,14 @@ export default function AdminLoginPage() {
           localStorageUtil.setIsAdministrator(true);
           localStorageUtil.setPermissionData(null); // null = superadmin, full access
         } else {
-          // Resolve permission ruleset — store isAdministrator flag AND full permissionData
+          // Agency accounts use their ruleset's explicit feature permissions.
           try {
             const permRes = await fetchWithAuth(`${API_BASE_URL_ADMINISTRATIVE}/api/permission/get-all`);
             if (permRes.ok) {
               const rulesets: Array<{ permissionId: number; permissionName: string; isAdministrator: boolean; permissionData: string }> = await permRes.json();
               const matched = rulesets.find(r => String(r.permissionId) === currentEmp.role);
               if (matched) {
-                localStorageUtil.setIsAdministrator(matched.isAdministrator);
+                localStorageUtil.setIsAdministrator(false);
                 localStorageUtil.setPermissionName(matched.permissionName ?? "");
                 try {
                   const parsed = JSON.parse(matched.permissionData ?? "{}");

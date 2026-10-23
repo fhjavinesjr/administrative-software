@@ -434,6 +434,13 @@ const MODULE_LIST: ModuleEntry[] = [
     indent: 0,
   },
   {
+    key: "hrm.reports.leaveSummary",
+    label: "Approved Leave Summary",
+    type: "module",
+    indent: 0,
+    hasDataScope: true,
+  },
+  {
     key: "hrm.plantillaMonitoring",
     label: "Plantilla Monitoring",
     type: "module",
@@ -538,6 +545,12 @@ const MODULE_LIST: ModuleEntry[] = [
     hasEdit: true,
     hasDelete: true,
   },
+  { key: "tk.reports.mra", label: "Monthly Report of Attendance", type: "module", indent: 0 },
+  { key: "tk.reports.tardiness", label: "Tardiness Summary", type: "module", indent: 0 },
+  { key: "tk.reports.undertime", label: "Undertime Summary", type: "module", indent: 0 },
+  { key: "tk.reports.overtime", label: "Overtime Summary", type: "module", indent: 0 },
+  { key: "tk.reports.nightDifferential", label: "Night Differential Summary", type: "module", indent: 0 },
+  { key: "tk.reports.incompleteDtr", label: "Incomplete DTR Review", type: "module", indent: 0 },
 
   // ── PAYROLL ──────────────────────────────────────────────────────────
   { key: "app.payroll", label: "Payroll", type: "app-header", indent: 0 },
@@ -597,6 +610,16 @@ const MODULE_LIST: ModuleEntry[] = [
     hasAdd: true,
     hasEdit: true,
     hasDelete: true,
+  },
+  {
+    key: "payroll.annualization",
+    label: "Annualization",
+    type: "module",
+    indent: 0,
+    hasAdd: true,
+    hasEdit: true,
+    hasDelete: true,
+    hasFinalize: true,
   },
   {
     key: "payroll.reports.earnings",
@@ -1207,34 +1230,6 @@ export default function Permission() {
 
   const handleAdminToggle = (checked: boolean) => {
     setIsAdmin(checked);
-    if (checked) {
-      const all: PermMap = {};
-      MODULE_LIST.forEach((m) => {
-        if (m.type !== "app-header") {
-          all[m.key] = {
-            canAccess: true,
-            canAdd: !!m.hasAdd,
-            canEdit: !!m.hasEdit,
-            canDelete: !!m.hasDelete,
-            canPublish: !!m.hasPublish,
-            canSubmit: !!m.hasSubmit,
-            canApprove: !!m.hasApprove,
-            canAssess: !!m.hasAssess,
-            canValidate: !!m.hasValidate,
-            canFinalize: !!m.hasFinalize,
-            dataScope: m.hasDataScope ? "AGENCY_WIDE" : "NONE",
-          };
-        }
-      });
-      setPermMap(all);
-      setPortalModuleAccess({
-        administrative: true,
-        hrManagement: true,
-        timeKeeping: true,
-        payroll: true,
-        primeHr: true,
-      });
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -1428,7 +1423,7 @@ export default function Permission() {
               )}
             </div>
             <div className={styles.formRowInline}>
-              <label>Administrator</label>
+              <label>Agency administrator (permissions below still apply)</label>
               <input
                 type="checkbox"
                 checked={isAdmin}

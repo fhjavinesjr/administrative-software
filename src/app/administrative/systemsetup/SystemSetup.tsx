@@ -13,8 +13,6 @@ import {
   sanitizeText,
   sanitizeCity,
   sanitizeAddress,
-  sanitizeNumbers,
-  sanitizePhone,
   sanitizeEmail,
   sanitizeISO,
   sanitizeZipCode,
@@ -26,7 +24,6 @@ import {
   formatPhilhealthNo,
   formatTinNo,
   formatPhoneNo,
-  formatTelephoneNo,
 } from "@/lib/utils/inputFormatters";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
@@ -45,6 +42,8 @@ export default function SystemSetup() {
     telNo: string;
     email: string;
     tinNo: string;
+    rdoCode: string;
+    birBranchCode: string;
     pagibigNo: string;
     philhealtNo: string;
     // optional base64 logo fields returned by backend
@@ -63,6 +62,8 @@ export default function SystemSetup() {
   const [telNo, setTelNo] = useState("");
   const [email, setEmail] = useState("");
   const [tinNo, setTinNo] = useState("");
+  const [rdoCode, setRdoCode] = useState("");
+  const [birBranchCode, setBirBranchCode] = useState("");
   const [pagibigNo, setPagibigNo] = useState("");
   const [philhealtNo, setPhilhealthNo] = useState("");
   const [isDOH, setIsDOH] = useState(false);
@@ -93,6 +94,8 @@ export default function SystemSetup() {
     telMobileNo: string;
     emailAddress: string;
     tinNo: string;
+    rdoCode: string;
+    birBranchCode: string;
     pagIbigNo: string;
     philHealthNo: string;
     leftHeaderLogo?: string | null;
@@ -112,6 +115,14 @@ export default function SystemSetup() {
       });
       return;
     }
+    if (!/^[0-9]{4}$/.test(zipcode.trim())) {
+      void Swal.fire({
+        icon: "warning",
+        title: "Check ZIP Code",
+        text: "Enter the agency's actual four-digit ZIP code before saving System Setup.",
+      });
+      return;
+    }
     const payload: SettingsPayload = {
       systemStartDate: date ? toCustomFormat(date, true) : null,
       companyName,
@@ -124,6 +135,8 @@ export default function SystemSetup() {
       telMobileNo: telNo,
       emailAddress: email,
       tinNo,
+      rdoCode,
+      birBranchCode,
       pagIbigNo: pagibigNo,
       philHealthNo: philhealtNo,
       leftHeaderLogo: stripDataUrlPrefix(leftLogoBase64),
@@ -217,6 +230,8 @@ export default function SystemSetup() {
     telMobileNo?: string;
     emailAddress?: string;
     tinNo?: string;
+    rdoCode?: string;
+    birBranchCode?: string;
     pagIbigNo?: string;
     philHealthNo?: string;
     // backend DTO uses byte[] field names; Jackson serializes them as base64 strings
@@ -248,6 +263,8 @@ export default function SystemSetup() {
               telNo: d.telMobileNo || "",
               email: d.emailAddress || "",
               tinNo: d.tinNo || "",
+              rdoCode: d.rdoCode || "",
+              birBranchCode: d.birBranchCode || "",
               pagibigNo: d.pagIbigNo || "",
               philhealtNo: d.philHealthNo || "",
               leftHeaderLogoBase64: d.leftHeaderLogo || null,
@@ -306,6 +323,8 @@ export default function SystemSetup() {
     setTelNo("");
     setEmail("");
     setTinNo("");
+    setRdoCode("");
+    setBirBranchCode("");
     setPagibigNo("");
     setPhilhealthNo("");
     setIsDOH(false);
@@ -378,6 +397,8 @@ export default function SystemSetup() {
     setTelNo(ent.telNo || "");
     setEmail(ent.email || "");
     setTinNo(ent.tinNo || "");
+    setRdoCode(ent.rdoCode || "");
+    setBirBranchCode(ent.birBranchCode || "");
     setPagibigNo(ent.pagibigNo || "");
     setPhilhealthNo(ent.philhealtNo || "");
 
@@ -466,6 +487,9 @@ export default function SystemSetup() {
                   type="text"
                   value={zipcode}
                   onChange={(e) => setZipcode(sanitizeZipCode(e.target.value))}
+                  inputMode="numeric"
+                  maxLength={4}
+                  pattern="[0-9]{4}"
                   required={true}
                 />
 
@@ -494,6 +518,28 @@ export default function SystemSetup() {
                   value={tinNo}
                   onChange={(e) => setTinNo(formatTinNo(e.target.value))}
                   required={true}
+                />
+
+                <label>BIR RDO Code</label>
+                <input
+                  className={styles.date}
+                  type="text"
+                  maxLength={10}
+                  value={rdoCode}
+                  onChange={(e) => setRdoCode(e.target.value.replace(/[^A-Za-z0-9-]/g, ""))}
+                  required={true}
+                />
+
+                <label>BIR Branch Code</label>
+                <input
+                  className={styles.date}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={birBranchCode}
+                  onChange={(e) => setBirBranchCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  required={true}
+                  placeholder="0000"
                 />
 
                 <label>Pag-Ibig No.</label>
@@ -623,6 +669,8 @@ export default function SystemSetup() {
                       <th>Tel./Mobile No.</th>
                       <th>Email Address</th>
                       <th>TIN No.</th>
+                      <th>RDO Code</th>
+                      <th>BIR Branch</th>
                       <th>Pag-Ibig No.</th>
                       <th>PhilHealt No.</th>
                       <th>Action</th>
@@ -642,6 +690,8 @@ export default function SystemSetup() {
                         <td>{ent.telNo || "-"}</td>
                         <td>{ent.email || "-"}</td>
                         <td>{ent.tinNo || "-"}</td>
+                        <td>{ent.rdoCode || "-"}</td>
+                        <td>{ent.birBranchCode || "-"}</td>
                         <td>{ent.pagibigNo || "-"}</td>
                         <td>{ent.philhealtNo || "-"}</td>
                         <td>
