@@ -13,6 +13,15 @@ import { sanitizeShortName } from "@/lib/utils/inputSanitizers";
 
 const API_BASE_URL_ADMINISTRATIVE = runtimeConfig.getApiUrl("administrative");
 
+const BIR_EMPLOYMENT_STATUSES = [
+  { code: "R", label: "Regular" },
+  { code: "C", label: "Casual" },
+  { code: "CP", label: "Contractual / Project-Based" },
+  { code: "S", label: "Seasonal" },
+  { code: "P", label: "Probationary" },
+  { code: "AL", label: "Apprentice / Learner" },
+] as const;
+
 export default function NatureOfAppointment() {
   const canAdd = localStorageUtil.canAdd("admin.natureAppointment");
   const canEdit = localStorageUtil.canEdit("admin.natureAppointment");
@@ -22,12 +31,14 @@ export default function NatureOfAppointment() {
     code: string;
     nature: string;
     isContractual: boolean;
+    birEmploymentStatusCode: string | null;
   };
 
   const [slct_app, setApp] = useState<NatureAPI[]>([]);
   const [code, setCode] = useState("");
   const [nature, setNature] = useState(""); // <-- updated
   const [isContractual, setIsContractual] = useState(false);
+  const [birEmploymentStatusCode, setBirEmploymentStatusCode] = useState("");
 
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -69,7 +80,12 @@ export default function NatureOfAppointment() {
     }
     e.preventDefault();
 
-    const payload = { code, nature, isContractual };
+    const payload = {
+      code,
+      nature,
+      isContractual,
+      birEmploymentStatusCode: birEmploymentStatusCode || null,
+    };
 
     try {
       if (!isEditing) {
@@ -121,6 +137,7 @@ export default function NatureOfAppointment() {
       setCode("");
       setNature("");
       setIsContractual(false);
+      setBirEmploymentStatusCode("");
     } catch (err) {
       console.error("Save failed:", err);
       Swal.fire("Error", "Failed to save record.", "error");
@@ -144,6 +161,7 @@ export default function NatureOfAppointment() {
     setCode(obj.code);
     setNature(obj.nature); // <-- updated
     setIsContractual(obj.isContractual);
+    setBirEmploymentStatusCode(obj.birEmploymentStatusCode || "");
     setIsEditing(true);
   };
 
@@ -198,6 +216,7 @@ export default function NatureOfAppointment() {
     setCode("");
     setNature("");
     setIsContractual(false);
+    setBirEmploymentStatusCode("");
     setIsEditing(false);
     setEditId(null);
   };
@@ -228,6 +247,23 @@ export default function NatureOfAppointment() {
               onChange={(e) => setNature(sanitizeShortName(e.target.value))}
               required
             />
+
+            <label htmlFor="birEmploymentStatusCode">BIR Employment Status</label>
+            <select
+              id="birEmploymentStatusCode"
+              value={birEmploymentStatusCode}
+              onChange={(event) => setBirEmploymentStatusCode(event.target.value)}
+            >
+              <option value="">Not mapped</option>
+              {BIR_EMPLOYMENT_STATUSES.map((status) => (
+                <option key={status.code} value={status.code}>
+                  {status.code} — {status.label}
+                </option>
+              ))}
+            </select>
+            <small>
+              Used by the BIR 1604-C Alphalist. Unmapped appointments will be flagged before export.
+            </small>
 
             <div className={styles.checkboxGroup}>
               <input
@@ -265,6 +301,7 @@ export default function NatureOfAppointment() {
                   <tr>
                     <th>Code</th>
                     <th>Nature</th>
+                    <th>BIR Status</th>
                     <th>Contractual</th>
                     <th>Actions</th>
                   </tr>
@@ -274,6 +311,7 @@ export default function NatureOfAppointment() {
                     <tr key={item.natureOfAppointmentId}>
                       <td>{item.code}</td>
                       <td>{item.nature}</td>
+                      <td>{item.birEmploymentStatusCode || "Not mapped"}</td>
                       <td>{item.isContractual ? "Yes" : "No"}</td>
                       <td>
                         <button

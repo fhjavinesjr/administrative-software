@@ -55,7 +55,7 @@ const empty: Form = {
 function canPublish(): boolean {
   if (localStorageUtil.getIsAdministrator()) return true;
   const raw = localStorage.getItem("permissionData");
-  if (!raw || raw === "__superadmin__") return true;
+  if (!raw || raw === "__superadmin__") return false;
   try {
     return (
       (

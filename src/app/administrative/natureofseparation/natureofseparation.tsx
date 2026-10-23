@@ -21,6 +21,7 @@ export default function Natureofseparation() {
     natureOfSeparationId?: number;
     code: string;
     nature: string;
+    birSeparationReasonCode: string | null;
   };
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function Natureofseparation() {
 
   const [code, setCode] = useState("");
   const [nature, setNature] = useState("");
+  const [birSeparationReasonCode, setBirSeparationReasonCode] = useState("");
   const [slct_app, setApp] = useState<SeparationEntry[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -71,7 +73,7 @@ export default function Natureofseparation() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, nature }),
+          body: JSON.stringify({ code, nature, birSeparationReasonCode: birSeparationReasonCode || null }),
         },
       );
 
@@ -101,6 +103,7 @@ export default function Natureofseparation() {
 
       setCode("");
       setNature("");
+      setBirSeparationReasonCode("");
     } else {
       if (editIndex !== null) {
         Swal.fire({
@@ -117,7 +120,7 @@ export default function Natureofseparation() {
               {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, nature }),
+                body: JSON.stringify({ code, nature, birSeparationReasonCode: birSeparationReasonCode || null }),
               },
             );
 
@@ -151,6 +154,7 @@ export default function Natureofseparation() {
 
             setCode("");
             setNature("");
+            setBirSeparationReasonCode("");
             setIsEditing(false);
             setEditIndex(null);
           }
@@ -208,12 +212,14 @@ export default function Natureofseparation() {
     setEditIndex(index);
     setCode(obj.code);
     setNature(obj.nature);
+    setBirSeparationReasonCode(obj.birSeparationReasonCode || "");
     setIsEditing(true);
   };
 
   const handleClear = () => {
     setCode("");
     setNature("");
+    setBirSeparationReasonCode("");
     setIsEditing(false);
   };
 
@@ -241,6 +247,18 @@ export default function Natureofseparation() {
               required={true}
               placeholder="Enter Nature"
             />
+            <label htmlFor="bir-separation-reason">BIR separation reason</label>
+            <select
+              id="bir-separation-reason"
+              value={birSeparationReasonCode}
+              onChange={(e) => setBirSeparationReasonCode(e.target.value)}
+            >
+              <option value="">Not mapped</option>
+              <option value="T">T — Terminated / resigned</option>
+              <option value="TR">TR — Transferred</option>
+              <option value="R">R — Retirement</option>
+              <option value="D">D — Death</option>
+            </select>
 
             <div className={styles.buttonGroup}>
               <button
@@ -267,6 +285,7 @@ export default function Natureofseparation() {
                   <tr>
                     <th>Code</th>
                     <th>Nature</th>
+                    <th>BIR reason</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -275,6 +294,7 @@ export default function Natureofseparation() {
                     <tr key={m.code ?? `row-${indx}`}>
                       <td>{m.code}</td>
                       <td>{m.nature}</td>
+                      <td>{m.birSeparationReasonCode || "Not mapped"}</td>
                       <td>
                         <button
                           className={`${styles.iconButton} ${styles.editIcon}`}

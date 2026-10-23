@@ -1,0 +1,31 @@
+.page { min-height: 100%; padding: 1.5rem; color: #1e293b; background: #f8fafc; }
+.header { margin-bottom: 1rem; h1 { margin: 0.1rem 0 0.3rem; font-size: 1.65rem; } p { margin: 0; color: #64748b; } }
+.eyebrow { color: #5a67ba !important; font-size: 0.76rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
+.errorBanner { margin-bottom: 1rem; padding: 0.8rem 1rem; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; background: #fef2f2; }
+.editor, .listPanel { border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.editor { padding: 1rem; margin-bottom: 1rem; }
+.editorTitle, .listHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.editorTitle h2, .listHeader h2 { margin: 0; font-size: 1rem; }
+.editorTitle p, .listHeader p { margin: 0.2rem 0 0; color: #64748b; font-size: 0.8rem; }
+.editorTitle button { padding: 0.4rem 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px; color: #475569; background: #fff; cursor: pointer; }
+.formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; margin-top: 1rem; }
+.formGrid label { color: #475569; font-size: 0.8rem; font-weight: 650; span { color: #94a3b8; font-weight: 500; } }
+.formGrid input, .formGrid textarea { box-sizing: border-box; width: 100%; margin-top: 0.3rem; padding: 0.6rem 0.7rem; border: 1px solid #cbd5e1; border-radius: 6px; color: #1e293b; background: #fff; font: inherit; }
+.formGrid input { min-height: 40px; }
+.formGrid input:focus, .formGrid textarea:focus { border-color: #5a67ba; outline: 2px solid #e0e7ff; }
+.fullWidth { grid-column: 1 / -1; }
+.formActions { display: flex; justify-content: flex-end; gap: 0.55rem; margin-top: 0.9rem; button { min-width: 95px; padding: 0.5rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; } button[type="submit"] { border-color: #5a67ba; color: #fff; background: #5a67ba; } button:disabled { opacity: 0.6; cursor: wait; } }
+.listPanel { overflow: hidden; }
+.listHeader { padding: 0.9rem 1rem; border-bottom: 1px solid #e2e8f0; input { width: min(320px, 100%); min-height: 40px; padding: 0 0.7rem; border: 1px solid #cbd5e1; border-radius: 6px; } }
+.tableWrap { overflow-x: auto; table { width: 100%; border-collapse: collapse; font-size: 0.84rem; } th { padding: 0.7rem; text-align: left; white-space: nowrap; color: #475569; background: #f1f5f9; } td { padding: 0.7rem; border-top: 1px solid #edf2f7; vertical-align: top; white-space: nowrap; } td span { display: block; margin-top: 0.15rem; color: #64748b; font-size: 0.75rem; white-space: normal; } }
+.actions { display: flex; gap: 0.4rem; button { padding: 0.32rem 0.55rem; border: 1px solid #cbd5e1; border-radius: 5px; color: #475569; background: #fff; cursor: pointer; } button:last-child { color: #b91c1c; } }
+.empty, .unauthorized { padding: 2.5rem; text-align: center; color: #64748b; }
+.unauthorized { margin: 1.5rem; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+
+@media (max-width: 760px) {
+  .page { padding: 1rem; }
+  .formGrid { grid-template-columns: 1fr; }
+  .fullWidth { grid-column: auto; }
+  .editorTitle, .listHeader { align-items: stretch; flex-direction: column; }
+  .listHeader input { width: 100%; box-sizing: border-box; }
+}
